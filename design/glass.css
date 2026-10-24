@@ -1,0 +1,153 @@
+/* V02 visual study. Browser filters illustrate the material, not Android 9 APIs. */
+.decisions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin: 40px 0 72px; }
+.decisions > div { padding: 22px 0; border-top: 1px solid #c3d1c9; }
+.decisions span { font-size: 12px; letter-spacing: 1px; color: #658075; }
+.decisions strong { display: block; margin: 14px 0 10px; font-size: 22px; font-weight: 500; }
+.decisions p { font-size: 13px; margin: 0; color: #657e72; }
+.screen.glass {
+  grid-template-rows: 64px 904px 112px;
+  --glass: rgba(22, 35, 43, .63);
+  --glass-strong: rgba(25, 39, 48, .80);
+  --glass-soft: rgba(179, 217, 217, .08);
+  --glass-edge: rgba(224, 255, 252, .17);
+  --glass-shine: rgba(235, 255, 251, .09);
+  --glass-shadow: rgba(0, 13, 22, .18);
+  --map-glass: rgba(20, 37, 42, .63);
+  --road: rgba(146, 187, 190, .17);
+  --road-small: rgba(146, 187, 190, .11);
+  --map-block: transparent;
+  --water: rgba(47, 125, 151, .16);
+  --park: rgba(118, 173, 132, .08);
+  --map-label: #8ca5aa;
+  background:
+    radial-gradient(ellipse at 12% 4%, rgba(84, 155, 143, .29), transparent 57%),
+    radial-gradient(ellipse at 85% 68%, rgba(121, 162, 183, .24), transparent 51%),
+    radial-gradient(ellipse at 35% 115%, rgba(93, 151, 160, .17), transparent 65%),
+    linear-gradient(122deg, #0e1920, #273e46 63%, #172a34);
+}
+.screen.glass.light {
+  --glass: rgba(255, 255, 255, .55);
+  --glass-strong: rgba(250, 255, 253, .80);
+  --glass-soft: rgba(255, 255, 255, .36);
+  --glass-edge: rgba(255, 255, 255, .76);
+  --glass-shine: rgba(255, 255, 255, .70);
+  --glass-shadow: rgba(54, 84, 87, .10);
+  --map-glass: rgba(234, 244, 239, .44);
+  --road: rgba(255, 255, 255, .84);
+  --road-small: rgba(255, 255, 255, .58);
+  --water: rgba(119, 180, 200, .20);
+  --park: rgba(172, 204, 167, .28);
+  --map-label: #6b8780;
+  background:
+    radial-gradient(ellipse at 8% 18%, rgba(176, 213, 198, .63), transparent 57%),
+    radial-gradient(ellipse at 86% 56%, rgba(159, 192, 213, .54), transparent 55%),
+    radial-gradient(ellipse at 36% 116%, rgba(235, 220, 188, .47), transparent 65%),
+    linear-gradient(125deg, #e1ece7, #d4e1e0 57%, #e9eef0);
+}
+.glass .oem-status { background: transparent; color: var(--text); padding: 0 40px; }
+.glass .status-right { color: var(--muted); }
+.status-left { display: flex; align-items: center; gap: 30px; }
+.status-left b { font-size: 23px; font-weight: 500; }
+.status-left > span { font-size: 18px; letter-spacing: 2px; color: var(--muted); }
+.status-weather { display: flex; align-items: center; gap: 10px; margin-right: 22px; }
+.status-weather .icon { width: 24px; height: 24px; }
+.glass .desktop { display: block; padding: 16px 32px 24px; min-height: 0; }
+.glass .desk-content { height: 100%; grid-template-columns: minmax(0, 1fr) 520px; }
+.glass .nav-card, .glass .music-card, .glass .quick-card,
+.glass .music-dock, .glass .direction-box, .glass .destination,
+.glass .map-tool, .glass .climate-glass {
+  background-color: var(--glass);
+  border: 1px solid var(--glass-edge);
+  box-shadow: inset 0 1px 0 var(--glass-shine), 0 16px 44px var(--glass-shadow);
+  backdrop-filter: blur(28px) saturate(115%);
+  -webkit-backdrop-filter: blur(28px) saturate(115%);
+}
+.glass .nav-card { background-color: var(--map-glass); }
+.glass .direction-box, .glass .destination { background-color: var(--glass-strong); }
+.glass .direction-box { left: 28px; top: 28px; }
+.glass .direction-copy b { font-size: 38px; }
+.glass .destination { left: 28px; right: 28px; bottom: 28px; }
+.glass .map-tool { bottom: 176px; }
+.glass .music-column { grid-template-rows: minmax(0, 1fr) 240px; }
+.glass .music-card { padding: 30px; overflow: hidden; position: relative; }
+.glass .music-card::before {
+  content: ""; position: absolute; width: 360px; height: 290px; right: -70px; top: 52px;
+  background: radial-gradient(ellipse, rgba(172, 203, 192, .12), transparent 68%);
+  pointer-events: none;
+}
+.listening { text-align: center; margin-top: 26px; position: relative; }
+.listening .hero-cover { width: 236px; height: 236px; border-radius: 26px; margin: 0 auto 22px; box-shadow: 0 18px 40px rgba(5, 29, 39, .18); }
+.listening h3 { font-size: 36px; font-weight: 500; letter-spacing: 1px; margin: 0 0 10px; }
+.listening p { font-size: 22px; color: var(--muted); margin: 0; }
+.listening .music-progress { margin: 25px 12px 0; }
+.glass .track-line::before { left: 0; top: 0; }
+.listening-note { display: flex; justify-content: space-between; align-items: center; color: var(--muted); margin: 18px 12px 0; font-size: 18px; }
+.listening-note .icon { width: 26px; height: 26px; }
+.glass .quick-card { padding: 30px; }
+.glass .quick-items { margin-top: 27px; }
+.glass .quick-icon { background: var(--glass-soft); border: 1px solid var(--glass-edge); }
+.glass .quick-item { font-size: 20px; }
+
+/* Shared compact Dock: the only playback transport controls on the home study. */
+.dock-lane { min-height: 0; padding: 0 32px 16px; }
+.music-dock {
+  height: 96px; border-radius: 28px; padding: 12px 20px;
+  display: grid; grid-template-columns: 238px 1px minmax(0, 1fr) 1px 352px 1px 132px;
+  align-items: center; gap: 22px;
+}
+.dock-separator { width: 1px; height: 34px; background: var(--glass-edge); }
+.dock-navigation { display: flex; align-items: center; gap: 14px; }
+.dock-control { display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 18px; color: var(--text); flex: none; }
+.dock-control .icon { width: 29px; height: 29px; }
+.dock-home { color: var(--accent); background: var(--glass-soft); }
+.dock-apps { display: flex; align-items: center; justify-content: center; gap: 12px; height: 64px; width: 152px; font-size: 21px; white-space: nowrap; }
+.dock-apps .icon { width: 29px; height: 29px; }
+.dock-media { display: flex; align-items: center; justify-content: space-between; gap: 22px; min-width: 0; }
+.dock-track { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.dock-track .cover { width: 60px; height: 60px; border-radius: 14px; }
+.dock-track-copy { min-width: 0; }
+.dock-track-copy b { display: block; font-size: 24px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dock-track-copy p { font-size: 17px; color: var(--muted); margin: 6px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dock-transport { display: flex; align-items: center; gap: 8px; flex: none; }
+.dock-transport .dock-control { width: 60px; height: 64px; }
+.dock-play { color: var(--accent-text); background: var(--accent); width: 58px; height: 58px; border-radius: 19px; display: flex; align-items: center; justify-content: center; }
+.dock-play .icon { width: 30px; height: 30px; stroke-width: 3; }
+.dock-climate { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.dock-zone { text-align: center; min-width: 84px; }
+.dock-zone b { font-size: 32px; font-weight: 400; letter-spacing: .2px; }
+.dock-zone sup { font-size: 17px; }
+.dock-zone span { display: block; font-size: 14px; color: var(--muted); margin-top: 2px; }
+.dock-auto { display: flex; align-items: center; gap: 10px; font-size: 18px; color: var(--accent); }
+.dock-auto .icon { width: 26px; height: 26px; }
+.dock-vehicle { display: flex; align-items: center; gap: 2px; }
+.dock-vehicle .icon { width: 30px; height: 30px; }
+.dock-section { margin-top: 76px; }
+.dock-studies { display: grid; gap: 22px; }
+.dock-wrap { aspect-ratio: 1920 / 160; overflow: hidden; position: relative; border-radius: 16px; }
+.screen.dock-study { display: block; height: 160px; padding-top: 28px; }
+.dock-study > .dock-lane { height: 112px; }
+.dock-mini-label { position: absolute; top: 9px; left: 50px; color: var(--muted); font-size: 13px; letter-spacing: 2px; }
+body.dock-only .board { display: none; }
+body.dock-only #single-screen { display: block; width: 1920px; height: 320px; }
+body.dock-only #single-screen > .screen { position: relative; }
+
+/* The surrounding background is included so transparency can be reviewed. */
+.glass.climate-panel.screen { display: block; padding: 24px; }
+.climate-glass { border-radius: 28px; padding: 26px 30px; height: 100%; }
+.glass .climate-zones { margin: 22px 0; }
+.glass .climate-heading strong { font-size: 27px; }
+.glass .zone-value b { font-size: 49px; }
+.glass .fan-level { margin: 18px 0 24px; }
+.glass .climate-mode { height: 60px; background: var(--glass-soft); border: 1px solid var(--glass-edge); }
+.glass .climate-mode.active { background: var(--accent); border-color: transparent; }
+body.pair .dock-section, body.pair .decisions { display: none; }
+@media(max-width:850px) {
+  .decisions { gap: 16px; margin: 28px 0 44px; }
+  .decisions strong { font-size: 17px; }
+  .decisions p { font-size: 11px; line-height: 1.7; }
+}
+@media(max-width:520px) {
+  .decisions { grid-template-columns: 1fr; gap: 0; }
+  .decisions > div { padding: 16px 0; }
+  .dock-section { margin-top: 48px; }
+}
