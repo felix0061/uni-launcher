@@ -1,0 +1,55 @@
+{
+  "checkedAt": "2026-10-24T09:47:27.298429+00:00",
+  "package": "xyz.i4o.uni.launcher",
+  "version": "0.2.0",
+  "toolchain": {
+    "flutter": "3.47.8",
+    "dart": "3.13.7",
+    "java": 17,
+    "compileSdk": 36,
+    "minSdk": 24,
+    "targetSdk": 28
+  },
+  "validation": {
+    "flutterAnalyze": "No issues found",
+    "flutterTests": 15,
+    "android9IntegrationChecks": 22,
+    "releaseLint": "Passed; only Play ExpiredTargetSdkVersion excluded for local Android 9 distribution",
+    "releaseEmulatorSmoke": {
+      "abi": "x86_64",
+      "api": 28,
+      "install": "Success",
+      "launch": "Status: ok",
+      "homeIntentResolves": true,
+      "homeLongPress": "Settings visibly opened; screenshot inspected",
+      "processResumed": true,
+      "fatalOrUnhandledErrors": false,
+      "screenshots": [
+        "flutter-release-home.png",
+        "flutter-release-settings.png"
+      ]
+    },
+    "realCar": "Pending; arm64 archive verified but not run on the car",
+    "performance": "No real-car performance claim"
+  },
+  "artifacts": [
+    {
+      "path": "build/app/outputs/flutter-apk/app-arm64-v8a-release.apk",
+      "abi": "arm64-v8a",
+      "bytes": 17304182,
+      "sha256": "b6d2fa8d663a2a774afe07ee6b3c87cad724974eb6264d72877e49a7eba579d5",
+      "versionCode": 2002,
+      "signatureVerified": true,
+      "certificateSha256": "bba7d5b864934b8ff144b08d1f58a866c883261500f9e9f201b96c2a3dc1ea1f"
+    },
+    {
+      "path": "build/app/outputs/flutter-apk/app-x86_64-release.apk",
+      "abi": "x86_64",
+      "bytes": 18812032,
+      "sha256": "c896b51e5830c95e3df8fab9631b41b2f10ad8a7214e45c76263a42d8439c5d4",
+      "versionCode": 4002,
+      "signatureVerified": true,
+      "certificateSha256": "bba7d5b864934b8ff144b08d1f58a866c883261500f9e9f201b96c2a3dc1ea1f"
+    }
+  ]
+}

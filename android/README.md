@@ -1,5 +1,7 @@
 # UNI Launcher 0.1.0
 
+这是保留的 WebView 基线。当前版本入口已迁移到 [Flutter 工程](../app/README.md)，继续复用本目录的 `core/`、`integration/` 与资源；以下说明只描述基线 APK。
+
 包名 `xyz.i4o.uni.launcher`。一个 APK，Java 原生 Android 宿主 + APK 内的离线界面，复用已评审的 V04 组件。当前为 Android 9 模拟器验证版；实车空调、胎压和官方字段一致性仍待上车核对。
 
 ## 已实现

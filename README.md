@@ -1,9 +1,10 @@
 # LYNK 05 桌面研究与设计
 
-针对领克 05 PHEV / IP753 / Android 9 的桌面项目，包含 APK 分析、设计和首版 Android 实现。包名 `xyz.i4o.uni.launcher`；源码、测试和报告由本地 Git 管理，先模拟器验证，再配合实车接入。
+针对领克 05 PHEV / IP753 / Android 9 的桌面项目，包含 APK 分析、设计和 Flutter Android 实现。包名 `xyz.i4o.uni.launcher`；源码、测试和报告由本地 Git 管理，先模拟器验证，再配合实车接入。
 
-- [Android 实现与构建](android/README.md)、[模拟器验证报告](android/verification/emulator-report.json)。
-- [实际模拟器深色首页](android/verification/home-dark.png)、[浅色首页](android/verification/home-light.png)、[未连接状态](android/verification/home-live-unavailable.png)。
+- **当前实现**：[Flutter 构建与架构](app/README.md)、[Android 9 验证报告](app/verification/emulator-report.json)。Flutter 绘制界面，复用 Java 原车适配器；毛玻璃可在设置开启，默认关闭。
+- [Flutter 深色首页](app/verification/flutter-home-dark.png)、[浅色直角首页](app/verification/flutter-home-light-square.png)、[毛玻璃设置](app/verification/flutter-settings-blur-on.png)、[未连接状态](app/verification/flutter-live-unavailable.png)。
+- [早期 WebView 基线与原生适配器](android/README.md)、[基线验证报告](android/verification/emulator-report.json)。保留供对照；当前 APK 入口已使用 Flutter。
 
 - [APK 能力分析](docs/APK_ANALYSIS.md)：系统身份、Widget、ECARX 车辆接口、导航、媒体、界面结构与证据边界。
 - [产品与界面设计](docs/PRODUCT_DESIGN.md)：布局、主题、组件、操作和异常状态。

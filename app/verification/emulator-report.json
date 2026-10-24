@@ -1,0 +1,41 @@
+{
+  "renderer": "Flutter Android",
+  "api": 28,
+  "checks": [
+    "Flutter home cards rendered",
+    "Blur defaults off with no BackdropFilter",
+    "Desktop fills the usable emulator window",
+    "Android app list arrives through platform channel",
+    "Bottom dock follows requested order",
+    "Holding Home enters desktop settings",
+    "Blur switch creates clipped Flutter filters",
+    "Blur setting committed to Android preferences",
+    "Disabling blur removes every filter",
+    "Light theme and zero radius applied",
+    "Card hold opens edit mode",
+    "Card library allocates page when full",
+    "Touch drag moves card on grid",
+    "Touch resize updates card spans",
+    "Edited card layout committed to Android preferences",
+    "Real installed application drawer opens",
+    "Native climate simulator confirms command",
+    "Live mode removes illustrative navigation",
+    "Unavailable live climate is disabled",
+    "Native navigation setting applied",
+    "Native navigation setting restored",
+    "No Flutter rendering exception"
+  ],
+  "passed": 22,
+  "glassDefault": false,
+  "carVerification": "pending",
+  "performance": "Functional emulator checks; no real-car performance claim",
+  "screenshots": [
+    "flutter-home-dark.png",
+    "flutter-settings-blur-on.png",
+    "flutter-home-light-square.png",
+    "flutter-card-edited.png",
+    "flutter-apps.png",
+    "flutter-climate.png",
+    "flutter-live-unavailable.png"
+  ]
+}

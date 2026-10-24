@@ -1,17 +1,18 @@
 # 接入架构与实施计划
 
-本文件保留接入规划；现已开始 Android 首版实现，包名 `xyz.i4o.uni.launcher`。已实现范围见 [Android README](../android/README.md)，实车协议和字段一致性仍待设备验证。一个 Launcher APK 内部模块化，沿用官方宿主与原厂来源。
+本文件保留接入规划；当前实现为 Flutter Android，包名 `xyz.i4o.uni.launcher`。已实现范围见 [Flutter README](../app/README.md)，实车协议和字段一致性仍待设备验证。一个 Launcher APK 内部模块化，沿用官方宿主与原厂来源。
 
 ## 1. 架构
 
 ```mermaid
 flowchart TD
-  UI[原生桌面界面 / 主题 / 状态呈现] --> Store[统一状态仓库与能力目录]
-  Store --> Widget[OEM Widget 宿主]
-  Store --> Navi[导航适配器]
-  Store --> Media[媒体适配器]
-  Store --> Vehicle[ECARX 车辆适配器]
-  Store --> System[系统与应用适配器]
+  UI[Flutter 卡片 / 主题 / 状态呈现] --> Store[Dart 状态仓库]
+  Store --> Channel[MethodChannel / EventChannel]
+  Channel --> Widget[Java OEM Widget 宿主]
+  Channel --> Navi[导航适配器]
+  Channel --> Media[媒体适配器]
+  Channel --> Vehicle[ECARX 车辆适配器]
+  Channel --> System[系统与应用适配器]
   Widget --> OEM[媒体 / 导航 / 天气 / 日历 / 账号 / 清理 / 胎压 / 可选 AQI]
   Navi --> Broadcast[高德广播摘要]
   Navi --> Embed[可选 ActivityView 宿主]
@@ -20,7 +21,9 @@ flowchart TD
   System --> Platform[PackageManager / Configuration / Window Insets]
 ```
 
-当前采用 Java 原生宿主、独立集成适配器与离线 WebView 组件，复用已评审样式和卡片编辑代码，围绕 Android 9 验证；渲染层和硬件调用分开。性能指标仍为实车验收目标：暖回桌面 300ms 内出现主界面、稳定后避免高频轮询；冷启动、帧率、PSS 在 IP753 上实测，不能以模拟器代替。
+当前采用 Flutter 渲染层和 Java 集成适配器，卡片、设置、底栏和主题均由 Dart Widget 构建，不载入 WebView。`app/` 的 Android 工程直接编译 `android/src/.../integration` 与 `core`，原厂 Provider 目录仍仅有一份。平台通道交换状态与限定动作；原厂 Widget 兼容页保留 Android View。
+
+毛玻璃是独立外观开关，默认关闭；关闭时不创建 `BackdropFilter`，保留半透明材质，开启时按卡片边界裁切模糊。性能指标仍为实车验收目标：暖回桌面 300ms 内出现主界面、稳定后避免高频轮询；冷启动、帧率、PSS 在 IP753 上实测，不能以模拟器代替。
 
 ## 2. 接口契约
 
