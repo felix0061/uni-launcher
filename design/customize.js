@@ -26,7 +26,7 @@ const cardCatalog = {
   shortcuts:{name:'快捷应用',icon:'apps',description:'你常用的四个应用',w:4,h:2,minW:3,minH:2},
   vehicle:{name:'车辆信息',icon:'car',description:'车辆信息兼容卡片',source:'原车车辆信息',w:4,h:3,minW:3,minH:2}
 };
-const preferences = {palette:'mint',custom:'#38A4A0',mode:'system',radius:28};
+const preferences = {palette:'mint',custom:'#38A4A0',mode:'system',radius:28,glass:false,pageTransition:'none'};
 let cards = defaultCards();
 let pageCount=2;
 if (!exportMode) {
@@ -39,8 +39,9 @@ if (!exportMode) {
     }
   } catch (_) {}
 }
-const ui={view:'home',page:0,editing:false,modal:null,selected:null,tab:'appearance',snapshot:null,undo:null,toast:'',playing:true,trackIndex:0,climate:{left:22.5,right:22.5,fan:3,power:true,auto:true,ac:true,sync:false,recirc:false}};
+const ui={view:'home',page:0,editing:false,modal:null,selected:null,tab:'appearance',snapshot:null,undo:null,toast:'',playing:true,trackIndex:0,climate:{left:22.5,right:22.5,fan:3,power:true,auto:true,ac:true,sync:false,recirc:false,driverHeat:0,driverVent:0,passengerHeat:0}};
 preferences.radius=Number.isFinite(+preferences.radius)?Math.max(0,Math.min(40,Math.round(+preferences.radius))):28;
+preferences.glass=preferences.glass===true;
 function safe(value) {return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function persistDesign() {if(!exportMode)try{localStorage.setItem('lynk-design-v04',JSON.stringify({version:4,preferences,cards,pageCount}));}catch(_){}}
 function rgb(hex) {return (hex.match(/[a-f0-9]{2}/ig)||['38','A4','A0']).slice(0,3).map(n=>parseInt(n,16));}
@@ -50,7 +51,7 @@ function themeStyle(theme) {
   const seed=p?.seed||preferences.custom;
   const accent=p?p[theme]:(theme==='light'?mix(seed,[0,0,0],.42):mix(seed,[255,255,255],.42));
   const text=theme==='light'?'#FFFFFF':mix(seed,[0,0,0],.80);
-  return `--accent:${accent};--accent-text:${text};--scene-rgb:${rgb(seed).join(',')};--card-radius:${preferences.radius}px;`;
+  return `--accent:${accent};--accent-text:${text};--scene-rgb:${rgb(seed).join(',')};--card-radius:${preferences.radius}px;--surface-filter:${preferences.glass?'blur(28px) saturate(115%)':'none'};--overlay-filter:${preferences.glass?'blur(12px)':'none'};`;
 }
 function activeTheme() {
   if(preferences.mode==='light'||preferences.mode==='dark')return preferences.mode;
@@ -67,7 +68,7 @@ function cardBody(card) {
   if(oemCardDefinitions[card.type]||card.type==='vehicle')return oemCardBody(card);
   switch(card.type) {
     case 'nav':return `${map}<div class="direction-box"><div class="turn-icon">${icon('turn')}</div><div class="direction-copy"><b>600 米后右转</b><p>进入城市大道</p></div></div><div class="compass">N</div><div class="map-tool"><span>＋</span><span>−</span></div><div class="destination"><div><small>前往 · 城市中心</small><div class="arrival"><b>10:08 到达</b><span>27 分钟 · 12.6 公里</span></div></div><div class="dest-arrow">${icon('nav')}</div></div>`;
-    case 'music':{const m=mediaState();return `<div class="card-label"><span>${safe(card.title)}</span><span class="source"><i class="source-dot"></i>原车媒体</span></div><div class="listening"><div class="cover hero-cover">${art}</div><div class="song-copy"><h3>${m.title}</h3><p>${m.artist} · ${m.collection}</p></div><div class="music-progress"><div class="track-line"></div><div class="music-times"><span>00:46</span><span>04:18</span></div></div><div class="listening-note"><span>原车媒体中心 · 样式示例</span>${actionButton('music-info','arrow-right','打开音乐详情','media-detail-button')}</div></div>`;}
+    case 'music':{const m=mediaState();return `<div class="card-label"><span>${safe(card.title)}</span><span class="source"><i class="source-dot"></i>原车媒体</span></div><div class="listening"><div class="cover hero-cover">${art}</div><div class="song-copy"><h3>${m.title}</h3><p>${m.artist} · ${m.collection}</p><div class="lyrics-inline">风把远方带进了呼吸</div></div><div class="music-progress"><div class="track-line"></div><div class="music-times"><span>00:46</span><span>04:18</span></div></div><div class="listening-note"><span>原车媒体中心 · 样式示例</span>${actionButton('music-info','arrow-right','打开音乐详情','media-detail-button')}</div></div>`;}
     case 'weather':return `<div class="weather-heading"><span>${icon('pin')}${safe(card.city||card.title||'杭州')}</span><span>天气示例</span></div><div class="weather-current"><div><b>24<sup>°</sup></b><span>多云</span></div><div class="weather-art">${icon('sun')}${icon('cloud')}</div></div><div class="weather-foot"><span>原车天气</span><span>等待官方天气同步</span></div>`;
     case 'clock':return `<div class="card-label"><span>${safe(card.title)}</span>${icon('clock')}</div><div class="clock-time">09<span>:</span>41</div><div class="clock-date">10 月 24 日 · 星期六</div>`;
     case 'shortcuts':return `<div class="card-label"><span>${safe(card.title)}</span>${icon('apps')}</div><div class="quick-items">${[['nav','导航'],['phone','电话'],['music','音乐'],['settings','系统设置']].map(([i,t])=>`<div class="quick-item"><span class="quick-icon">${icon(i)}</span><span>${t}</span></div>`).join('')}</div>`;
@@ -92,7 +93,7 @@ function appearanceSettings(theme) {
     <section class="settings-block"><div class="setting-heading"><h3>显示模式</h3><span>选择适合此刻的明暗</span></div><div class="mode-picker">${[['system','auto-theme','跟随系统'],['light','sun','浅色'],['dark','moon','深色']].map(([id,s,label])=>`<button data-action="set-mode" data-value="${id}" class="${preferences.mode===id?'selected':''}">${icon(s)}${label}${preferences.mode===id?icon('check'):''}</button>`).join('')}</div></section>
     <section class="settings-block theme-block"><div class="setting-heading"><h3>主题配色</h3><span>同步改变强调色与背景氛围</span></div><div class="palette-picker">${palettePresets.map(p=>`<button data-action="set-palette" data-value="${p.id}" class="${preferences.palette===p.id?'selected':''}" aria-label="${p.name}主题色"><span class="palette-chip" style="--swatch:${p.seed}">${preferences.palette===p.id?icon('check'):''}</span><b>${p.name}</b></button>`).join('')}</div><div class="custom-color-row"><div><strong>自定义颜色</strong><span>从取色器选择，或输入 HEX 色值</span></div><div class="custom-color-controls"><label class="color-input-wrap" title="选择自定义颜色"><input type="color" aria-label="自定义主题颜色" value="${safe(preferences.custom)}"><span style="background:${safe(preferences.custom)}"></span></label><input class="hex-input" aria-label="主题 HEX 色值" value="${safe(preferences.custom.toUpperCase())}" maxlength="7" spellcheck="false"><button class="text-button ${preferences.palette==='custom'?'accent':''}" data-action="use-custom">${preferences.palette==='custom'?'已应用':'应用'}</button></div></div></section>
     <section class="settings-block radius-setting"><div><strong>卡片圆角</strong><span>0 为直角 · 默认 28px</span></div><div class="radius-controls"><span>0</span><input type="range" min="0" max="40" step="1" value="${preferences.radius}" data-setting="radius" aria-label="卡片圆角滑杆，0至40像素"><span>40</span><label class="radius-number"><input type="number" min="0" max="40" step="1" value="${preferences.radius}" data-setting="radius" aria-label="卡片圆角像素值"><span>px</span></label></div></section>
-  </div><aside class="settings-preview"><div class="setting-heading"><h3>实时预览</h3><span>${theme==='light'?'浅色':'深色'} · ${safe(palettePresets.find(p=>p.id===preferences.palette)?.name||'自定义')}</span></div><div class="mini-screen-wrap">${screen(theme,{static:true})}</div><div class="preview-hint"><span class="preview-color" style="background:var(--accent)"></span><p>路线、播放按钮与选中状态<br>使用同一组主题色</p></div><button class="outline-button" data-action="home">${icon('home')}返回桌面查看</button></aside>`;
+  </div><aside class="settings-preview"><div class="setting-heading"><h3>实时预览</h3><span>${theme==='light'?'浅色':'深色'} · ${safe(palettePresets.find(p=>p.id===preferences.palette)?.name||'自定义')}</span></div><div class="mini-screen-wrap">${screen(theme,{static:true})}</div><div class="preview-hint"><span class="preview-color" style="background:var(--accent)"></span><p>路线、播放按钮与选中状态<br>使用同一组主题色</p></div><div class="glass-setting"><div><strong>毛玻璃</strong><span>预览背景模糊 · 关闭仍半透明</span></div><button class="glass-switch" role="switch" aria-label="毛玻璃" aria-checked="${preferences.glass}" data-action="toggle-glass"><span></span></button></div><button class="outline-button" data-action="home">${icon('home')}返回桌面查看</button></aside>`;
 }
 function layoutSettings() {
   return `<div class="layout-settings settings-block"><div class="layout-copy"><span class="section-kicker">YOUR SPACE</span><h3>桌面，由你编排。</h3><p>长按卡片，进入编辑模式。<br>调整位置和大小，按你的习惯组合信息。</p><button class="solid-button" data-action="start-edit">${icon('edit')}编辑桌面布局</button><button class="text-button" data-action="reset-layout">恢复默认布局</button></div><div class="layout-instructions">${[['plus','添加卡片','从卡片库选择，空间不足时放入新页'],['move','移动与缩放','拖动位置，角点按网格吸附'],['edit','编辑内容','调整卡片名称、尺寸与展示密度'],['trash','移除卡片','移除后可撤销，底栏入口始终保留']].map(([s,t,p])=>`<div>${icon(s)}<span><b>${t}</b><small>${p}</small></span></div>`).join('')}</div></div>`;
@@ -102,8 +103,9 @@ function sourceSettings() {
   return `<div class="source-settings">${types.map(type=>{const c=cardCatalog[type];return `<div class="settings-block source-row">${icon(c.icon)}<div><h3>${c.name}</h3><p>${c.conditional?'按车型能力启用':'保持官方信息来源'}</p></div><span>${c.source}</span><small>待连接</small></div>`;}).join('')}<p class="source-note">样式演示使用占位数据；实际显示内容以原车应用提供的信息为准。</p></div>`;
 }
 function settingsScreen(theme) {
-  return `<div class="screen glass ${theme} settings-screen" style="${themeStyle(theme)}">${statusBar()}<div class="settings-content"><header class="settings-heading">${actionButton('home','arrow-left','返回桌面','back-button')}<div><h1>桌面设置</h1><p>外观、配色与卡片布局</p></div><span class="autosave-label">${icon('check')}更改自动保存</span></header><nav class="settings-tabs">${[['appearance','外观主题'],['layout','卡片布局'],['sources','功能接入']].map(([id,t])=>`<button data-action="settings-tab" data-tab="${id}" class="${ui.tab===id?'active':''}">${t}</button>`).join('')}</nav><div class="settings-body ${ui.tab==='appearance'?'appearance-body':''}">${ui.tab==='appearance'?appearanceSettings(theme):ui.tab==='layout'?layoutSettings():sourceSettings()}</div></div>${dock()}${modalMarkup(theme)}</div>`;
+  return `<div class="screen glass ${theme} settings-screen" style="${themeStyle(theme)}">${statusBar()}<div class="settings-content"><header class="settings-heading">${actionButton('home','arrow-left','返回桌面','back-button')}<div><h1>桌面设置</h1><p>外观、配色与卡片布局</p></div><span class="autosave-label">${icon('check')}更改自动保存</span></header><nav class="settings-tabs">${[['appearance','外观主题'],['layout','卡片布局'],['motion','切换动效'],['sources','功能接入']].map(([id,t])=>`<button data-action="settings-tab" data-tab="${id}" class="${ui.tab===id?'active':''}">${t}</button>`).join('')}</nav><div class="settings-body ${ui.tab==='appearance'?'appearance-body':''}">${ui.tab==='appearance'?appearanceSettings(theme):ui.tab==='layout'?layoutSettings():ui.tab==='motion'?motionSettings():sourceSettings()}</div></div>${dock()}${modalMarkup(theme)}</div>`;
 }
+function motionSettings(){return `<section class="settings-block motion-settings"><div class="setting-heading"><h3>桌面翻屏</h3><span>仅桌面卡片切换，底栏保持固定</span></div><div class="motion-options">${[['none','无动画','直接切换，画面不滑动'],['fade','淡入淡出','柔和交替显示'],['slide','横向滑动','跟随翻页方向滑入']].map(([id,name,note])=>`<button data-action="set-transition" data-value="${id}" class="${preferences.pageTransition===id?'selected':''}"><b>${name}</b><p>${note}</p>${preferences.pageTransition===id?icon('check'):'<span class="motion-check"></span>'}</button>`).join('')}</div><p class="motion-note">点击页码或左右轻扫切换桌面。编辑布局时暂停动效；系统要求减少动态效果时使用无动画。</p></section>`;}
 function modalMarkup(theme) {
   if(!ui.modal)return '';
   const experience=experienceSheet();if(experience)return experience;
@@ -131,6 +133,10 @@ function updateRadius(value) {
   persistDesign();
 }
 function renderStandalone() {
+  if(designQuery.get('view')==='component'){
+    document.getElementById('single-screen').innerHTML=climate(activeTheme());
+    resize();return;
+  }
   document.body.classList.remove('dock-only','pair','component','cards-only');
   document.body.classList.add('single');
   document.getElementById('single-screen').innerHTML=ui.view==='settings'?settingsScreen(activeTheme()):screen(activeTheme());
@@ -147,10 +153,17 @@ function handleDesignAction(button) {
   const a=button.dataset.action;
   if(a==='home'){if(ui.editing){showToast('请先完成或取消本次布局编辑');return;}ui.view='home';ui.modal=null;renderStandalone();}
   if(a==='open-settings'){if(ui.editing){showToast('请先完成或取消本次布局编辑');return;}ui.view='settings';ui.modal=null;renderStandalone();}
+  if(a==='set-transition'){preferences.pageTransition=button.dataset.value;persistDesign();renderStandalone();}
   if(a==='settings-tab'){ui.tab=button.dataset.tab;renderStandalone();}
   if(a==='set-mode'){preferences.mode=button.dataset.value;persistDesign();renderStandalone();}
   if(a==='set-palette'){preferences.palette=button.dataset.value;persistDesign();renderStandalone();}
   if(a==='use-custom'){preferences.palette='custom';persistDesign();renderStandalone();}
+  if(a==='toggle-glass'){
+    preferences.glass=!preferences.glass;persistDesign();
+    document.querySelectorAll('.screen').forEach(el=>{el.style.setProperty('--surface-filter',preferences.glass?'blur(28px) saturate(115%)':'none');el.style.setProperty('--overlay-filter',preferences.glass?'blur(12px)':'none');});
+    document.querySelectorAll('[data-action="toggle-glass"]').forEach(el=>el.setAttribute('aria-checked',String(preferences.glass)));
+    renderStandalone();
+  }
   if(a==='start-edit')beginEditing();
   if(a==='finish-edit'){ui.editing=false;ui.modal=null;persistDesign();renderStandalone();showToast('桌面布局已保存');}
   if(a==='cancel-edit'){restoreSnapshot(ui.snapshot);ui.editing=false;ui.modal=null;renderStandalone();}
@@ -187,7 +200,14 @@ function handleDesignAction(button) {
     if(card.type==='weather')card.city=title||'杭州';
     ui.modal=null;renderStandalone();
   }
-  if(a==='switch-page'){ui.page=+button.dataset.page;renderStandalone();}
+  if(a==='switch-page'){
+    const old=ui.page;ui.page=+button.dataset.page;renderStandalone();
+    const grid=document.querySelector('#single-screen .card-grid');
+    if(grid&&old!==ui.page&&!ui.editing&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
+      if(preferences.pageTransition==='fade')grid.animate([{opacity:0},{opacity:1}],{duration:280,easing:'ease-out'});
+      if(preferences.pageTransition==='slide')grid.animate([{transform:`translateX(${ui.page>old?'':'-'}100%)`},{transform:'translateX(0)'}],{duration:280,easing:'ease-out'});
+    }
+  }
   if(a==='new-page'){ui.page=pageCount++;renderStandalone();}
   if(a==='reset-layout'){cards=defaultCards();pageCount=2;ui.page=0;persistDesign();renderStandalone();showToast('已恢复默认卡片布局');}
   if(a==='toggle-play'){ui.playing=!ui.playing;renderStandalone();}
@@ -200,6 +220,15 @@ function handleDesignAction(button) {
   if(a==='fan-down'||a==='fan-up'){ui.climate.fan=Math.max(1,Math.min(7,ui.climate.fan+(a==='fan-up'?1:-1)));renderStandalone();}
   if(a==='climate-power'){ui.climate.power=!ui.climate.power;renderStandalone();}
   if(a==='climate-mode'){ui.climate[button.dataset.value]=!ui.climate[button.dataset.value];if(button.dataset.value==='sync'&&ui.climate.sync)ui.climate.right=ui.climate.left;renderStandalone();}
+  if(a==='seat-heat'||a==='seat-vent'){
+    const zone=button.dataset.zone,value=Number(button.dataset.value);
+    if(!['0','1','2','3'].includes(button.dataset.value)||!Number.isInteger(value)||!['left','right'].includes(zone)||(a==='seat-vent'&&zone!=='left'))return;
+    const key=a==='seat-vent'?'driverVent':zone==='left'?'driverHeat':'passengerHeat';
+    ui.climate[key]=value;
+    // Demo policy only; the actual level contract and vehicle behavior need device verification.
+    if(value>0&&zone==='left')ui.climate[a==='seat-heat'?'driverVent':'driverHeat']=0;
+    document.querySelectorAll('.seat-controls').forEach(el=>el.outerHTML=seatControls());
+  }
 }
 function initCustomization() {
   const view=designQuery.get('view');

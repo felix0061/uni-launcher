@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 import '../controller/launcher_controller.dart';
 import '../model/card_layout.dart';
 import '../theme/launcher_theme.dart';
+import '../theme/design_tokens.dart';
 import 'card_content.dart';
 import 'glass_surface.dart';
+import 'launcher_dialog.dart';
+import 'uni_icon.dart';
+
+part 'card_editor_sheet.dart';
 
 class EditableCard extends StatefulWidget {
   final LauncherCard card;
@@ -22,9 +27,11 @@ class EditableCard extends StatefulWidget {
 class _EditableCardState extends State<EditableCard> {
   LauncherCard? origin;
   Offset delta = Offset.zero;
+  bool rejectionShown = false;
   void start(DragStartDetails details) {
     origin = widget.card;
     delta = Offset.zero;
+    rejectionShown = false;
   }
 
   void move(DragUpdateDetails details, bool resize) {
@@ -34,13 +41,19 @@ class _EditableCardState extends State<EditableCard> {
         spec = specFor(card.type),
         dx = (delta.dx / widget.unitX).round(),
         dy = (delta.dy / widget.unitY).round();
-    widget.controller.transform(resize
+    final accepted = widget.controller.transform(resize
         ? card.copyWith(
             w: (card.w + dx).clamp(spec.minW, 12 - card.x),
             h: (card.h + dy).clamp(spec.minH, 6 - card.y))
         : card.copyWith(
             x: (card.x + dx).clamp(0, 12 - card.w),
             y: (card.y + dy).clamp(0, 6 - card.h)));
+    if (!accepted && !rejectionShown) {
+      rejectionShown = true;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          duration: const Duration(seconds: 2),
+          content: Text(resize ? '此处空间不足，请先移动其他卡片再调整尺寸' : '此处已有卡片，请移动到空白位置')));
+    }
   }
 
   @override
@@ -52,16 +65,17 @@ class _EditableCardState extends State<EditableCard> {
         onLongPress: c.editing ? null : c.beginEdit,
         child: GlassSurface(
             padding: EdgeInsets.zero,
+            borderColor: c.editing ? s.accent : null,
             child: Stack(children: [
               Positioned.fill(
-                  top: c.editing ? 50 : 0,
+                  top: c.editing ? Design.px(64) : 0,
                   child: CardContent(card: card, controller: c)),
               if (c.editing) ...[
                 Positioned(
-                    top: 3,
-                    left: 10,
-                    right: 4,
-                    height: 44,
+                    top: Design.px(8),
+                    left: Design.px(14),
+                    right: Design.px(12),
+                    height: Design.px(46),
                     child: Row(children: [
                       Expanded(
                           child: GestureDetector(
@@ -70,148 +84,89 @@ class _EditableCardState extends State<EditableCard> {
                               onPanStart: start,
                               onPanUpdate: (d) => move(d, false),
                               onPanEnd: (_) => origin = null,
+                              onPanCancel: () => origin = null,
                               child: Row(children: [
-                                Icon(Icons.drag_indicator,
-                                    color: s.accent, size: 22),
-                                const SizedBox(width: 4),
+                                UniIcon('move',
+                                    color: s.accent, size: Design.px(23)),
+                                SizedBox(width: Design.px(9)),
                                 Flexible(
                                     child: Text(card.title,
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
-                                            fontSize: 17, color: s.accent))),
-                                const SizedBox(width: 10),
+                                            fontSize: Design.px(21),
+                                            color: s.accent))),
+                                SizedBox(width: Design.px(9)),
                                 Text('${card.w} × ${card.h}',
-                                    style:
-                                        TextStyle(color: s.muted, fontSize: 13))
+                                    style: TextStyle(
+                                        color: s.muted,
+                                        fontSize: Design.px(15)))
                               ]))),
                       IconAction(
                           icon: Icons.edit_outlined,
                           label: '编辑${card.title}',
-                          size: 36,
+                          size: Design.px(44),
+                          iconSize: Design.px(22),
+                          soft: true,
                           onTap: () => editCard(context, c, card)),
-                      IconAction(
-                          key: ValueKey('delete-${card.id}'),
-                          icon: Icons.close,
-                          label: '删除${card.title}',
-                          size: 36,
-                          onTap: () {
-                            c.remove(card.id);
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                content: const Text('卡片已移除'),
-                                action: SnackBarAction(
-                                    label: '撤销', onPressed: c.undoRemove)));
-                          })
+                      SizedBox(width: Design.px(9)),
+                      _DeleteCardAction(card: card, controller: c),
                     ])),
                 Positioned(
                     bottom: 0,
                     right: 0,
-                    width: 42,
-                    height: 42,
+                    width: Design.px(48),
+                    height: Design.px(48),
                     child: GestureDetector(
                         key: ValueKey('resize-${card.id}'),
                         onPanStart: start,
                         onPanUpdate: (d) => move(d, true),
                         onPanEnd: (_) => origin = null,
+                        onPanCancel: () => origin = null,
                         child: Container(
                             decoration: BoxDecoration(
                                 color: s.accent,
                                 borderRadius: BorderRadius.only(
-                                    topLeft: Radius.circular(s.radius * .65))),
-                            child: Icon(Icons.open_in_full,
-                                size: 22,
-                                color: s.dark
-                                    ? const Color(0xFF183039)
-                                    : Colors.white)))),
+                                    topLeft: Radius.circular(s.controlRadius))),
+                            child: Center(
+                                child: UniIcon('resize',
+                                    size: Design.px(24),
+                                    color: s.accentText))))),
               ]
             ])));
   }
 }
 
-Future<void> showCardLibrary(BuildContext context, LauncherController c) =>
-    showDialog(
-        context: context,
-        builder: (context) => Dialog(
-            backgroundColor: Colors.transparent,
+class _DeleteCardAction extends StatelessWidget {
+  final LauncherCard card;
+  final LauncherController controller;
+  const _DeleteCardAction({required this.card, required this.controller});
+  @override
+  Widget build(BuildContext context) {
+    final s = SurfaceStyle.of(context);
+    return Tooltip(
+        message: '删除${card.title}',
+        child: Semantics(
+            button: true,
+            label: '删除${card.title}',
             child: SizedBox(
-                width: 1100,
-                height: 680,
-                child: GlassSurface(
-                    child: Column(children: [
-                  Row(children: [
-                    const Text('添加卡片', style: TextStyle(fontSize: 30)),
-                    const Spacer(),
-                    IconAction(
-                        icon: Icons.close,
-                        label: '关闭卡片库',
-                        onTap: () => Navigator.pop(context))
-                  ]),
-                  const SizedBox(height: 20),
-                  Expanded(
-                      child: GridView.builder(
-                          itemCount: librarySpecs.length,
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 3,
-                                  mainAxisSpacing: 16,
-                                  crossAxisSpacing: 16,
-                                  childAspectRatio: 2),
-                          itemBuilder: (context, i) {
-                            final spec = librarySpecs[i];
-                            return OutlinedButton(
-                                key: ValueKey('add-${spec.type}'),
-                                onPressed: () {
-                                  if (c.add(spec.type)) Navigator.pop(context);
-                                },
-                                child: Row(children: [
-                                  Icon(cardIcon(spec.type), size: 36),
-                                  const SizedBox(width: 20),
-                                  Expanded(
-                                      child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                        Text(spec.label,
-                                            style:
-                                                const TextStyle(fontSize: 22)),
-                                        const SizedBox(height: 8),
-                                        Text(spec.source,
-                                            style:
-                                                const TextStyle(fontSize: 14))
-                                      ])),
-                                  const Icon(Icons.add)
-                                ]));
-                          }))
-                ])))));
-
-Future<void> editCard(
-    BuildContext context, LauncherController c, LauncherCard card) async {
-  final input = TextEditingController(text: card.title);
-  await showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-              title: const Text('编辑卡片'),
-              content: SizedBox(
-                  width: 440,
-                  child: TextField(
-                      key: const ValueKey('card-title'),
-                      controller: input,
-                      maxLength: 20,
-                      decoration: const InputDecoration(labelText: '卡片名称'))),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('取消')),
-                FilledButton(
-                    onPressed: () {
-                      c.transform(card.copyWith(
-                          title: input.text.trim().isEmpty
-                              ? specFor(card.type).label
-                              : input.text.trim()));
-                      Navigator.pop(context);
-                    },
-                    child: const Text('保存'))
-              ]));
-  input.dispose();
+                width: Design.px(44),
+                height: Design.px(44),
+                child: Material(
+                    color: s.soft,
+                    borderRadius: BorderRadius.circular(s.controlRadius),
+                    child: InkWell(
+                        key: ValueKey('delete-${card.id}'),
+                        borderRadius: BorderRadius.circular(s.controlRadius),
+                        onTap: () {
+                          controller.remove(card.id);
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: const Text('卡片已移除'),
+                              action: SnackBarAction(
+                                  label: '撤销',
+                                  onPressed: controller.undoRemove)));
+                        },
+                        child: Center(
+                            child: UniIcon('trash',
+                                size: Design.px(22), color: s.text)))))));
+  }
 }

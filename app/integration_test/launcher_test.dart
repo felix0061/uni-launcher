@@ -6,6 +6,9 @@ import 'package:uni_launcher/main.dart' as app;
 import 'package:uni_launcher/launcher_app.dart';
 import 'package:uni_launcher/model/appearance.dart';
 import 'package:uni_launcher/widgets/glass_surface.dart';
+import 'package:uni_launcher/widgets/seat_controls.dart';
+import 'package:uni_launcher/screens/settings_screen.dart';
+import 'package:uni_launcher/widgets/lyrics_view.dart';
 
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +46,16 @@ void main() {
     verify('Android app list arrives through platform channel',
         (c.native.value['apps'] as List).isNotEmpty);
     await binding.takeScreenshot('flutter-home-dark');
+    c.setAppearance(c.appearance.copyWith(mode: 'light'));
+    await settle();
+    await binding.takeScreenshot('flutter-home-light');
+    c.setAppearance(c.appearance.copyWith(mode: 'dark'));
+    await settle();
+    c.switchPage(1);
+    await settle();
+    await binding.takeScreenshot('flutter-secondary-dark');
+    c.home();
+    await settle();
     final keys = [
       'home',
       'all-apps',
@@ -62,6 +75,67 @@ void main() {
     await tester.longPress(find.byKey(const ValueKey('home')));
     await settle();
     verify('Holding Home enters desktop settings', c.settings);
+    final paletteMaterial = tester.widget<Material>(find
+        .descendant(
+            of: find.byKey(const ValueKey('palette-mint')),
+            matching: find.byType(Material))
+        .first);
+    verify(
+        'Palette uses reviewed rectangular shape instead of Material stadium',
+        paletteMaterial.shape is RoundedRectangleBorder &&
+            ((paletteMaterial.shape! as RoundedRectangleBorder)
+                            .borderRadius
+                            .resolve(TextDirection.ltr)
+                            .topLeft
+                            .x -
+                        14.9333)
+                    .abs() <
+                .03);
+    verify('Settings previews the actual desktop renderer',
+        find.byType(DesktopPreview).evaluate().length == 1);
+    await binding.takeScreenshot('flutter-settings-dark');
+    c.tab('motion');
+    await settle();
+    await tester.tap(find.byKey(const ValueKey('transition-slide')));
+    await settle();
+    await c.persist();
+    final motion = await c.gateway.bootstrap();
+    verify(
+        'Page transition preference persists in native storage',
+        jsonDecode(motion['savedDesign'])['preferences']['pageTransition'] ==
+            'slide');
+    await binding.takeScreenshot('flutter-settings-motion');
+    c.home();
+    await settle();
+    final fixedDock = tester.getRect(find.byKey(const ValueKey('bottom-dock')));
+    await tester.fling(
+        find.byKey(const ValueKey('card-grid')), const Offset(-550, 0), 1000);
+    await settle();
+    verify(
+        'Swipe changes page while dock remains fixed',
+        c.page == 1 &&
+            tester.getRect(find.byKey(const ValueKey('bottom-dock'))) ==
+                fixedDock);
+    c.setAppearance(c.appearance.copyWith(pageTransition: 'fade'));
+    c.switchPage(0);
+    await settle();
+    verify('Fade transition arrives at first page',
+        find.byKey(const ValueKey('nav-1')).evaluate().length == 1);
+    c.setAppearance(c.appearance.copyWith(pageTransition: 'none'));
+    c.openSettings();
+    c.tab('appearance');
+    await settle();
+    final radiusField = find.byKey(const ValueKey('radius-number-28'));
+    await tester.ensureVisible(radiusField);
+    await settle();
+    await tester.enterText(radiusField, '0');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await settle();
+    verify(
+        'Radius number input applies square corners', c.appearance.radius == 0);
+    await binding.takeScreenshot('flutter-settings-square');
+    c.setAppearance(c.appearance.copyWith(radius: 28));
+    await settle();
     await tester.scrollUntilVisible(
         find.byKey(const ValueKey('glass-switch')), 180,
         scrollable: find.byType(Scrollable).first);
@@ -90,8 +164,15 @@ void main() {
     await tester.longPress(find.byKey(const ValueKey('music-1')));
     await settle();
     verify('Card hold opens edit mode', c.editing);
+    await tester.tap(find.byTooltip('编辑正在播放'));
+    await settle();
+    await binding.takeScreenshot('flutter-card-settings');
+    await tester.tap(find.byTooltip('关闭卡片设置'));
+    await settle();
+    await binding.takeScreenshot('flutter-edit-mode');
     await tester.tap(find.byKey(const ValueKey('add-card')));
     await settle();
+    await binding.takeScreenshot('flutter-card-library');
     await tester.tap(find.byKey(const ValueKey('add-air')));
     await settle();
     verify('Card library allocates page when full',
@@ -123,13 +204,65 @@ void main() {
     await binding.takeScreenshot('flutter-apps');
     await tester.tap(find.byTooltip('关闭应用列表'));
     await settle();
+    await tester.tap(find.byKey(const ValueKey('music-info')));
+    await settle();
+    verify(
+        'Music card dock and detail share native demo lyrics',
+        find.byType(LyricsView).evaluate().length >= 3 &&
+            (c.native.value['media'] as Map)['lyricsSource'] == 'demo');
+    await binding.takeScreenshot('flutter-music');
+    await tester.tap(find.byTooltip('关闭音乐详情'));
+    await settle();
+    await tester.tap(find.byKey(const ValueKey('vehicle')));
+    await settle();
+    await binding.takeScreenshot('flutter-vehicle');
+    await tester.tap(find.byTooltip('关闭车辆信息'));
+    await settle();
+    await tester.tap(find.byKey(const ValueKey('camera')));
+    await settle();
+    await binding.takeScreenshot('flutter-camera');
+    await tester.tap(find.byTooltip('关闭影像面板'));
+    await settle();
     await c.command('temp-up', zone: 'left');
     await settle();
     verify('Native climate simulator confirms command',
         (c.native.value['climate'] as Map)['left'] == 23.0);
+    c.setAppearance(c.appearance
+        .copyWith(mode: 'dark', palette: 'mint', radius: 28, glass: false));
+    await settle();
     await tester.tap(find.byKey(const ValueKey('climate')));
     await settle();
+    verify(
+        'Seat panel exposes three requested controls',
+        find.byType(SeatControls).evaluate().length == 1 &&
+            find
+                    .byKey(const ValueKey('seat-passengerHeat-1'))
+                    .evaluate()
+                    .length ==
+                1 &&
+            find.text('副驾通风').evaluate().isEmpty);
+    await tester.tap(find.byKey(const ValueKey('seat-driverHeat-2')));
+    await settle();
+    verify('Driver heating selection confirmed by native simulator',
+        (c.native.value['climate'] as Map)['driverHeat'] == 2);
+    await tester.tap(find.byKey(const ValueKey('seat-passengerHeat-1')));
+    await settle();
+    verify('Passenger heating selection confirmed independently',
+        (c.native.value['climate'] as Map)['passengerHeat'] == 1);
     await binding.takeScreenshot('flutter-climate');
+    await tester.tap(find.byKey(const ValueKey('seat-driverVent-3')));
+    await settle();
+    verify(
+        'Driver ventilation confirms and clears demo driver heating',
+        (c.native.value['climate'] as Map)['driverVent'] == 3 &&
+            (c.native.value['climate'] as Map)['driverHeat'] == 0);
+    await binding.takeScreenshot('flutter-seats-vent');
+    await tester.tap(find.byKey(const ValueKey('seat-driverVent-0')));
+    await settle();
+    verify(
+        'Seat explicit off confirms without changing passenger heating',
+        (c.native.value['climate'] as Map)['driverVent'] == 0 &&
+            (c.native.value['climate'] as Map)['passengerHeat'] == 1);
     await tester.tap(find.byTooltip('关闭空调'));
     await settle();
     await c.command('demo-mode', enabled: false);
@@ -144,7 +277,70 @@ void main() {
                 .onTap ==
             null);
     await binding.takeScreenshot('flutter-live-unavailable');
+    await tester.tap(find.byKey(const ValueKey('climate')));
+    await settle();
+    verify(
+        'Live unavailable seat controls are disabled and unknown',
+        ['driverHeat', 'driverVent', 'passengerHeat'].every((key) =>
+            tester
+                    .widget<OutlinedButton>(find.byKey(ValueKey('seat-$key-1')))
+                    .onPressed ==
+                null &&
+            find.byKey(ValueKey('seat-unknown-$key')).evaluate().length == 1));
+    await binding.takeScreenshot('flutter-seats-unavailable');
+    await tester.tap(find.byTooltip('关闭空调'));
+    await settle();
+    await c.command('refresh');
+    await settle();
+    final nativeMedia = c.native.value['media'] as Map;
+    expect(nativeMedia['authorized'], true,
+        reason:
+            'Synthetic media listener grant must survive installation: $nativeMedia');
+    expect(nativeMedia['available'], true,
+        reason: 'Synthetic foreground session must stay alive: $nativeMedia');
+    verify(
+        'Synthetic MediaSession lyrics arrive through native adapter',
+        nativeMedia['source'] == 'ecarx.xsf.mediacenter' &&
+            (nativeMedia['lyrics'] as String)
+                .contains('Fixture lyric second') &&
+            nativeMedia['lyricsSource'] == 'media-session');
+    verify(
+        'Native playback position duration and clock are available',
+        nativeMedia['positionKnown'] == true &&
+            nativeMedia['durationMs'] == 180000 &&
+            (nativeMedia['positionMs'] as num) >= 1000 &&
+            (nativeMedia['sampledAtMs'] as num) > 0);
+    await c.command('previous');
+    await settle();
+    verify(
+        'Native seek resets lyric highlight to first line',
+        find
+            .byKey(const ValueKey('lyric-line-0-active'))
+            .evaluate()
+            .isNotEmpty);
+    await Future<void>.delayed(const Duration(seconds: 3));
+    await settle();
+    verify(
+        'Playing native timeline scrolls to next lyric line',
+        find
+            .byKey(const ValueKey('lyric-line-1-active'))
+            .evaluate()
+            .isNotEmpty);
+    await c.command('toggle-play');
+    await settle();
+    verify('Media pause is confirmed by native source callback',
+        (c.native.value['media'] as Map)['playing'] == false);
+    await tester.tap(find.byKey(const ValueKey('music-info')));
+    await settle();
+    await binding.takeScreenshot('flutter-lyrics-session');
+    await tester.tap(find.byTooltip('关闭音乐详情'));
+    await settle();
+    await c.command('toggle-play');
+    await settle();
     c.openSettings();
+    c.tab('sources');
+    await settle();
+    await tester.ensureVisible(find.byKey(const ValueKey('hide-navigation')));
     await settle();
     await tester.tap(find.byKey(const ValueKey('hide-navigation')));
     await settle();
@@ -155,7 +351,7 @@ void main() {
     verify('Native navigation setting restored',
         c.native.value['hideNavigation'] == false);
     c.setAppearance(c.appearance
-        .copyWith(mode: 'dark', palette: 'mint', radius: 28, glass: true));
+        .copyWith(mode: 'dark', palette: 'mint', radius: 28, glass: false));
     await c.persist();
     c.home();
     await settle();
@@ -164,6 +360,7 @@ void main() {
       ...?binding.reportData,
       'renderer': 'Flutter Android',
       'api': 28,
+      'mediaFixture': 'Synthetic MediaSession, not the OEM media center',
       'checks': checks,
       'passed': checks.length,
       'glassDefault': false,

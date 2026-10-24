@@ -25,7 +25,7 @@ function dock() {
     <div class="dock-climate ${ui.climate.power?'':'off'}" data-dock-group="climate">${zone('left','主驾')}${actionButton('climate','fan','空调与风量','dock-control dock-fan')}${zone('right','副驾')}${actionButton('climate-power','power','空调开关','dock-control '+(ui.climate.power?'accent':''))}</div>
     <span class="dock-separator"></span>
     <div class="dock-transport" data-dock-group="transport">${actionButton('previous','back','上一首','dock-control')}${actionButton('toggle-play',ui.playing?'pause':'play',ui.playing?'暂停':'播放','dock-play')}${actionButton('next','next','下一首','dock-control')}</div>
-    <button class="dock-track dock-info" data-action="music-info" data-dock-group="info" aria-label="音乐信息，打开详情"><div class="cover">${art}</div><div class="dock-track-copy"><b>${m.title}</b><p>${m.artist} · 原车媒体中心</p></div></button>
+    <button class="dock-track dock-info" data-action="music-info" data-dock-group="info" aria-label="音乐信息，打开详情"><div class="cover">${art}</div><div class="dock-track-copy"><b>${m.title}</b><p class="dock-lyric">风把远方带进了呼吸</p></div></button>
     <span class="dock-separator"></span>
     <div data-dock-group="vehicle">${actionButton('vehicle','car','车辆信息','dock-control')}</div>
     <div data-dock-group="camera">${actionButton('camera','camera','360 影像','dock-control')}</div>
@@ -48,11 +48,12 @@ function dockStudy(theme) {
 
 
 function climate(theme) {
-  return `<div class="climate-panel screen ${theme} calm glass" style="${themeStyle(theme)}" role="img" aria-label="${theme==='dark'?'深色':'浅色'}双区空调毛玻璃卡片视觉稿"><div class="climate-glass">
+  return `<div class="climate-panel screen ${theme} calm glass" style="${themeStyle(theme)}" aria-label="${theme==='dark'?'深色':'浅色'}双区空调与座椅舒适视觉稿"><div class="climate-glass">
     <div class="climate-heading"><strong>座舱舒适</strong><span>自动空调</span></div>
     <div class="climate-zones"><div class="zone"><div class="zone-label">主驾</div><div class="zone-value"><span>−</span><b>22.5<sup>°</sup></b><span>＋</span></div></div><span class="sync">双区同步</span><div class="zone"><div class="zone-label">副驾</div><div class="zone-value"><span>−</span><b>22.5<sup>°</sup></b><span>＋</span></div></div></div>
     <div class="fan-level">${icon('fan')}<span>风量</span><div class="fan-track">${Array.from({length:7},(_,i)=>`<i class="${i<3?'on':''}"></i>`).join('')}</div><span>3 档</span></div>
     <div class="climate-modes"><div class="climate-mode active">AUTO</div><div class="climate-mode active">A/C</div><div class="climate-mode">${icon('recirc')}内循环</div><div class="climate-mode">${icon('defrost')}除霜</div></div>
+    ${seatControls()}
   </div></div>`;
 }
 
@@ -70,7 +71,7 @@ function render() {
   document.getElementById('oem-studies').innerHTML=['dark','light'].map(theme=>`<figure class="screen-figure"><figcaption class="screen-caption"><b>${theme==='dark'?'深色':'浅色'} · 原厂卡片样式总览</b><a href="?view=cards&theme=${theme}">查看完整卡片 ↗</a></figcaption><div class="gallery-wrap">${oemGallery(theme)}</div></figure>`).join('');
   document.getElementById('secondary-studies').innerHTML=`<div class="screen-wrap">${screen('dark',{static:true,page:1})}</div>`;
   document.getElementById('dock-studies').innerHTML=['dark','light'].map(theme=>`<div class="dock-wrap">${dockStudy(theme)}</div>`).join('');
-  document.getElementById('climate-studies').innerHTML=['dark','light'].map(theme=>`<figure class="climate-figure"><figcaption>${theme==='dark'?'深色空调层':'浅色空调层'}</figcaption><div class="climate-wrap">${climate(theme)}</div></figure>`).join('');
+  document.getElementById('climate-studies').innerHTML=['dark','light'].map(theme=>`<figure class="climate-figure"><figcaption>${theme==='dark'?'深色座舱舒适':'浅色座舱舒适'} · 空调与座椅</figcaption><div class="climate-wrap">${climate(theme)}</div></figure>`).join('');
   const view=params.get('view');
   if(view==='single'||view==='component') {
     document.body.classList.add('single');

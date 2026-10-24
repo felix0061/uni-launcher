@@ -32,6 +32,7 @@ public final class MainActivity extends FlutterActivity {
     private String cached="{}";
     private boolean demoPlaying=true;
     private int demoTrack=0;
+    private long demoPositionMs=0,demoSampleAt=android.os.SystemClock.elapsedRealtime();
     private EventChannel.EventSink sink;
     private MethodChannel channel;
     private final BroadcastReceiver packages=new BroadcastReceiver(){public void onReceive(Context c,Intent i){installed=apps.refresh();publish();}};
@@ -60,18 +61,23 @@ public final class MainActivity extends FlutterActivity {
         IntentFilter filter=new IntentFilter();filter.addAction(Intent.ACTION_PACKAGE_ADDED);filter.addAction(Intent.ACTION_PACKAGE_REMOVED);filter.addAction(Intent.ACTION_PACKAGE_CHANGED);filter.addDataScheme("package");registerReceiver(packages,filter);
         publish();
     }
+    private long demoPosition(){return demoPositionMs+(demoPlaying?Math.max(0,android.os.SystemClock.elapsedRealtime()-demoSampleAt):0);}
     private void updateSnapshot(){
         JSONObject state=new JSONObject();try{
             JSONObject climate=new JSONObject().put("left",simulator.left).put("right",simulator.right).put("fan",simulator.fan).put("power",simulator.power)
-                .put("auto",simulator.auto).put("ac",simulator.ac).put("sync",simulator.sync).put("recirc",simulator.recirc);
+                .put("auto",simulator.auto).put("ac",simulator.ac).put("sync",simulator.sync).put("recirc",simulator.recirc)
+                .put("driverHeat",simulator.driverHeat).put("driverVent",simulator.driverVent).put("passengerHeat",simulator.passengerHeat);
             state.put("demo",prefs.getBoolean("demo",false)).put("hideNavigation",prefs.getBoolean("hideNavigation",false))
                 .put("globalNavigation",prefs.getBoolean("globalNavigation",false))
                 .put("globalNavigationGranted",checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS")==android.content.pm.PackageManager.PERMISSION_GRANTED)
                 .put("dark",(getResources().getConfiguration().uiMode&Configuration.UI_MODE_NIGHT_MASK)==Configuration.UI_MODE_NIGHT_YES)
-                .put("apps",installed).put("climate",climate).put("vehicle",vehicle.snapshot()).put("media",media.snapshot()).put("version","0.2.0-flutter");
+                .put("apps",installed).put("climate",climate).put("vehicle",vehicle.snapshot()).put("media",media.snapshot()).put("version","0.3.0-flutter");
             state.put("savedDesign",prefs.getString("savedDesign", ""));
             if(prefs.getBoolean("demo",false))state.put("media",new JSONObject().put("available",true).put("playing",demoPlaying)
-                .put("title",demoTrack%2==0?"向海而行":"山海之间").put("artist",demoTrack%2==0?"Coastline":"Northbound").put("collection","模拟驾驶歌单").put("source","simulator"));
+                .put("title",demoTrack%2==0?"向海而行":"山海之间").put("artist",demoTrack%2==0?"Coastline":"Northbound").put("collection","晨间驾驶歌单").put("source","simulator")
+                .put("lyrics","[00:00.00]晨光沿着海岸慢慢亮起\n[00:03.00]风把远方带进了呼吸\n[00:06.00]穿过山与海的交界\n[00:09.00]每一程都有新的风景\n[00:12.00]跟着潮声向前去\n[00:15.00]让今天从容开启")
+                .put("lyricsSource","demo").put("durationMs",258000).put("positionMs",demoPosition()).put("positionKnown",true)
+                .put("sampledAtMs",System.currentTimeMillis()).put("speed",1));
         }catch(Exception e){android.util.Log.e("UniState","Snapshot failed",e);}cached=state.toString();
     }
         private boolean saveDesign(String raw){
@@ -80,6 +86,8 @@ public final class MainActivity extends FlutterActivity {
                 JSONObject data=new JSONObject(raw);JSONObject p=data.getJSONObject("preferences");
                 if(data.optInt("version")!=4||!p.optString("custom").matches("#[0-9a-fA-F]{6}"))return false;
                 String mode=p.optString("mode"),palette=p.optString("palette");
+                String effect=p.optString("pageTransition","none");
+                if(!"none".equals(effect)&&!"fade".equals(effect)&&!"slide".equals(effect))return false;
                 if(!"system".equals(mode)&&!"dark".equals(mode)&&!"light".equals(mode))return false;
                 if(!"mint".equals(palette)&&!"blue".equals(palette)&&!"violet".equals(palette)&&!"amber".equals(palette)&&!"rose".equals(palette)&&!"custom".equals(palette))return false;
                 int radius=p.getInt("radius"),pages=data.getInt("pageCount");
@@ -116,7 +124,9 @@ public final class MainActivity extends FlutterActivity {
             if(!ok)toast("尚未连接空调，可从空调面板打开原车应用");publish();return;
         }
         if("toggle-play".equals(action)||"previous".equals(action)||"next".equals(action)){
-            if(prefs.getBoolean("demo",false)){if("toggle-play".equals(action))demoPlaying=!demoPlaying;else demoTrack++;publish();return;}
+            if(prefs.getBoolean("demo",false)){if("toggle-play".equals(action)){demoPositionMs=demoPosition();demoPlaying=!demoPlaying;}
+                else {demoTrack+="previous".equals(action)?-1:1;demoPositionMs=0;}
+                demoSampleAt=android.os.SystemClock.elapsedRealtime();publish();return;}
             if(!media.command(action))toast("当前音源不支持此操作，或尚未授权媒体访问");publish();
         }
     }

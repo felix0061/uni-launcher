@@ -11,6 +11,11 @@ public final class OfficialVehicleAdapter implements VehicleAdapter {
     public OfficialVehicleAdapter(Context context) {
         try {
             state.put("connected", false).put("writable", false).put("source", "官方 ECARX 适配层");
+            JSONObject seats = new JSONObject();
+            for (String control : new String[]{"driverHeat", "driverVent", "passengerHeat"}) {
+                seats.put(control, new JSONObject().put("supported", false).put("writable", false).put("reason", "待车辆确认"));
+            }
+            state.put("seatCapabilities", seats);
             Class<?> api = Class.forName("com.ecarx.xui.adaptapi.car.Car");
             Object car = api.getMethod("create", Context.class).invoke(null, context);
             if (car == null) { state.put("reason", "车辆服务尚未就绪"); return; }

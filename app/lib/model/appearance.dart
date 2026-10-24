@@ -20,7 +20,7 @@ const accentPresets = [
 ];
 
 class Appearance {
-  final String mode, palette, custom;
+  final String mode, palette, custom, pageTransition;
   final double radius;
   final bool glass;
   const Appearance(
@@ -28,7 +28,8 @@ class Appearance {
       this.palette = 'mint',
       this.custom = '#38A4A0',
       this.radius = 28,
-      this.glass = false});
+      this.glass = false,
+      this.pageTransition = 'none'});
   factory Appearance.fromJson(Map<String, dynamic> json) => Appearance(
         mode: ['system', 'light', 'dark'].contains(json['mode'])
             ? json['mode']
@@ -44,25 +45,32 @@ class Appearance {
             ? (json['radius'] as num).toDouble().clamp(0, 40)
             : 28,
         glass: json['glass'] == true,
+        pageTransition:
+            ['none', 'fade', 'slide'].contains(json['pageTransition'])
+                ? json['pageTransition']
+                : 'none',
       );
   Appearance copyWith(
           {String? mode,
           String? palette,
           String? custom,
           double? radius,
-          bool? glass}) =>
+          bool? glass,
+          String? pageTransition}) =>
       Appearance(
           mode: mode ?? this.mode,
           palette: palette ?? this.palette,
           custom: custom ?? this.custom,
           radius: (radius ?? this.radius).clamp(0, 40),
-          glass: glass ?? this.glass);
+          glass: glass ?? this.glass,
+          pageTransition: pageTransition ?? this.pageTransition);
   Map<String, dynamic> toJson() => {
         'mode': mode,
         'palette': palette,
         'custom': custom,
         'radius': radius.round(),
-        'glass': glass
+        'glass': glass,
+        'pageTransition': pageTransition
       };
   bool isDark(bool systemDark) =>
       mode == 'dark' || (mode == 'system' && systemDark);
@@ -71,8 +79,7 @@ class Appearance {
       : accentPresets.firstWhere((p) => p.id == palette).seed;
   Color accent(bool dark) {
     if (palette == 'custom')
-      return Color.lerp(
-          seed(), dark ? Colors.white : Colors.black, dark ? .35 : .35)!;
+      return Color.lerp(seed(), dark ? Colors.white : Colors.black, .42)!;
     final p = accentPresets.firstWhere((p) => p.id == palette);
     return dark ? p.dark : p.light;
   }

@@ -6,6 +6,8 @@
 - [Flutter 深色首页](app/verification/flutter-home-dark.png)、[浅色直角首页](app/verification/flutter-home-light-square.png)、[毛玻璃设置](app/verification/flutter-settings-blur-on.png)、[未连接状态](app/verification/flutter-live-unavailable.png)。
 - [早期 WebView 基线与原生适配器](android/README.md)、[基线验证报告](android/verification/emulator-report.json)。保留供对照；当前 APK 入口已使用 Flutter。
 
+- [歌词与切换动效](docs/MEDIA_LYRICS_AND_MOTION.md)：音乐卡片/底栏/详情的同步歌词、官方宿主证据与三种翻屏设置。
+- [设计与实现一致性审计](docs/UI_FIDELITY_AUDIT.md)：样式偏差修正、座椅控制和验证边界。
 - [APK 能力分析](docs/APK_ANALYSIS.md)：系统身份、Widget、ECARX 车辆接口、导航、媒体、界面结构与证据边界。
 - [产品与界面设计](docs/PRODUCT_DESIGN.md)：布局、主题、组件、操作和异常状态。
 - [接入与实施计划](docs/INTEGRATION_PLAN.md)：适配器、数据契约、分期任务、实车验证。

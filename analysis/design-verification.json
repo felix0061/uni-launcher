@@ -30,6 +30,30 @@
       "passed": true
     },
     {
+      "name": "glass defaults off in preview sidebar",
+      "passed": true
+    },
+    {
+      "name": "glass off synchronizes preview and surfaces",
+      "passed": true
+    },
+    {
+      "name": "glass on synchronizes preview and surfaces",
+      "passed": true
+    },
+    {
+      "name": "glass enabled on climate overlay",
+      "passed": true
+    },
+    {
+      "name": "glass off synchronizes preview and surfaces",
+      "passed": true
+    },
+    {
+      "name": "glass off preserves translucent colors",
+      "passed": true
+    },
+    {
       "name": "radius 0",
       "passed": true
     },
@@ -42,6 +66,14 @@
       "passed": true
     },
     {
+      "name": "page transition settings offers none fade slide",
+      "passed": true
+    },
+    {
+      "name": "page transition selection persists in prototype",
+      "passed": true
+    },
+    {
       "name": "theme preview synchronizes",
       "passed": true
     },
@@ -51,6 +83,122 @@
     },
     {
       "name": "climate dock and panel share state",
+      "passed": true
+    },
+    {
+      "name": "glass off removes climate overlay blur",
+      "passed": true
+    },
+    {
+      "name": "seat controls expose explicit off and three levels",
+      "passed": true
+    },
+    {
+      "name": "seats default off",
+      "passed": true
+    },
+    {
+      "name": "driverHeat explicit level 1",
+      "passed": true
+    },
+    {
+      "name": "driverHeat explicit level 2",
+      "passed": true
+    },
+    {
+      "name": "driverHeat explicit level 3",
+      "passed": true
+    },
+    {
+      "name": "driverHeat explicit level 3",
+      "passed": true
+    },
+    {
+      "name": "driverHeat explicit level 0",
+      "passed": true
+    },
+    {
+      "name": "driverVent explicit level 1",
+      "passed": true
+    },
+    {
+      "name": "driverVent explicit level 2",
+      "passed": true
+    },
+    {
+      "name": "driverVent explicit level 3",
+      "passed": true
+    },
+    {
+      "name": "driverVent explicit level 3",
+      "passed": true
+    },
+    {
+      "name": "driverVent explicit level 0",
+      "passed": true
+    },
+    {
+      "name": "passengerHeat explicit level 1",
+      "passed": true
+    },
+    {
+      "name": "passengerHeat explicit level 2",
+      "passed": true
+    },
+    {
+      "name": "passengerHeat explicit level 3",
+      "passed": true
+    },
+    {
+      "name": "passengerHeat explicit level 3",
+      "passed": true
+    },
+    {
+      "name": "passengerHeat explicit level 0",
+      "passed": true
+    },
+    {
+      "name": "driver ventilation clears heating only",
+      "passed": true
+    },
+    {
+      "name": "driver heating clears ventilation only",
+      "passed": true
+    },
+    {
+      "name": "turning ventilation off preserves heating",
+      "passed": true
+    },
+    {
+      "name": "turning heating off preserves ventilation",
+      "passed": true
+    },
+    {
+      "name": "no passenger ventilation control or state",
+      "passed": true
+    },
+    {
+      "name": "unsupported seat zone and level are ignored",
+      "passed": true
+    },
+    {
+      "name": "seat selections survive panel reopening",
+      "passed": true
+    },
+    {
+      "name": "seat level radius 0",
+      "passed": true
+    },
+    {
+      "name": "seat level radius 40",
+      "passed": true
+    },
+    {
+      "name": "seat level radius 28",
+      "passed": true
+    },
+    {
+      "name": "all seats explicitly off",
       "passed": true
     },
     {
@@ -106,7 +254,127 @@
       "passed": true
     },
     {
+      "name": "glass preference survives reload",
+      "passed": true
+    },
+    {
+      "name": "legacy preferences default glass off",
+      "passed": true
+    },
+    {
+      "name": "dark component seat controls and mutual exclusion",
+      "passed": true
+    },
+    {
+      "name": "dark component explicit off",
+      "passed": true
+    },
+    {
+      "name": "light component seat controls and mutual exclusion",
+      "passed": true
+    },
+    {
+      "name": "light component explicit off",
+      "passed": true
+    },
+    {
       "name": "no runtime errors",
+      "passed": true
+    },
+    {
+      "name": "home-dark controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "home-light controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "home-pair controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "secondary-dark controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "secondary-light controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "settings-dark controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "settings-light controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "card-edit-mode controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "card-library controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "card-settings controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "oem-cards-dark controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "oem-cards-light controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "dock-detail controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "climate-dark controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "climate-light controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "climate-panel controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "climate-panel-light controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "settings-glass-on controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "music-panel controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "vehicle-panel controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "camera-panel controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "home-square controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "settings-motion controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "no runtime errors after exports",
       "passed": true
     }
   ],
@@ -114,5 +382,173 @@
   "officialTypesCovered": 9,
   "providerComponentsMapped": 14,
   "officialFieldParity": "not verified: provider apps/device unavailable",
-  "vehicleIntegration": false
+  "vehicleIntegration": false,
+  "seatLevels": "demo 0–3; actual vehicle contract unverified",
+  "componentCanvas": {
+    "width": 900,
+    "height": 720
+  },
+  "exports": [
+    {
+      "name": "home-dark",
+      "view": "single",
+      "theme": "dark",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "name": "home-light",
+      "view": "single",
+      "theme": "light",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "name": "home-pair",
+      "view": "pair",
+      "theme": "dark",
+      "width": 2400,
+      "height": 760
+    },
+    {
+      "name": "secondary-dark",
+      "view": "secondary",
+      "theme": "dark",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "name": "secondary-light",
+      "view": "secondary",
+      "theme": "light",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "name": "settings-dark",
+      "view": "settings",
+      "theme": "dark",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "name": "settings-light",
+      "view": "settings",
+      "theme": "light",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "name": "card-edit-mode",
+      "view": "edit",
+      "theme": "dark",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "name": "card-library",
+      "view": "library",
+      "theme": "dark",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "name": "card-settings",
+      "view": "card-edit",
+      "theme": "dark",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "name": "oem-cards-dark",
+      "view": "cards",
+      "theme": "dark",
+      "width": 1920,
+      "height": 1464
+    },
+    {
+      "name": "oem-cards-light",
+      "view": "cards",
+      "theme": "light",
+      "width": 1920,
+      "height": 1464
+    },
+    {
+      "name": "dock-detail",
+      "view": "dock",
+      "theme": "dark",
+      "width": 1920,
+      "height": 320
+    },
+    {
+      "name": "climate-dark",
+      "view": "component",
+      "theme": "dark",
+      "width": 900,
+      "height": 720
+    },
+    {
+      "name": "climate-light",
+      "view": "component",
+      "theme": "light",
+      "width": 900,
+      "height": 720
+    },
+    {
+      "name": "climate-panel",
+      "view": "climate",
+      "theme": "dark",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "name": "climate-panel-light",
+      "view": "climate",
+      "theme": "light",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "name": "settings-glass-on",
+      "view": "settings",
+      "theme": "dark",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "name": "music-panel",
+      "view": "music",
+      "theme": "dark",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "name": "vehicle-panel",
+      "view": "vehicle",
+      "theme": "dark",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "name": "camera-panel",
+      "view": "camera",
+      "theme": "dark",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "name": "home-square",
+      "view": "settings",
+      "theme": "dark",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "name": "settings-motion",
+      "view": "settings",
+      "theme": "dark",
+      "width": 1920,
+      "height": 1080
+    }
+  ]
 }

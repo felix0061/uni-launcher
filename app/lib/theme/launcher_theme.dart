@@ -1,54 +1,132 @@
 import 'package:flutter/material.dart';
 import '../model/appearance.dart';
+import 'design_tokens.dart';
 
 class SurfaceStyle extends ThemeExtension<SurfaceStyle> {
   final bool dark, glass;
   final double radius;
-  final Color accent, seed, text, muted, surface, edge;
+  final Color accent,
+      accentText,
+      seed,
+      text,
+      muted,
+      surface,
+      strong,
+      soft,
+      edge,
+      shadow;
   const SurfaceStyle(
       {required this.dark,
       required this.glass,
       required this.radius,
       required this.accent,
+      required this.accentText,
       required this.seed,
       required this.text,
       required this.muted,
       required this.surface,
-      required this.edge});
+      required this.strong,
+      required this.soft,
+      required this.edge,
+      required this.shadow});
   factory SurfaceStyle.from(Appearance a, bool systemDark) {
     final dark = a.isDark(systemDark);
     return SurfaceStyle(
         dark: dark,
         glass: a.glass,
-        radius: a.radius,
+        radius: Design.px(a.radius),
         accent: a.accent(dark),
+        accentText:
+            dark ? Color.lerp(a.seed(), Colors.black, .80)! : Colors.white,
         seed: a.seed(),
-        text: dark ? const Color(0xFFE9F4F4) : const Color(0xFF18312D),
-        muted: dark ? const Color(0xFFA5BBBD) : const Color(0xFF607E77),
-        surface: dark ? const Color(0xA61A3039) : const Color(0xAAFAFFFD),
-        edge: dark ? const Color(0x24D9F8F4) : const Color(0xB3FFFFFF));
+        text: dark ? const Color(0xFFF2F6F5) : const Color(0xFF182D29),
+        muted: dark ? const Color(0xFFADBDC4) : const Color(0xFF546C65),
+        surface: dark ? const Color(0xA116232B) : const Color(0x8CFFFFFF),
+        strong: dark ? const Color(0xCC192730) : const Color(0xCCFAFFFD),
+        soft: dark ? const Color(0x14B3D9D9) : const Color(0x5CFFFFFF),
+        edge: dark ? const Color(0x2BE0FFFC) : const Color(0xC2FFFFFF),
+        shadow: dark ? const Color(0x2E000D16) : const Color(0x1A365457));
   }
   static SurfaceStyle of(BuildContext c) =>
       Theme.of(c).extension<SurfaceStyle>()!;
+  double get controlRadius => radius * .64;
   @override
   SurfaceStyle copyWith() => this;
   @override
   SurfaceStyle lerp(covariant SurfaceStyle? other, double t) => other ?? this;
 }
 
-ThemeData launcherTheme(SurfaceStyle s) => ThemeData(
+ThemeData launcherTheme(SurfaceStyle s) {
+  final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(s.controlRadius));
+  final button = ButtonStyle(
+    shape: WidgetStatePropertyAll(shape),
+    textStyle: WidgetStatePropertyAll(TextStyle(
+        fontSize: Design.px(21),
+        fontWeight: FontWeight.w400,
+        height: 1.2,
+        letterSpacing: 0)),
+    minimumSize: WidgetStatePropertyAll(Size(0, Design.px(60))),
+    padding:
+        WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: Design.px(24))),
+    visualDensity: VisualDensity.standard,
+  );
+  final colors = ColorScheme.fromSeed(
+          seedColor: s.seed,
+          brightness: s.dark ? Brightness.dark : Brightness.light)
+      .copyWith(
+          primary: s.accent,
+          onPrimary: s.accentText,
+          primaryContainer: s.soft,
+          onPrimaryContainer: s.accent,
+          surface: s.strong,
+          onSurface: s.text,
+          outline: s.edge);
+  return ThemeData(
       useMaterial3: true,
-      brightness: s.dark ? Brightness.dark : Brightness.light,
-      colorScheme: ColorScheme.fromSeed(
-              seedColor: s.seed,
-              brightness: s.dark ? Brightness.dark : Brightness.light)
-          .copyWith(primary: s.accent),
+      brightness: colors.brightness,
+      colorScheme: colors,
       scaffoldBackgroundColor:
-          s.dark ? const Color(0xFF142832) : const Color(0xFFDDEAE6),
+          s.dark ? const Color(0xFF0E1920) : const Color(0xFFE1ECE7),
       textTheme: Typography.material2021()
           .black
-          .apply(bodyColor: s.text, displayColor: s.text),
+          .apply(bodyColor: s.text, displayColor: s.text)
+          .copyWith(
+              bodyMedium: TextStyle(
+                  fontSize: Design.px(20),
+                  height: 1.2,
+                  color: s.text,
+                  letterSpacing: 0)),
+      textButtonTheme: TextButtonThemeData(
+          style: button.copyWith(
+              foregroundColor: WidgetStatePropertyAll(s.muted))),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+          style: button.copyWith(
+              foregroundColor: WidgetStatePropertyAll(s.text),
+              backgroundColor: WidgetStatePropertyAll(s.soft),
+              side: WidgetStatePropertyAll(BorderSide(color: s.edge)))),
+      filledButtonTheme: FilledButtonThemeData(
+          style: button.copyWith(
+              foregroundColor: WidgetStatePropertyAll(s.accentText),
+              backgroundColor: WidgetStatePropertyAll(s.accent))),
+      inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: s.soft,
+          contentPadding: EdgeInsets.symmetric(
+              horizontal: Design.px(15), vertical: Design.px(14)),
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(s.radius * .5),
+              borderSide: BorderSide(color: s.edge)),
+          enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(s.radius * .5),
+              borderSide: BorderSide(color: s.edge))),
+      sliderTheme: SliderThemeData(
+          trackHeight: Design.px(6),
+          showValueIndicator: ShowValueIndicator.never,
+          thumbShape: RoundSliderThumbShape(enabledThumbRadius: Design.px(7)),
+          overlayShape: RoundSliderOverlayShape(overlayRadius: Design.px(18)),
+          tickMarkShape: SliderTickMarkShape.noTickMark),
       tooltipTheme:
           const TooltipThemeData(waitDuration: Duration(milliseconds: 800)),
-      extensions: [s],
-    );
+      extensions: [s]);
+}

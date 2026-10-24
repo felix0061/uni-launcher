@@ -1,14 +1,24 @@
-# UNI Launcher 0.2.0 · Flutter Android
+# UNI Launcher 0.3.0 · Flutter Android
 
 包名 `xyz.i4o.uni.launcher`，面向领克 05 IP753 / Android 9。界面由 Flutter 绘制，Android 平台通道复用已有 Java 适配器。源代码直接保存在本目录并由仓库的本地 Git commit 管理，不另行打包源码。
 
 ## 界面与设置
 
 - 无左侧栏；80 逻辑像素底栏按「首页、全部、空调操作、音乐控制、音乐信息、车辆信息、360」排列，操作按钮使用图标。
-- 长按首页进入设置；深色、浅色、跟随系统，5 组主题色和自定义 HEX。
-- 圆角 0–40，0 为直角。毛玻璃独立开关，默认关闭；关闭时移除所有 `BackdropFilter`，保留半透明材质。设置与卡片布局保存到 Android SharedPreferences。
+- 长按首页进入设置；深色、浅色、跟随系统，5 组主题色、自定义取色器与行内 HEX。
+- 圆角 0–40，提供滑杆和数值输入，0 为直角。毛玻璃独立开关，默认关闭；关闭时移除所有 `BackdropFilter`，保留半透明材质。设置与卡片布局保存到 Android SharedPreferences。
+- 切换动效页可选无动画、淡入淡出、横向滑动，支持左右轻扫，底栏固定；默认无动画。
+- 音乐卡片、底栏和详情复用滚动歌词，有时间轴时按媒体进度同步，支持暂停与 seek；无歌词不沿用旧曲目。来源与边界见[歌词接入说明](../docs/MEDIA_LYRICS_AND_MOTION.md)。
 - 卡片长按编辑、网格移动、缩放、重命名、删除/撤销、取消/完成、添加与分页；尺寸按内容设最小值，最多 20 页。
 - 覆盖官方目录中的导航、媒体、天气、日历、账号、清理、胎压、可选空气质量；其他车型的出行服务保留目录记录但不出现在 IP753 卡片库。
+
+## 样式核对与座椅
+
+此次按[设计一致性审计](../docs/UI_FIDELITY_AUDIT.md)修正默认胶囊按钮、坐标换算、完整桌面预览、原始 SVG 图标、卡片内容结构、分类卡片库、单卡尺寸设置及所有面板。`Design.px` 明确 1920 稿件到 1600 逻辑画布的换算，按钮采用圆角矩形，圆形色点保留语义形状。
+
+空调面板增加主驾加热/通风、副驾加热，显式选择关闭/1/2/3档。演示中主驾加热与通风互斥；实车档位和互斥契约尚未确认。每项座椅控制分别检查自己的 capability，普通空调写权限不启用座椅控制；实车数据未知时显示 `—` 并禁用操作。
+
+`python3 tools/sync_design_assets.py` 从本仓库原创设计符号同步 SVG 资源；Flutter 使用 `flutter_svg` 绘制，仍无 WebView。新增卡片、编辑器、气候面板、座椅和统一弹层模块各自复用公共主题与表面。
 
 ## 模块
 
@@ -50,7 +60,7 @@ flutter build apk --release --target-platform android-arm64,android-x64 --split-
 
 构建产物在 `build/app/outputs/flutter-apk/`。`app-arm64-v8a-release.apk` 是后续车机验证候选，`app-x86_64-release.apk` 供模拟器；这两个 ABI 构建自相同源码，arm64 尚未经过实车运行验证。
 
-分 ABI APK 的 versionCode 由 Flutter 添加 ABI 前缀，本次 arm64 为 2002、x86_64 为 4002；后续升级应提高 `pubspec.yaml` 的构建号。当前签名、大小和 SHA-256 记录于[构建报告](verification/build-report.json)。
+分 ABI APK 的 versionCode 由 Flutter 添加 ABI 前缀，本次 arm64 为 2003、x86_64 为 4003；后续升级应提高 `pubspec.yaml` 的构建号。当前签名、大小和 SHA-256 记录于[构建报告](verification/build-report.json)。
 
 本机 Flutter SDK 位于 `/data/tools/flutter`、Android SDK 位于 `/data/tools/linkco-android/sdk`。需要本地代理环境时可用 `python3 tools/flutter_task.py <flutter 参数>`；脚本为 Gradle 继承已有代理，测试连接本机 VM service 时绕过代理。可用 `FLUTTER_SDK` 覆盖 Flutter 路径。SDK、Gradle 缓存和 build 均不提交。
 
@@ -71,6 +81,15 @@ python3 tools/flutter_task.py drive \
 
 组件测试覆盖默认无模糊、开关与原生保存、深浅主题/0 圆角、布局冲突/边界、取消/恢复、最小卡片尺寸、未连接状态。Android 集成测试覆盖真实应用列表平台通道、底栏顺序、首页长按、主题/模糊持久化、触摸拖动缩放、演示空调回读与导航栏开关。
 
+歌词集成测试需先在模拟器安装合成媒体源，不能安装到车机：
+
+```sh
+python3 ../android/tools/build-fixture.py
+python3 tools/flutter_task.py drive --driver=test_driver/driver.dart --target=integration_test/launcher_test.dart -d emulator-5580
+```
+
+驱动脚本在 Flutter 安装完成后准备模拟器媒体授权与前台测试音源，校验设备为模拟器；测试源可用 `adb -s emulator-5580 uninstall ecarx.xsf.mediacenter` 移除。
+
 [验证报告](verification/emulator-report.json)和同目录的 `flutter-*.png` 是实际模拟器输出。只验证功能，不把模拟器帧率视为 MSM8996 实车性能。后续按[实车验收记录](../docs/CAR_ACCEPTANCE.md)继续核对。
 
-本次结果：静态分析无问题，15 项状态/组件测试及 22 项 Android 9 集成检查通过；release 签名与 ABI 校验通过，x86_64 release 安装、启动、HOME Intent 和长按首页进入设置均已验证。实际 release [首页](verification/flutter-release-home.png)与[设置](verification/flutter-release-settings.png)截图已检查。
+最终静态分析、状态/组件测试、Android 9 集成与 release 验证结果见[构建报告](verification/build-report.json)。实际 release [首页](verification/flutter-release-home.png)与[设置](verification/flutter-release-settings.png)截图单独保存；实时车控和性能仍待实车。

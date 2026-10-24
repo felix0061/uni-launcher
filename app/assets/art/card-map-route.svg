@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1144 732" preserveAspectRatio="xMidYMid slice">
+  <path fill="none" stroke="#0b3b39" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" d="M650 520V470H780V145H960"/><path fill="none" stroke="#71e4ce" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" d="M650 520V470H780V145H960"/>
+  <circle cx="960" cy="145" r="13" fill="#71e4ce" stroke="#16232b" stroke-width="6"/>
+  <circle cx="650" cy="520" r="48" fill="#71e4ce" opacity=".12"/><circle cx="650" cy="520" r="30" fill="#16232b"/>
+  <path d="m650 495 17 41-17-8-17 8Z" fill="#71e4ce"/>
+</svg>

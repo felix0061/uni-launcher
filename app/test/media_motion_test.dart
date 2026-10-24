@@ -1,0 +1,158 @@
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:uni_launcher/controller/launcher_controller.dart';
+import 'package:uni_launcher/launcher_app.dart';
+import 'package:uni_launcher/model/appearance.dart';
+import 'package:uni_launcher/model/lyrics.dart';
+import 'package:uni_launcher/widgets/lyrics_view.dart';
+import 'package:uni_launcher/widgets/page_transition.dart';
+import 'fake_gateway.dart';
+import 'package:uni_launcher/theme/launcher_theme.dart';
+
+void main() {
+  test('LRC supports multiple timestamps, precision, offset and backward seek',
+      () {
+    final l = Lyrics.parse(
+        '[ar:Artist]\n[offset:-500]\n[00:01.2][00:03.25]重复行\n[00:02.123]另一行\n[00:65]非法秒');
+    expect(l.timed, true);
+    expect(l.lines.map((v) => v.timeMs), [700, 1623, 2750]);
+    expect(l.activeAt(699), -1);
+    expect(l.activeAt(1623), 1);
+    expect(l.activeAt(5000), 2);
+    expect(l.activeAt(800), 0);
+    expect(l.lines.map((v) => v.text), ['重复行', '另一行', '重复行']);
+  });
+  test(
+      'Plain lyrics have no fabricated timing; malformed and oversized inputs are bounded',
+      () {
+    final l = Lyrics.parse('第一行\n第二行');
+    expect(l.timed, false);
+    expect(l.activeAt(90000), -1);
+    expect(l.lines.length, 2);
+    expect(Lyrics.parse(null).lines, isEmpty);
+    expect(Lyrics.parse('x' * 131073).lines, isEmpty);
+  });
+  test('Playback clock extrapolates speed, pauses and clamps duration', () {
+    Map<String, dynamic> state = {
+      'positionMs': 1000,
+      'sampledAtMs': 10000,
+      'durationMs': 5000,
+      'speed': 2,
+      'playing': true,
+      'positionKnown': true
+    };
+    expect(MediaTimeline.fromJson(state).at(11000), 3000);
+    expect(MediaTimeline.fromJson(state).at(15000), 5000);
+    expect(
+        MediaTimeline.fromJson({...state, 'playing': false}).at(15000), 1000);
+    expect(MediaTimeline.fromJson(state).at(9000), 1000);
+  });
+  testWidgets(
+      'Lyrics follow progress, seek backward and clear on track without lyrics',
+      (t) async {
+    Future<void> display(String lyrics, int position) async {
+      await t.pumpWidget(MaterialApp(
+          theme: launcherTheme(SurfaceStyle.from(const Appearance(), true)),
+          home: Scaffold(
+              body: SizedBox(
+                  width: 400,
+                  child: LyricsView(media: {
+                    'lyrics': lyrics,
+                    'playing': false,
+                    'positionMs': position,
+                    'positionKnown': true
+                  })))));
+      await t.pumpAndSettle();
+    }
+
+    const lrc = '[00:00]第一行\n[00:03]第二行\n[00:06]第三行\n[00:09]第四行';
+    await display(lrc, 6500);
+    expect(find.byKey(const ValueKey('lyric-line-2-active')), findsOneWidget);
+    final scroll = t.state<ScrollableState>(find.descendant(
+        of: find.byKey(const ValueKey('lyrics-scroll')),
+        matching: find.byType(Scrollable)));
+    expect(scroll.position.pixels, 60);
+    await display(lrc, 1000);
+    expect(scroll.position.pixels, 0);
+    expect(find.byKey(const ValueKey('lyric-line-0-active')), findsOneWidget);
+    await display('', 0);
+    expect(find.byKey(const ValueKey('lyrics-empty')), findsOneWidget);
+    expect(find.text('第三行'), findsNothing);
+    expect(t.takeException(), null);
+  });
+  test('Transition preference has a safe default and round trips', () {
+    expect(Appearance.fromJson({}).pageTransition, 'none');
+    expect(Appearance.fromJson({'pageTransition': 'unknown'}).pageTransition,
+        'none');
+    for (final effect in ['none', 'slide', 'fade']) {
+      expect(
+          Appearance.fromJson(
+                  const Appearance().copyWith(pageTransition: effect).toJson())
+              .pageTransition,
+          effect);
+    }
+  });
+  testWidgets(
+      'Motion setting persists, page swipe changes only workspace and none is instant',
+      (t) async {
+    t.view.physicalSize = const Size(1920, 1080);
+    t.view.devicePixelRatio = 1;
+    final g = FakeGateway(), c = LauncherController(g);
+    await c.initialize();
+    await t.pumpWidget(LauncherApp(controller: c));
+    await t.pumpAndSettle();
+    addTearDown(() async {
+      await t.pumpWidget(const SizedBox.shrink());
+      c.dispose();
+      await g.dispose();
+      t.view.resetPhysicalSize();
+      t.view.resetDevicePixelRatio();
+    });
+    c.openSettings();
+    c.tab('motion');
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('transition-slide')));
+    await t.pumpAndSettle();
+    expect(jsonDecode(g.saved!)['preferences']['pageTransition'], 'slide');
+    c.home();
+    await t.pumpAndSettle();
+    final dockBefore = t.getRect(find.byKey(const ValueKey('bottom-dock')));
+    await t.fling(
+        find.byKey(const ValueKey('card-grid')), const Offset(-550, 0), 1000);
+    await t.pumpAndSettle();
+    expect(c.page, 1);
+    expect(t.getRect(find.byKey(const ValueKey('bottom-dock'))), dockBefore);
+    c.setAppearance(c.appearance.copyWith(pageTransition: 'fade'));
+    await t.pumpAndSettle();
+    c.switchPage(0);
+    await t.pump();
+    expect(
+        find.descendant(
+            of: find.byType(DesktopPageTransition),
+            matching: find.byType(FadeTransition)),
+        findsWidgets);
+    expect(find.byKey(const ValueKey('nav-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('member-1')), findsOneWidget);
+    await t.pumpAndSettle();
+    c.setAppearance(c.appearance.copyWith(pageTransition: 'none'));
+    await t.pumpAndSettle();
+    c.switchPage(1);
+    await t.pump();
+    expect(find.byKey(const ValueKey('nav-1')), findsNothing);
+    expect(
+        find.descendant(
+            of: find.byType(DesktopPageTransition),
+            matching: find.byType(AnimatedSwitcher)),
+        findsNothing);
+    expect(t.takeException(), null);
+  });
+  testWidgets('System reduced motion disables workspace animation', (t) async {
+    await t.pumpWidget(const MaterialApp(
+        home: MediaQuery(
+            data: MediaQueryData(disableAnimations: true),
+            child: DesktopPageTransition(
+                page: 0, effect: 'slide', child: Text('page')))));
+    expect(find.byType(AnimatedSwitcher), findsNothing);
+  });
+}

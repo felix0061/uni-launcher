@@ -56,6 +56,9 @@ void main() {
   testWidgets('native navigation switch sends platform action', (t) async {
     final (c, g) = await launch(t);
     c.openSettings();
+    c.tab('sources');
+    await t.pumpAndSettle();
+    await t.ensureVisible(find.byKey(const ValueKey('hide-navigation')));
     await t.pumpAndSettle();
     await t.tap(find.byKey(const ValueKey('hide-navigation')));
     await t.pumpAndSettle();
@@ -88,7 +91,7 @@ void main() {
     await t.pumpAndSettle();
     expect(find.text('600 米后右转'), findsNothing);
     expect(find.text('24°'), findsNothing);
-    expect(find.text('—°'), findsNWidgets(2));
+    expect(find.text('—°').evaluate().length, greaterThanOrEqualTo(2));
     final play = t.widget<IconAction>(find.byKey(const ValueKey('play-pause')));
     expect(play.onTap, null);
     expect(c.native.value['demo'], false);

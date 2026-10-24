@@ -7,6 +7,8 @@ import android.media.session.MediaController;
 import android.media.session.MediaSessionManager;
 import android.media.session.PlaybackState;
 import android.os.Handler;
+import android.os.Bundle;
+import android.os.SystemClock;
 import org.json.JSONObject;
 import java.util.List;
 
@@ -21,6 +23,7 @@ public final class MediaAdapter {
     private final MediaController.Callback callback=new MediaController.Callback(){
         public void onMetadataChanged(MediaMetadata m){changed.run();}
         public void onPlaybackStateChanged(PlaybackState s){changed.run();}
+        public void onExtrasChanged(Bundle extras){changed.run();}
         public void onSessionDestroyed(){select(null);changed.run();}
     };
     private final MediaSessionManager.OnActiveSessionsChangedListener sessions=new MediaSessionManager.OnActiveSessionsChangedListener(){
@@ -55,8 +58,35 @@ public final class MediaAdapter {
                     .put("artist",m==null?"":m.getString(MediaMetadata.METADATA_KEY_ARTIST))
                     .put("collection",m==null?"":m.getString(MediaMetadata.METADATA_KEY_ALBUM))
                     .put("playing",p!=null&&p.getState()==PlaybackState.STATE_PLAYING);
+                // Android has no universal lyrics contract. Only accept an explicit
+                // text payload; URIs, cache files and private OEM APIs are not guessed.
+                String lyrics=readLyrics(m,controller.getExtras());
+                j.put("lyrics",lyrics).put("lyricsSource",lyrics.isEmpty()?"":"media-session")
+                    .put("durationMs",m==null?0:Math.max(0,m.getLong(MediaMetadata.METADATA_KEY_DURATION)))
+                    .put("positionMs",position(p)).put("positionKnown",p!=null&&p.getPosition()>=0)
+                    .put("sampledAtMs",System.currentTimeMillis())
+                    .put("speed",p==null?0:p.getPlaybackSpeed());
             }
         }catch(Exception ignored){}return j;
+    }
+    private static String readLyrics(MediaMetadata metadata,Bundle extras){
+        String[] keys={"android.media.metadata.LYRICS","android.media.metadata.LYRIC","lyrics","lyric","lrc"};
+        for(String key:keys){
+            try{CharSequence value=metadata==null?null:metadata.getText(key);
+                if(value!=null&&value.length()>0&&value.length()<=131072)return value.toString();
+            }catch(RuntimeException ignored){}
+            try{Object value=extras==null?null:extras.get(key);
+                if(value instanceof CharSequence&&((CharSequence)value).length()>0&&((CharSequence)value).length()<=131072)return value.toString();
+            }catch(RuntimeException ignored){}
+        }
+        return "";
+    }
+    private static long position(PlaybackState p){
+        if(p==null||p.getPosition()<0)return 0;
+        long value=p.getPosition();
+        if(p.getState()==PlaybackState.STATE_PLAYING&&p.getLastPositionUpdateTime()>0)
+            value+=(long)(Math.max(0,SystemClock.elapsedRealtime()-p.getLastPositionUpdateTime())*p.getPlaybackSpeed());
+        return Math.max(0,value);
     }
     public boolean command(String action){
         if(controller==null)return false;

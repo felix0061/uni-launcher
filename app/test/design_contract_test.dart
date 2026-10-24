@@ -1,0 +1,148 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:uni_launcher/controller/launcher_controller.dart';
+import 'package:uni_launcher/launcher_app.dart';
+import 'package:uni_launcher/model/seat_control.dart';
+import 'package:uni_launcher/screens/settings_screen.dart';
+import 'package:uni_launcher/widgets/launcher_dialog.dart';
+import 'package:uni_launcher/widgets/climate_panel.dart';
+import 'package:uni_launcher/widgets/seat_controls.dart';
+import 'fake_gateway.dart';
+
+void main() {
+  Future<(LauncherController, FakeGateway)> launch(WidgetTester t) async {
+    t.view.physicalSize = const Size(1920, 1080);
+    t.view.devicePixelRatio = 1;
+    final g = FakeGateway(), c = LauncherController(g);
+    await c.initialize();
+    await t.pumpWidget(LauncherApp(controller: c));
+    await t.pumpAndSettle();
+    addTearDown(() async {
+      await t.pumpWidget(const SizedBox.shrink());
+      c.dispose();
+      await g.dispose();
+      t.view.resetPhysicalSize();
+      t.view.resetDevicePixelRatio();
+    });
+    return (c, g);
+  }
+
+  testWidgets(
+      'reviewed palette uses rectangular corners, modes and palette have separate heights',
+      (t) async {
+    final (c, _) = await launch(t);
+    c.openSettings();
+    await t.pumpAndSettle();
+    final palette = find.byKey(const ValueKey('palette-mint'));
+    final material = t.widget<Material>(
+        find.descendant(of: palette, matching: find.byType(Material)).first);
+    expect(material.shape, isA<RoundedRectangleBorder>());
+    final shape = material.shape! as RoundedRectangleBorder;
+    expect(shape.borderRadius.resolve(TextDirection.ltr).topLeft.x,
+        closeTo(14.9333, .02));
+    expect(t.getRect(palette).height, closeTo(138, .1));
+    expect(t.getRect(find.byKey(const ValueKey('mode-system'))).height,
+        closeTo(66, .1));
+    expect(find.byType(DesktopPreview), findsOneWidget);
+    final indicator =
+        t.getRect(find.byKey(const ValueKey('tab-indicator-appearance')));
+    expect(indicator.left, closeTo(62, .1));
+    expect(indicator.width, closeTo(96, .1));
+    expect(find.byKey(const ValueKey('radius-number-28')).hitTestable(),
+        findsOneWidget);
+    expect(t.takeException(), null);
+  });
+  testWidgets(
+      'zero radius reaches palette and input controls while color chips stay circular',
+      (t) async {
+    final (c, _) = await launch(t);
+    c.openSettings();
+    c.setAppearance(c.appearance.copyWith(radius: 0));
+    await t.pumpAndSettle();
+    for (final name in ['palette-mint', 'mode-system']) {
+      final m = t.widget<Material>(find
+          .descendant(
+              of: find.byKey(ValueKey(name)), matching: find.byType(Material))
+          .first);
+      expect(
+          (m.shape! as RoundedRectangleBorder)
+              .borderRadius
+              .resolve(TextDirection.ltr),
+          BorderRadius.zero);
+    }
+    final field = t.widget<TextField>(find.byKey(const ValueKey('hex-field')));
+    final border = field.decoration?.border ??
+        Theme.of(t.element(find.byType(DesktopPreview)))
+            .inputDecorationTheme
+            .border;
+    expect((border! as OutlineInputBorder).borderRadius, BorderRadius.zero);
+    expect(t.takeException(), null);
+  });
+  test('general HVAC permission never grants seat read or write access', () {
+    final n = <String, dynamic>{
+      'demo': false,
+      'vehicle': {'writable': true},
+      'climate': {'driverHeat': 3}
+    };
+    final state = SeatControlState.fromNative(n, 'driverHeat');
+    expect(state.writable, false);
+    expect(state.level, null);
+    n['vehicle'] = {
+      'writable': true,
+      'seatCapabilities': {
+        'driverHeat': {'supported': true, 'readable': true, 'writable': false}
+      }
+    };
+    final read = SeatControlState.fromNative(n, 'driverHeat');
+    expect(read.writable, false);
+    expect(read.level, 3);
+    expect(SeatControlState.fromNative(n, 'passengerHeat').writable, false);
+  });
+  testWidgets(
+      'three seat selectors route explicit levels with correct zones and match sheet width',
+      (t) async {
+    final (c, g) = await launch(t);
+    showClimatePanel(t.element(find.byKey(const ValueKey('climate'))), c);
+    await t.pumpAndSettle();
+    expect(find.byType(LauncherSheet), findsOneWidget);
+    expect(find.byType(SeatControls), findsOneWidget);
+    for (final item in [
+      ('driverHeat', 'seat-heat', 'left', 2),
+      ('driverVent', 'seat-vent', 'left', 3),
+      ('passengerHeat', 'seat-heat', 'right', 1)
+    ]) {
+      await t.ensureVisible(find.byKey(ValueKey('seat-${item.$1}-${item.$4}')));
+      await t.tap(find.byKey(ValueKey('seat-${item.$1}-${item.$4}')));
+      await t.pumpAndSettle();
+      expect(g.commands.last, containsPair('action', item.$2));
+      expect(g.commands.last, containsPair('zone', item.$3));
+      expect(g.commands.last, containsPair('value', '${item.$4}'));
+    }
+    expect(find.text('副驾通风'), findsNothing);
+    final sheet = t.widget<LauncherSheet>(find.byType(LauncherSheet));
+    expect(sheet.width, closeTo(933.333, .01));
+    expect(t.takeException(), null);
+  });
+  testWidgets(
+      'live unavailable seats show unknown and cannot send commands despite HVAC writable',
+      (t) async {
+    final (c, g) = await launch(t);
+    g.state['demo'] = false;
+    g.state['vehicle'] = {'writable': true};
+    g.stream.add(Map.of(g.state));
+    await t.pumpAndSettle();
+    showClimatePanel(t.element(find.byKey(const ValueKey('climate'))), c);
+    await t.pumpAndSettle();
+    for (final key in ['driverHeat', 'driverVent', 'passengerHeat']) {
+      expect(find.byKey(ValueKey('seat-unknown-$key')), findsOneWidget);
+      for (int level = 0; level <= 3; level++)
+        expect(
+            t
+                .widget<OutlinedButton>(
+                    find.byKey(ValueKey('seat-$key-$level')))
+                .onPressed,
+            null);
+    }
+    expect(t.takeException(), null);
+  });
+}
