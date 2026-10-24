@@ -22,7 +22,9 @@ class SeatControlState {
         (capability['supported'] == true && capability['readable'] == true);
     return SeatControlState(
         writable: demo ||
-            (capability['supported'] == true && capability['writable'] == true),
+            (!vehicleCommandPending(native) &&
+                capability['supported'] == true &&
+                capability['writable'] == true),
         level: readable && raw is int && raw >= 0 && raw <= 3 ? raw : null);
   }
 }

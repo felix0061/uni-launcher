@@ -22,6 +22,7 @@ import xyz.i4o.uni.launcher.platform.EmbeddedNavigationFactory;
 
 /** Flutter renderer, sharing the verified native integration classes with the baseline. */
 public final class MainActivity extends FlutterActivity {
+    private static java.lang.ref.WeakReference<MainActivity> active=new java.lang.ref.WeakReference<>(null);
     private SharedPreferences prefs;
     private NavigationChrome chrome;
     private AppRepository apps;
@@ -33,6 +34,8 @@ public final class MainActivity extends FlutterActivity {
     private JSONArray installed=new JSONArray();
     private final ClimateState simulator=new ClimateState();
     private String cached="{}";
+    private JSONObject flutterViewport=new JSONObject();
+    private int reservedBottomPx;
     private boolean demoPlaying=true;
     private int demoTrack=0;
     private long demoPositionMs=0,demoSampleAt=android.os.SystemClock.elapsedRealtime();
@@ -48,6 +51,7 @@ public final class MainActivity extends FlutterActivity {
             try{
                 if("snapshot".equals(call.method)){if(prefs!=null)updateSnapshot();result.success(cached);}
                 else if("saveDesign".equals(call.method))result.success(saveDesign((String)call.arguments));
+                else if("viewport".equals(call.method)){flutterViewport=new JSONObject((String)call.arguments);result.success(null);}
                 else if("action".equals(call.method)){String raw=(String)call.arguments;if(raw==null||raw.length()>8192){result.error("invalid","Invalid request",null);return;}handle(new JSONObject(raw));result.success(null);}
                 else result.notImplemented();
             }catch(Exception e){result.error("unavailable","操作暂不可用",null);}
@@ -59,11 +63,18 @@ public final class MainActivity extends FlutterActivity {
     }
     @Override protected void onCreate(Bundle saved){
         super.onCreate(saved);getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        // Android can create a separate HOME task after a regular app launch.
+        // Keep one host/engine so hidden instances cannot retain map displays.
+        MainActivity previous=active.get();active=new java.lang.ref.WeakReference<>(this);
+        if(previous!=null&&previous!=this&&!previous.isFinishing())previous.finish();
         prefs=getSharedPreferences("launcher",0);chrome=new NavigationChrome(this,prefs);
         if(!prefs.contains("demo"))prefs.edit().putBoolean("demo",Build.FINGERPRINT.contains("generic")||Build.MODEL.contains("sdk_gphone")||Build.MODEL.contains("Android SDK")).apply();
         apps=new AppRepository(this);catalog=new OfficialCatalog(this);vehicle=new VehicleTelemetry(this,()->publish());navigation=new NavigationApps(this,prefs);
         media=new MediaAdapter(this,()->publish());media.setPreferredPackage(prefs.getString("mediaPackage","auto"));installed=apps.refresh();
         IntentFilter filter=new IntentFilter();filter.addAction(Intent.ACTION_PACKAGE_ADDED);filter.addAction(Intent.ACTION_PACKAGE_REMOVED);filter.addAction(Intent.ACTION_PACKAGE_CHANGED);filter.addDataScheme("package");registerReceiver(packages,filter);
+        findViewById(android.R.id.content).addOnLayoutChangeListener((v,l,t,r,b,ol,ot,orr,ob)->{
+            if(r-l!=orr-ol||b-t!=ob-ot)v.post(this::publish);
+        });
         publish();
     }
     private long demoPosition(){return demoPositionMs+(demoPlaying?Math.max(0,android.os.SystemClock.elapsedRealtime()-demoSampleAt):0);}
@@ -75,14 +86,29 @@ public final class MainActivity extends FlutterActivity {
             JSONObject telemetry=vehicle.snapshot();
             if(!prefs.getBoolean("demo",false))climate=telemetry.optJSONObject("climate")==null?new JSONObject():telemetry.getJSONObject("climate");
             state.put("navigation",navigation.snapshot()).put("integrationPreferences",new JSONObject().put("mediaPackage",prefs.getString("mediaPackage","auto"))) ;
+            android.view.View content=findViewById(android.R.id.content),decor=getWindow().getDecorView();
+            android.view.WindowInsets insets=decor.getRootWindowInsets();
+            boolean alreadyInset=content!=null&&insets!=null&&insets.getSystemWindowInsetBottom()>0&&content.getHeight()>0
+                &&content.getHeight()+insets.getSystemWindowInsetBottom()<=decor.getHeight()+1;
+            state.put("contentReservesSystemBars",alreadyInset);
+            // This firmware sometimes expands content behind its persistent
+            // 136px OEM bar after a virtual-display focus change. Stable insets
+            // retain the reservation even when content/system insets become 0.
+            if(insets!=null&&insets.getStableInsetBottom()>0)reservedBottomPx=insets.getStableInsetBottom();
+            if(content!=null&&content.getHeight()>0){
+                int usable=content.getHeight();
+                if(!prefs.getBoolean("hideNavigation",false)&&decor.getHeight()>reservedBottomPx)
+                    usable=Math.min(usable,decor.getHeight()-reservedBottomPx);
+                state.put("contentHeightPx",content.getHeight()).put("viewportHeightPx",usable).put("reservedBottomPx",reservedBottomPx);
+            }
             state.put("demo",prefs.getBoolean("demo",false)).put("hideNavigation",prefs.getBoolean("hideNavigation",false))
                 .put("globalNavigation",prefs.getBoolean("globalNavigation",false))
                 .put("globalNavigationGranted",checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS")==android.content.pm.PackageManager.PERMISSION_GRANTED)
                 .put("dark",(getResources().getConfiguration().uiMode&Configuration.UI_MODE_NIGHT_MASK)==Configuration.UI_MODE_NIGHT_YES)
-                .put("apps",installed).put("climate",climate).put("vehicle",vehicle.snapshot()).put("media",media.snapshot()).put("version","0.4.0-flutter");
+                .put("apps",installed).put("climate",climate).put("vehicle",vehicle.snapshot()).put("media",media.snapshot()).put("version","0.4.2-flutter");
             state.put("savedDesign",prefs.getString("savedDesign", ""));
             if(prefs.getBoolean("demo",false))state.put("media",new JSONObject().put("available",true).put("playing",demoPlaying)
-                .put("title",demoTrack%2==0?"向海而行":"山海之间").put("artist",demoTrack%2==0?"Coastline":"Northbound").put("collection","晨间驾驶歌单").put("source","simulator").put("canNext",true).put("canPrevious",true).put("canToggle",true)
+                .put("title",demoTrack%2==0?"向海而行":"山海之间").put("artist",demoTrack%2==0?"Coastline":"Northbound").put("collection","晨间驾驶歌单").put("source","simulator").put("canNext",true).put("canPrevious",true).put("canToggle",true).put("canSeek",true)
                 .put("lyrics","[00:00.00]晨光沿着海岸慢慢亮起\n[00:03.00]风把远方带进了呼吸\n[00:06.00]穿过山与海的交界\n[00:09.00]每一程都有新的风景\n[00:12.00]跟着潮声向前去\n[00:15.00]让今天从容开启")
                 .put("lyricsSource","demo").put("durationMs",258000).put("positionMs",demoPosition()).put("positionKnown",true)
                 .put("sampledAtMs",System.currentTimeMillis()).put("speed",1));
@@ -145,6 +171,13 @@ public final class MainActivity extends FlutterActivity {
             boolean ok=demo?simulator.apply(action,request.optString("zone"),value):vehicle.command(action,request.optString("zone"),value);
             if(!ok)toast("尚未连接空调，可从空调面板打开原车应用");publish();return;
         }
+        if("seek".equals(action)){
+            long position;try{position=Long.parseLong(value);}catch(NumberFormatException e){return;}
+            if(position<0)return;
+            if(prefs.getBoolean("demo",false)){demoPositionMs=Math.min(258000,position);demoSampleAt=android.os.SystemClock.elapsedRealtime();}
+            else if(!media.command(action,position))toast("当前音源不支持调整进度");
+            publish();return;
+        }
         if("toggle-play".equals(action)||"previous".equals(action)||"next".equals(action)){
             if(prefs.getBoolean("demo",false)){if("toggle-play".equals(action)){demoPositionMs=demoPosition();demoPlaying=!demoPlaying;}
                 else {demoTrack+="previous".equals(action)?-1:1;demoPositionMs=0;}
@@ -154,6 +187,20 @@ public final class MainActivity extends FlutterActivity {
     }
 
     private void publish(){if(prefs==null||media==null||vehicle==null)return;updateSnapshot();if(sink!=null)sink.success(cached);}
+    @Override public void dump(String prefix,java.io.FileDescriptor fd,java.io.PrintWriter writer,String[] args){
+        if(args!=null)for(String arg:args)if("--uni-state".equals(arg)){
+            // dumpsys is already restricted to Android DUMP callers. Exclude
+            // artwork, song text and app icons from this read-only diagnostic.
+            try{JSONObject full=new JSONObject(cached),report=new JSONObject();
+                for(String key:new String[]{"version","demo","hideNavigation","contentReservesSystemBars","contentHeightPx","viewportHeightPx","reservedBottomPx","navigation","vehicle"})report.put(key,full.opt(key));
+                JSONObject m=full.optJSONObject("media"),safe=new JSONObject();
+                if(m!=null)for(String key:new String[]{"available","authorized","playing","source","preferredPackage","sessions","reason","canToggle","canNext","canPrevious","canSeek","controlSource","lyricsSource","durationMs","positionMs"})safe.put(key,m.opt(key));
+                if(m!=null)safe.put("lyricsAvailable",!m.optString("lyrics").isEmpty()).put("artworkAvailable",!m.optString("artwork").isEmpty());
+                report.put("media",safe).put("flutterViewport",flutterViewport);if(mapFactory!=null)report.put("mapViews",mapFactory.snapshot());writer.println("UNI_STATE="+report.toString());
+            }catch(Exception e){writer.println("UNI_STATE_UNAVAILABLE");}return;
+        }
+        super.dump(prefix,fd,writer,args);
+    }
     private void toast(String text){Toast.makeText(this,text,Toast.LENGTH_SHORT).show();}
     @Override protected void onStart(){super.onStart();if(media!=null){media.start();vehicle.start();if(mapFactory!=null)mapFactory.setVisible(true);publish();}}
     @Override protected void onResume(){super.onResume();if(chrome!=null){chrome.apply();publish();}}
@@ -161,5 +208,5 @@ public final class MainActivity extends FlutterActivity {
     @Override public void onWindowFocusChanged(boolean focus){super.onWindowFocusChanged(focus);if(focus&&chrome!=null)chrome.apply();}
     @Override public void onConfigurationChanged(Configuration c){super.onConfigurationChanged(c);publish();}
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);if(channel!=null)channel.invokeMethod("home",null);}
-    @Override protected void onDestroy(){unregisterReceiver(packages);if(mapFactory!=null)mapFactory.close();media.stop();vehicle.close();if(channel!=null)channel.setMethodCallHandler(null);sink=null;super.onDestroy();}
+    @Override protected void onDestroy(){unregisterReceiver(packages);if(mapFactory!=null)mapFactory.close();media.stop();vehicle.close();if(channel!=null)channel.setMethodCallHandler(null);sink=null;if(active.get()==this)active.clear();super.onDestroy();}
 }

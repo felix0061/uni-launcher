@@ -88,11 +88,26 @@ class _LyricsViewState extends State<LyricsView> {
   Widget build(BuildContext context) {
     final s = SurfaceStyle.of(context);
     final count = widget.compact ? 1 : 3;
+    final liveLine = widget.media['lyricLine']?.toString().trim() ?? '';
+    if (lyrics.lines.isEmpty && liveLine.isNotEmpty)
+      return SizedBox(
+          height: rowHeight * count,
+          child: Center(
+              child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  child: Text(liveLine,
+                      key: ValueKey(liveLine),
+                      maxLines: count,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: widget.textAlign,
+                      style: TextStyle(
+                          fontSize: Design.px(20), color: s.accent)))));
     if (lyrics.lines.isEmpty)
       return SizedBox(
           height: rowHeight * count,
           child: Center(
-              child: Text('当前音源未提供歌词',
+              child: Text(
+                  widget.media['lyricsReason']?.toString() ?? '当前音源未提供歌词',
                   key: const ValueKey('lyrics-empty'),
                   style: TextStyle(fontSize: Design.px(19), color: s.muted))));
     return Semantics(

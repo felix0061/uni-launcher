@@ -26,6 +26,7 @@ public final class FixtureActivity extends Activity {
                 public void onPause(){positionMs=position();playing=false;sampledAt=android.os.SystemClock.elapsedRealtime();update();}
                 public void onSkipToNext(){track++;positionMs=1000;sampledAt=android.os.SystemClock.elapsedRealtime();update();}
                 public void onSkipToPrevious(){track--;positionMs=1000;sampledAt=android.os.SystemClock.elapsedRealtime();update();}
+                public void onSeekTo(long at){positionMs=Math.max(0,Math.min(180000,at));sampledAt=android.os.SystemClock.elapsedRealtime();update();}
             });
         }
         session.setActive(true);update();
@@ -37,7 +38,7 @@ public final class FixtureActivity extends Activity {
             .putString(MediaMetadata.METADATA_KEY_ARTIST,"UNI test artist").putString(MediaMetadata.METADATA_KEY_ALBUM,"Synthetic media session")
             .putString("android.media.metadata.LYRICS","[00:00.00]Fixture lyric first\n[00:03.00]Fixture lyric second\n[00:06.00]Fixture lyric third")
             .putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART,cover).putLong(MediaMetadata.METADATA_KEY_DURATION,180000).build());
-        session.setPlaybackState(new PlaybackState.Builder().setActions(PlaybackState.ACTION_PLAY|PlaybackState.ACTION_PAUSE|PlaybackState.ACTION_SKIP_TO_NEXT|PlaybackState.ACTION_SKIP_TO_PREVIOUS)
+        session.setPlaybackState(new PlaybackState.Builder().setActions(PlaybackState.ACTION_PLAY|PlaybackState.ACTION_PAUSE|PlaybackState.ACTION_SKIP_TO_NEXT|PlaybackState.ACTION_SKIP_TO_PREVIOUS|PlaybackState.ACTION_SEEK_TO)
             .setState(playing?PlaybackState.STATE_PLAYING:PlaybackState.STATE_PAUSED,position(),1).build());
     }
 }

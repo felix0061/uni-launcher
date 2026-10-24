@@ -15,6 +15,7 @@ commands={
  'size':['wm','size'], 'density':['wm','density'],
  'windows':['dumpsys','window','windows'], 'services':['service','list'],
  'widgets':['dumpsys','appwidget'], 'media':['dumpsys','media_session'],
+ 'uni-state':['dumpsys','activity','xyz.i4o.uni.launcher/.MainActivity','--uni-state'],
 }
 for package in ['xyz.i4o.uni.launcher','ecarx.launcher3','com.autonavi.amapauto','com.autonavi.amapautolite','com.autonavi.minimap','ecarx.xsf.mediacenter','com.netease.cloudmusic','com.netease.cloudmusic.iot','com.tencent.qqmusic','com.tencent.qqmusiccar','com.ecarx.xcvehicle','com.ecarx.hvac']:
  commands['package-'+package]=['dumpsys','package',package]

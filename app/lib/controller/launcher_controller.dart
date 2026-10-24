@@ -71,12 +71,18 @@ class LauncherController extends ChangeNotifier {
       }
     }
     final oldDark = native.value['dark'];
+    final oldDemo = native.value['demo'];
+    final oldEmbed = (native.value['navigation'] as Map?)?['canEmbed'];
+    final oldHeight = native.value['viewportHeightPx'];
     native.value = state;
     if (state['message'] is String && (state['message'] as String).isNotEmpty) {
       message = state['message'];
       notifyListeners();
     }
-    if (appearance.mode == 'system' && oldDark != state['dark'])
+    if ((appearance.mode == 'system' && oldDark != state['dark']) ||
+        oldDemo != state['demo'] ||
+        oldHeight != state['viewportHeightPx'] ||
+        oldEmbed != (state['navigation'] as Map?)?['canEmbed'])
       notifyListeners();
   }
 

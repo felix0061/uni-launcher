@@ -33,7 +33,13 @@ class VehicleReadout extends StatelessWidget {
           ('fan', '风量', ''),
           ('driverHeat', '主驾加热', '档'),
           ('driverVent', '主驾通风', '档'),
-          ('passengerHeat', '副驾加热', '档')
+          ('passengerHeat', '副驾加热', '档'),
+          ('batteryPercent', '动力电池', '%'),
+          ('pm25', '车内 PM2.5', ' µg/m³'),
+          ('aqi', '车内 AQI', ''),
+          ('speed', '车速', ''),
+          ('odometer', '里程', ''),
+          ('range', '续航', '')
         ])
           SizedBox(
               width: Design.px(235),
@@ -51,7 +57,7 @@ class VehicleReadout extends StatelessWidget {
       Text('${vehicle['reason'] ?? '等待原车车辆服务'}',
           style:
               TextStyle(fontSize: Design.px(18), color: s.muted, height: 1.6)),
-      Text('电量与续航请查看原车车辆应用',
+      Text('未获得有效读数或单位的项目显示 —',
           style: TextStyle(fontSize: Design.px(17), color: s.muted)),
       Wrap(alignment: WrapAlignment.end, spacing: Design.px(12), children: [
         TextButton(

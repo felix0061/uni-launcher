@@ -16,6 +16,9 @@ public final class OfficialVehicleAdapter implements VehicleAdapter {
                 seats.put(control, new JSONObject().put("supported", false).put("writable", false).put("reason", "待车辆确认"));
             }
             state.put("seatCapabilities", seats);
+            boolean allowed=context.checkSelfPermission("android.car.permission.CAR_VENDOR_EXTENSION")==android.content.pm.PackageManager.PERMISSION_GRANTED;
+            state.put("vendorPermissionGranted",allowed);
+            if(!allowed){state.put("reason","车辆读取权限未授权");return;}
             Class<?> api = Class.forName("com.ecarx.xui.adaptapi.car.Car");
             Object car = api.getMethod("create", Context.class).invoke(null, context);
             if (car == null) { state.put("reason", "车辆服务尚未就绪"); return; }

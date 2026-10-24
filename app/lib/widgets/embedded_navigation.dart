@@ -12,13 +12,21 @@ import 'uni_icon.dart';
 /// Desktop preview must never start a second map instance.
 class EmbeddedContentPolicy extends InheritedWidget {
   final bool enabled;
+  final bool visible;
   const EmbeddedContentPolicy(
-      {super.key, required this.enabled, required super.child});
+      {super.key,
+      required this.enabled,
+      this.visible = true,
+      required super.child});
   static bool allowed(BuildContext c) =>
       c.dependOnInheritedWidgetOfExactType<EmbeddedContentPolicy>()?.enabled ??
       true;
+  static bool visibleOf(BuildContext c) =>
+      c.dependOnInheritedWidgetOfExactType<EmbeddedContentPolicy>()?.visible ??
+      true;
   @override
-  bool updateShouldNotify(EmbeddedContentPolicy old) => old.enabled != enabled;
+  bool updateShouldNotify(EmbeddedContentPolicy old) =>
+      old.enabled != enabled || old.visible != visible;
 }
 
 class EmbeddedNavigationCard extends StatefulWidget {
@@ -32,6 +40,8 @@ class EmbeddedNavigationCard extends StatefulWidget {
 
 class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
   MethodChannel? channel;
+  bool desiredVisible = true;
+  bool? sentVisible;
   Map<String, dynamic> status = {};
   String get package => '${widget.navigation['package'] ?? ''}';
   @override
@@ -41,6 +51,7 @@ class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
         old.navigation['canEmbed'] != widget.navigation['canEmbed']) {
       channel?.setMethodCallHandler(null);
       channel = null;
+      sentVisible = null;
       status = {};
     }
   }
@@ -54,6 +65,8 @@ class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
   void connect(int id) {
     final current = MethodChannel('xyz.i4o.uni.launcher/map/$id');
     channel = current;
+    sentVisible = null;
+    syncVisibility(desiredVisible);
     channel!.setMethodCallHandler((call) async {
       if (mounted &&
           channel == current &&
@@ -70,10 +83,29 @@ class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
     });
   }
 
+  void syncVisibility(bool visible) {
+    desiredVisible = visible;
+    final current = channel;
+    if (current == null || sentVisible == visible) return;
+    sentVisible = visible;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && channel == current && desiredVisible == visible) {
+        current
+            .invokeMethod<void>('visible', visible)
+            .catchError((Object _) {});
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = SurfaceStyle.of(context), c = widget.controller;
     final allowed = EmbeddedContentPolicy.allowed(context);
+    // Offstage alone does not hide Android 9's independently composited SurfaceView.
+    syncVisibility(allowed &&
+        EmbeddedContentPolicy.visibleOf(context) &&
+        !c.settings &&
+        (ModalRoute.of(context)?.isCurrent ?? true));
     final canEmbed = widget.navigation['canEmbed'] == true &&
         allowed &&
         !kIsWeb &&

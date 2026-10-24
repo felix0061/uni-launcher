@@ -1,5 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:uni_launcher/controller/launcher_controller.dart';
 import 'package:uni_launcher/launcher_app.dart';
@@ -14,6 +16,76 @@ import 'package:uni_launcher/widgets/card_content.dart';
 import 'fake_gateway.dart';
 
 void main() {
+  testWidgets('OEM inset fluctuations never move the dock', (t) async {
+    t.view.physicalSize = const Size(1920, 944);
+    t.view.devicePixelRatio = 1;
+    t.view.padding = const FakeViewPadding(bottom: 136);
+    final g = FakeGateway();
+    final controller = LauncherController(g);
+    g.state['contentReservesSystemBars'] = false;
+    await controller.initialize();
+    await t.pumpWidget(LauncherApp(controller: controller));
+    await t.pumpAndSettle();
+    final before = t.getRect(find.byKey(const ValueKey('bottom-dock'))).bottom;
+    g.state['contentReservesSystemBars'] = true;
+    g.stream.add(Map.of(g.state));
+    await t.pumpAndSettle();
+    final after = t.getRect(find.byKey(const ValueKey('bottom-dock'))).bottom;
+    expect(after, before);
+    expect(after, greaterThan(920));
+    expect(after, lessThan(944));
+    // Some Android 9 car builds report the reserved bar as a keyboard inset.
+    t.view.padding = const FakeViewPadding();
+    t.view.viewInsets = const FakeViewPadding(bottom: 136);
+    g.state['contentReservesSystemBars'] = false;
+    g.stream.add(Map.of(g.state));
+    await t.pumpAndSettle();
+    final keyboardBefore =
+        t.getRect(find.byKey(const ValueKey('bottom-dock'))).bottom;
+    g.state['contentReservesSystemBars'] = true;
+    g.stream.add(Map.of(g.state));
+    await t.pumpAndSettle();
+    final keyboardAfter =
+        t.getRect(find.byKey(const ValueKey('bottom-dock'))).bottom;
+    expect(keyboardBefore, before);
+    expect(keyboardAfter, before);
+    expect(keyboardAfter, greaterThan(920));
+    // ActivityView can temporarily report a full-height Flutter viewport while
+    // the real native content frame still stops above the OEM bottom bar.
+    t.view.physicalSize = const Size(1920, 1080);
+    g.state['contentHeightPx'] = 1080;
+    g.state['viewportHeightPx'] = 944;
+    g.stream.add(Map.of(g.state));
+    await t.pumpAndSettle();
+    expect(t.getRect(find.byKey(const ValueKey('bottom-dock'))).bottom, before);
+    await t.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+    await g.dispose();
+    t.view.resetPadding();
+    t.view.resetViewInsets();
+    t.view.resetPhysicalSize();
+    t.view.resetDevicePixelRatio();
+  });
+  test('Each climate control requires its own fresh writable reading', () {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final n = <String, dynamic>{
+      'vehicle': {
+        'connected': true,
+        'writable': true,
+        'climateCapabilities': {
+          'left': {'writable': true},
+          'right': {'writable': false}
+        },
+        'fields': {
+          'left': {'valid': true, 'value': 22.5, 'updatedAtMs': now},
+          'right': {'valid': true, 'value': 22.5, 'updatedAtMs': now},
+        }
+      }
+    };
+    expect(climateWritable(n, 'left'), true);
+    expect(climateWritable(n, 'right'), false);
+    expect(climateWritable(n, 'power'), false);
+  });
   test('Demo seats use simulator levels even with an unavailable vehicle map',
       () {
     final n = <String, dynamic>{
@@ -168,13 +240,16 @@ void main() {
     t.view.resetDevicePixelRatio();
   });
   testWidgets(
-      'Settings retains desktop map state and preview does not start another map',
+      'Pages settings and modals retain one map and hide its native surface',
       (t) async {
     t.view.physicalSize = const Size(1920, 1080);
     t.view.devicePixelRatio = 1;
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
     final g = FakeGateway();
+    g.state['demo'] = false;
     g.state['navigation'] = {
-      'canEmbed': false,
+      'canEmbed': true,
       'package': 'com.autonavi.amapauto',
       'reason': '未授权'
     };
@@ -183,9 +258,31 @@ void main() {
     await t.pumpWidget(LauncherApp(controller: c));
     await t.pumpAndSettle();
     final original = t.state(find.byType(EmbeddedNavigationCard));
+    final visibility = <bool>[];
+    const channel = MethodChannel('xyz.i4o.uni.launcher/map/99');
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      if (call.method == 'visible') visibility.add(call.arguments == true);
+      return call.method == 'status' ? {'phase': 'ready', 'ready': true} : null;
+    });
+    (original as dynamic).connect(99);
+    await t.pumpAndSettle();
+    expect(visibility.last, true);
+    final dock = t.getRect(find.byKey(const ValueKey('bottom-dock')));
+    c.switchPage(1);
+    await t.pumpAndSettle();
+    expect(visibility.last, false);
+    c.switchPage(0);
+    await t.pumpAndSettle();
+    expect(identical(t.state(find.byType(EmbeddedNavigationCard)), original),
+        true);
+    expect(visibility.last, true);
+    expect(t.getRect(find.byKey(const ValueKey('bottom-dock'))), dock);
     c.openSettings();
     await t.pumpAndSettle();
-    expect(find.byType(EmbeddedContentPolicy), findsOneWidget);
+    expect(visibility.last, false,
+        reason: 'The native SurfaceView must be hidden above settings');
     expect(
         find
             .byType(EmbeddedNavigationCard, skipOffstage: false)
@@ -196,9 +293,19 @@ void main() {
     await t.pumpAndSettle();
     expect(identical(t.state(find.byType(EmbeddedNavigationCard)), original),
         true);
+    expect(visibility.last, true);
+    await t.tap(find.byKey(const ValueKey('music-info')));
+    await t.pumpAndSettle();
+    expect(visibility.last, false,
+        reason: 'Native map must not cover a Flutter modal');
+    await t.tap(find.byTooltip('关闭音乐详情'));
+    await t.pumpAndSettle();
+    expect(visibility.last, true);
     await t.pumpWidget(const SizedBox.shrink());
     c.dispose();
     await g.dispose();
+    messenger.setMockMethodCallHandler(channel, null);
+    debugDefaultTargetPlatformOverride = null;
     t.view.resetPhysicalSize();
     t.view.resetDevicePixelRatio();
   });

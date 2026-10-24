@@ -1,7 +1,7 @@
 {
-  "checkedAt": "2026-10-24T11:35:37.932085+00:00",
+  "checkedAt": "2026-10-24T15:14:31.710653+00:00",
   "package": "xyz.i4o.uni.launcher",
-  "version": "0.4.0",
+  "version": "0.4.2",
   "toolchain": {
     "flutter": "3.47.8",
     "dart": "3.13.7",
@@ -12,29 +12,37 @@
   },
   "validation": {
     "flutterAnalyze": "No issues found",
-    "flutterTests": 36,
-    "android9IntegrationChecks": 52,
+    "flutterTests": 39,
+    "android9IntegrationChecks": 54,
     "releaseLint": "lintVital release passed; only Play ExpiredTargetSdkVersion excluded for local Android 9 distribution",
     "releaseEmulatorSmoke": {
+      "version": "0.4.2-flutter",
       "abi": "x86_64",
       "api": 28,
       "install": "Success",
       "launch": "Status: ok",
-      "homeIntentResolves": true,
-      "processResumed": true,
       "fatalOrUnhandledErrors": false,
+      "homeLongPress": true,
+      "viewport": {
+        "width": 1920,
+        "maxHeight": 1024,
+        "height": 1024,
+        "nativeHeightPx": 1024,
+        "dpr": 1,
+        "page": 0,
+        "settings": true
+      },
       "screenshots": [
         "flutter-release-home.png",
         "flutter-release-settings.png"
-      ],
-      "homeLongPress": "Settings visibly opened; screenshot inspected"
+      ]
     },
-    "realCar": "Pending; arm64 package built and signature checked, not run on the car",
+    "realCar": "0.4.2 installed. Stable 944px Flutter viewport across 944/1080 native window changes; dock visible, page return retains map view/display, settings hides real map without preview duplicate. Official HVAC/seats/tires and PM25/AQI/battery readings received. Actual controls deferred by owner after leaving vehicle.",
     "performance": "No real-car performance claim",
     "javaCoreChecks": 364,
     "designChecks": 94,
     "designImages": 23,
-    "media": "Two independent synthetic MediaSessions: package selection isolation, auto source updates, artwork, lyrics, playback clock, pause/resume, skip and no-session behavior passed; actual OEM/NetEase/QQ versions pending",
+    "media": "QQ standard path retained. NetEase exact-package targeted controls and seek installed; 32 offline contract assertions and synthetic MediaSession seek passed. Real NetEase UI control callback validation pending. Installed player external lyrics disabled by default; metadata/event receiver implemented.",
     "weather": {
       "conditions": 38,
       "dayNightPaintChecks": 76,
@@ -44,27 +52,39 @@
       ],
       "realProvider": "pending"
     },
-    "navigation": "Android 9 ActivityView implementation compiled; permission fallback, app selection persistence and preview isolation passed. Real AMap embedding, display, touch and car system privileges pending",
-    "vehicle": "Read-only ECARX candidate getter mapping, validity/freshness, independent seat read capability and tri-state sync handling. Real readings/units and all vehicle write operations pending"
+    "navigation": "Actual AMap card and settings/page lifecycle passed with same viewId/displayId. One instance, stable dock. Occasional internal map top black strip remains; sleep, reverse takeover and long duration performance pending.",
+    "vehicle": "Official Car.create/IConnectable/ICarFunction and CarPropertyManager PA connected; ZigZag corrected and SDK mapping crosschecked. Per-field writes with queued/sent/readback statuses implemented but not exercised by automatic car tests. Pressure and distance/speed units require confirmation.",
+    "windowInsets": "Stable system-bar reservation defines viewport; real native content 944/1080 both yield Flutter 944; screenshots confirm visible dock.",
+    "neteaseContractAssertions": 32,
+    "officialCarRegressions": "PA protocol/enum decoding, 31 command-planning checks, sensor availability/SDK/range/units checks and API28 compile passed"
   },
   "artifacts": [
     {
       "path": "build/app/outputs/flutter-apk/app-arm64-v8a-release.apk",
       "abi": "arm64-v8a",
-      "bytes": 18124511,
-      "sha256": "5a68687f798b4c36543173286a57b7c0fa3fee73e3bf768e74ce1038f007f4d2",
-      "versionCode": 2004,
+      "bytes": 18140999,
+      "sha256": "6d224ab7446c1cf71f0262c3dcb76ca159e7a5a2d21f622cb0e37699a9d42732",
+      "versionCode": 2006,
       "signatureVerified": true,
       "certificateSha256": "bba7d5b864934b8ff144b08d1f58a866c883261500f9e9f201b96c2a3dc1ea1f"
     },
     {
       "path": "build/app/outputs/flutter-apk/app-x86_64-release.apk",
       "abi": "x86_64",
-      "bytes": 19632361,
-      "sha256": "27591bbc83331fadc95500d50c766ce7a67682776bacca1e461d8dff0c8fc073",
-      "versionCode": 4004,
+      "bytes": 19714385,
+      "sha256": "7bdf79920fd8c3574802323acb65814d0e85af51e04ecaf4b70e25ca76f90b41",
+      "versionCode": 4006,
       "signatureVerified": true,
       "certificateSha256": "bba7d5b864934b8ff144b08d1f58a866c883261500f9e9f201b96c2a3dc1ea1f"
+    },
+    {
+      "path": "build/app/outputs/flutter-apk/UNI-Launcher-0.4.2-IP753.apk",
+      "abi": "arm64-v8a-IP753",
+      "bytes": 18150854,
+      "sha256": "f3212c881902c94e538e834426674567d8766c308e301b45c478466008479663",
+      "versionCode": 2006,
+      "signatureVerified": true,
+      "certificateSha256": "c8a2e9bccf597c2fb6dc66bee293fc13f2fc47ec77bc6b2b0d52c11f51192ab8"
     }
   ]
 }

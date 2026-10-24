@@ -766,7 +766,7 @@ class SourceSettings extends StatelessWidget {
                         ? (v) => c.command('global-navigation', enabled: v)
                         : null),
                 Row(children: [
-                  Text('UNI 0.4.0 · xyz.i4o.uni.launcher',
+                  Text('UNI 0.4.1 · xyz.i4o.uni.launcher',
                       style:
                           TextStyle(fontSize: Design.px(18), color: s.muted)),
                   const Spacer(),

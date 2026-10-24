@@ -20,7 +20,6 @@ Future<void> showClimatePanel(BuildContext context, LauncherController c) =>
             builder: (context, n, _) {
               final s = SurfaceStyle.of(context),
                   demo = n['demo'] == true,
-                  enabled = demo || mapOf(n['vehicle'])['writable'] == true,
                   climate = mapOf(n['climate']);
               Widget step(String label, IconData icon, VoidCallback? tap) =>
                   IconAction(
@@ -50,7 +49,7 @@ Future<void> showClimatePanel(BuildContext context, LauncherController c) =>
                                 step(
                                     '降低${zone == 'left' ? '主驾' : '副驾'}温度',
                                     Icons.remove,
-                                    enabled
+                                    climateWritable(n, zone)
                                         ? () =>
                                             c.command('temp-down', zone: zone)
                                         : null),
@@ -64,7 +63,7 @@ Future<void> showClimatePanel(BuildContext context, LauncherController c) =>
                                 step(
                                     '提高${zone == 'left' ? '主驾' : '副驾'}温度',
                                     Icons.add,
-                                    enabled
+                                    climateWritable(n, zone)
                                         ? () => c.command('temp-up', zone: zone)
                                         : null)
                               ])
@@ -77,8 +76,12 @@ Future<void> showClimatePanel(BuildContext context, LauncherController c) =>
                       SizedBox(width: Design.px(25)),
                       Text('风量', style: TextStyle(fontSize: Design.px(24))),
                       SizedBox(width: Design.px(25)),
-                      step('降低风量', Icons.remove,
-                          enabled ? () => c.command('fan-down') : null),
+                      step(
+                          '降低风量',
+                          Icons.remove,
+                          climateWritable(n, 'fan')
+                              ? () => c.command('fan-down')
+                              : null),
                       SizedBox(width: Design.px(25)),
                       SizedBox(
                           width: Design.px(46),
@@ -90,8 +93,12 @@ Future<void> showClimatePanel(BuildContext context, LauncherController c) =>
                               textAlign: TextAlign.center,
                               style: TextStyle(fontSize: Design.px(38)))),
                       SizedBox(width: Design.px(25)),
-                      step('提高风量', Icons.add,
-                          enabled ? () => c.command('fan-up') : null)
+                      step(
+                          '提高风量',
+                          Icons.add,
+                          climateWritable(n, 'fan')
+                              ? () => c.command('fan-up')
+                              : null)
                     ]),
                     SizedBox(height: Design.px(28)),
                     Row(children: [
@@ -112,15 +119,14 @@ Future<void> showClimatePanel(BuildContext context, LauncherController c) =>
                                     child: OutlinedButton(
                                         key:
                                             ValueKey('climate-mode-${mode.$1}'),
-                                        onPressed: enabled
+                                        onPressed: climateWritable(n, mode.$1)
                                             ? () => c.command('climate-mode',
                                                 value: mode.$1)
                                             : null,
                                         style: OutlinedButton.styleFrom(
                                             padding: EdgeInsets.zero,
                                             backgroundColor:
-                                                (demo || VehicleField.fromNative(n, mode.$1).valid) &&
-                                                        climate[mode.$1] == true
+                                                (demo || VehicleField.fromNative(n, mode.$1).valid) && climate[mode.$1] == true
                                                     ? s.accent
                                                     : s.soft,
                                             foregroundColor:
@@ -132,6 +138,13 @@ Future<void> showClimatePanel(BuildContext context, LauncherController c) =>
                                         child: Text(mode.$2, style: TextStyle(fontSize: Design.px(23)))))))
                     ]),
                     SeatControls(controller: c, native: n),
+                    if (!demo && vehicleCommandLabel(n).isNotEmpty)
+                      Padding(
+                          padding: EdgeInsets.only(top: Design.px(16)),
+                          child: Text(vehicleCommandLabel(n),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  color: s.muted, fontSize: Design.px(18)))),
                     if (!demo)
                       Align(
                           alignment: Alignment.centerRight,

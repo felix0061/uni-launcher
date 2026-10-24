@@ -19,10 +19,12 @@ public final class LegacyVehicleReader {
         Method method=receiver.getClass().getMethod(name);method.setAccessible(true);return method.invoke(receiver);
     }
     private void connect()throws Exception{
+        if(context.checkSelfPermission("android.car.permission.CAR_VENDOR_EXTENSION")!=android.content.pm.PackageManager.PERMISSION_GRANTED)
+            throw new SecurityException("Vehicle vendor permission is required before creating the SDK client");
         if(binder!=null&&binder.isBinderAlive()&&car!=null)return;
         car=climate=vfmisc=signal=null;
         binder=(IBinder)Class.forName("android.os.ServiceManager").getMethod("getService",String.class).invoke(null,"ecarxcar_service");
-        if(binder==null)throw new IllegalStateException("No ECARX Binder");
+        if(binder==null)throw new UnsupportedOperationException("ECARX_BINDER_ABSENT");
         Class<?> api=Class.forName("ecarx.car.IECarXCar");
         Object remote=Class.forName("ecarx.car.IECarXCar$Stub").getMethod("asInterface",IBinder.class).invoke(null,binder);
         car=Class.forName("ecarx.car.ECarXCar").getMethod("createCar",Context.class,api).invoke(null,context,remote);
@@ -66,7 +68,7 @@ public final class LegacyVehicleReader {
             int count=0;java.util.Iterator<String> keys=fields.keys();while(keys.hasNext())if(fields.getJSONObject(keys.next()).optBoolean("valid"))count++;
             state.put("validFieldCount",count).put("updatedAtMs",System.currentTimeMillis());
             if(count==0)state.put("reason","车辆服务可连接；尚未获得有效字段");
-        }catch(Throwable e){try{state.put("connected",false).put("reason","原车只读接口未就绪或权限不足").put("connectionError",e.getClass().getSimpleName());}catch(Exception ignored){}}
+        }catch(Throwable e){try{state.put("connected",false).put("reason",e instanceof UnsupportedOperationException?"当前固件未提供此车辆读取接口":"原车只读接口未就绪或权限不足").put("connectionError",e.getClass().getSimpleName());}catch(Exception ignored){}}
         return state;
     }
     public void close(){car=climate=vfmisc=signal=null;binder=null;}

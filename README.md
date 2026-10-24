@@ -2,7 +2,10 @@
 
 针对领克 05 PHEV / IP753 / Android 9 的桌面项目，包含 APK 分析、设计和 Flutter Android 实现。包名 `xyz.i4o.uni.launcher`；源码、测试和报告由本地 Git 管理，先模拟器验证，再配合实车接入。
 
+- [0.4.2 底栏、地图、网易云与官方车控](docs/IP753_0_4_2.md)：固定窗口几何、复用地图容器、专用媒体兼容、官方 HVAC/座椅与传感器。
+- [官方车辆接口](docs/OFFICIAL_CAR_API.md)、[网易云专用接口](docs/NETEASE_MEDIA.md)。
 - [0.4.0 官方能力对照与上车准备](docs/OEM_PARITY_0_4.md)：真导航容器、播放器关联、候选车辆读取及 38 类天气图标。
+- [0.4.1 首轮实车测试与启动修复](docs/IP753_FIRST_CAR_TEST.md)：异步权限崩溃、独立实车签名包、地图任务迁移与车机窗口适配。
 - [天气图标日间总览](app/verification/weather-icons-day.png)、[夜间总览](app/verification/weather-icons-night.png)、[导航与播放器接入设置](app/verification/flutter-integration-settings.png)。
 - **当前实现**：[Flutter 构建与架构](app/README.md)、[Android 9 验证报告](app/verification/emulator-report.json)。Flutter 绘制界面，复用 Java 原车适配器；毛玻璃可在设置开启，默认关闭。
 - [Flutter 深色首页](app/verification/flutter-home-dark.png)、[浅色直角首页](app/verification/flutter-home-light-square.png)、[毛玻璃设置](app/verification/flutter-settings-blur-on.png)、[未连接状态](app/verification/flutter-live-unavailable.png)。

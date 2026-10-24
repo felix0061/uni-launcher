@@ -164,7 +164,10 @@ class _MusicCard extends StatelessWidget {
                                                     horizontal: Design.px(12)),
                                                 child: MediaProgress(
                                                     media:
-                                                        mapOf(state['media']))),
+                                                        mapOf(state['media']),
+                                                    onSeek: (v) => controller
+                                                        .command('seek',
+                                                            value: '$v'))),
                                             if (!editing) ...[
                                               SizedBox(height: Design.px(13)),
                                               Padding(
@@ -252,7 +255,10 @@ class MediaPanel extends StatelessWidget {
                             SizedBox(height: Design.px(20)),
                             LyricsView(media: m),
                             SizedBox(height: Design.px(20)),
-                            MediaProgress(media: m),
+                            MediaProgress(
+                                media: m,
+                                onSeek: (v) =>
+                                    controller.command('seek', value: '$v')),
                             SizedBox(height: Design.px(26)),
                             Row(children: [
                               for (final action in [

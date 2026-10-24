@@ -26,7 +26,6 @@ class BottomDock extends StatelessWidget {
             demo = native['demo'] == true,
             climate = mapOf(native['climate']),
             media = mapOf(native['media']),
-            enabled = demo || mapOf(native['vehicle'])['writable'] == true,
             canPlay = demo || media['available'] == true,
             playing = media['playing'] == true;
         Widget gap() => SizedBox(width: Design.px(20));
@@ -58,8 +57,9 @@ class BottomDock extends StatelessWidget {
                   size: Design.px(40),
                   iconSize: Design.px(21),
                   foregroundColor: s.muted,
-                  onTap:
-                      enabled ? () => c.command('temp-down', zone: id) : null),
+                  onTap: climateWritable(native, id)
+                      ? () => c.command('temp-down', zone: id)
+                      : null),
               SizedBox(
                   width: Design.px(88),
                   height: Design.px(64),
@@ -77,7 +77,9 @@ class BottomDock extends StatelessWidget {
                   size: Design.px(40),
                   iconSize: Design.px(21),
                   foregroundColor: s.muted,
-                  onTap: enabled ? () => c.command('temp-up', zone: id) : null)
+                  onTap: climateWritable(native, id)
+                      ? () => c.command('temp-up', zone: id)
+                      : null)
             ]);
         return SizedBox(
             key: const ValueKey('bottom-dock'),
@@ -120,10 +122,10 @@ class BottomDock extends StatelessWidget {
                                 'climate-power',
                                 Icons.power_settings_new,
                                 '空调开关',
-                                enabled
+                                climateWritable(native, 'power')
                                     ? () => c.command('climate-power')
                                     : null,
-                                active: demo && climate['power'] == true,
+                                active: climate['power'] == true,
                                 width: 56)
                           ])),
                   gap(),

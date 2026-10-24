@@ -6,6 +6,7 @@ import 'package:uni_launcher/launcher_app.dart';
 import 'package:uni_launcher/model/appearance.dart';
 import 'package:uni_launcher/model/lyrics.dart';
 import 'package:uni_launcher/widgets/lyrics_view.dart';
+import 'package:uni_launcher/widgets/media_progress.dart';
 import 'package:uni_launcher/widgets/page_transition.dart';
 import 'fake_gateway.dart';
 import 'package:uni_launcher/theme/launcher_theme.dart';
@@ -80,6 +81,39 @@ void main() {
     expect(find.byKey(const ValueKey('lyrics-empty')), findsOneWidget);
     expect(find.text('第三行'), findsNothing);
     expect(t.takeException(), null);
+  });
+  testWidgets(
+      'Seek gesture sends one bounded position and unsupported source is read only',
+      (t) async {
+    final positions = <int>[];
+    Future<void> display(bool supported) async {
+      await t.pumpWidget(MaterialApp(
+          theme: launcherTheme(SurfaceStyle.from(const Appearance(), true)),
+          home: Scaffold(
+              body: SizedBox(
+                  width: 600,
+                  child: MediaProgress(
+                    media: {
+                      'durationMs': 180000,
+                      'positionMs': 10000,
+                      'positionKnown': true,
+                      'playing': false,
+                      'canSeek': supported
+                    },
+                    onSeek: positions.add,
+                  )))));
+      await t.pumpAndSettle();
+    }
+
+    await display(true);
+    final slider = find.byKey(const ValueKey('media-seek'));
+    await t.drag(slider, const Offset(200, 0));
+    await t.pumpAndSettle();
+    expect(positions.length, 1);
+    expect(positions.single, inInclusiveRange(10000, 180000));
+    await display(false);
+    expect(find.byType(Slider), findsNothing);
+    expect(positions.length, 1);
   });
   test('Transition preference has a safe default and round trips', () {
     expect(Appearance.fromJson({}).pageTransition, 'none');

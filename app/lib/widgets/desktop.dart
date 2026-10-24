@@ -7,6 +7,7 @@ import 'glass_surface.dart';
 import 'editable_card.dart';
 import 'uni_icon.dart';
 import 'page_transition.dart';
+import 'embedded_navigation.dart';
 
 class Header extends StatefulWidget {
   final LauncherController controller;
@@ -94,8 +95,16 @@ class Desktop extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = controller, visiblePage = controller.page;
-    final visibleCards =
-        c.cards.where((card) => card.page == visiblePage).toList();
+    final keepNativeMap = c.native.value['demo'] != true &&
+        (c.native.value['navigation'] as Map?)?['canEmbed'] == true;
+    // Android 9 surfaces cannot participate in Flutter's outgoing-page
+    // animation. Keep page elements mounted and only change their visibility.
+    // Other layouts retain the selected Flutter page transition.
+    Widget grid(int page) => EmbeddedContentPolicy(
+        key: ValueKey('desktop-page-$page'),
+        enabled: EmbeddedContentPolicy.allowed(context),
+        visible: page == visiblePage && !c.settings,
+        child: _grid(context, page));
     return GestureDetector(
         behavior: HitTestBehavior.translucent,
         onLongPress: c.editing ? null : c.openSettings,
@@ -138,51 +147,14 @@ class Desktop extends StatelessWidget {
               Expanded(
                   child: DesktopPageTransition(
                       page: visiblePage,
-                      effect: c.editing ? 'none' : c.appearance.pageTransition,
-                      child: LayoutBuilder(builder: (context, box) {
-                        const gap = 20.0;
-                        final unitX = (box.maxWidth + gap) / 12,
-                            unitY = (box.maxHeight + gap) / 6,
-                            items = visibleCards;
-                        return Stack(
-                            key: const ValueKey('card-grid'),
-                            clipBehavior: Clip.none,
-                            children: [
-                              if (c.editing)
-                                Positioned.fill(
-                                    child: IgnorePointer(
-                                        child: CustomPaint(
-                                            painter: _GridDots(
-                                                unitX,
-                                                unitY,
-                                                SurfaceStyle.of(context)
-                                                    .edge)))),
-                              if (items.isEmpty)
-                                Positioned.fill(
-                                    child: Center(
-                                        child: OutlinedButton.icon(
-                                            onPressed: () {
-                                              if (!c.editing) c.beginEdit();
-                                              showCardLibrary(context, c);
-                                            },
-                                            icon: const Icon(Icons.add),
-                                            label: const Text('添加一张卡片')))),
-                              for (final card in items)
-                                Positioned(
-                                    key: ValueKey('position-${card.id}'),
-                                    left: card.x * unitX,
-                                    top: card.y * unitY,
-                                    width: card.w * unitX - gap,
-                                    height: card.h * unitY - gap,
-                                    child: RepaintBoundary(
-                                        child: EditableCard(
-                                            key: ValueKey(card.id),
-                                            card: card,
-                                            controller: c,
-                                            unitX: unitX,
-                                            unitY: unitY))),
-                            ]);
-                      }))),
+                      effect: c.editing || keepNativeMap
+                          ? 'none'
+                          : c.appearance.pageTransition,
+                      child: keepNativeMap
+                          ? IndexedStack(index: visiblePage, children: [
+                              for (int i = 0; i < c.pageCount; i++) grid(i)
+                            ])
+                          : grid(visiblePage))),
               SizedBox(height: Design.px(16)),
               SizedBox(
                   height: Design.px(16),
@@ -225,6 +197,51 @@ class Desktop extends StatelessWidget {
                               onTap: c.newPage)
                       ])),
             ])));
+  }
+
+  Widget _grid(BuildContext context, int page) {
+    final c = controller;
+    return LayoutBuilder(builder: (context, box) {
+      const gap = 20.0;
+      final unitX = (box.maxWidth + gap) / 12,
+          unitY = (box.maxHeight + gap) / 6,
+          items = c.cards.where((card) => card.page == page).toList();
+      return Stack(
+          key: const ValueKey('card-grid'),
+          clipBehavior: Clip.none,
+          children: [
+            if (c.editing)
+              Positioned.fill(
+                  child: IgnorePointer(
+                      child: CustomPaint(
+                          painter: _GridDots(
+                              unitX, unitY, SurfaceStyle.of(context).edge)))),
+            if (items.isEmpty)
+              Positioned.fill(
+                  child: Center(
+                      child: OutlinedButton.icon(
+                          onPressed: () {
+                            if (!c.editing) c.beginEdit();
+                            showCardLibrary(context, c);
+                          },
+                          icon: const Icon(Icons.add),
+                          label: const Text('添加一张卡片')))),
+            for (final card in items)
+              Positioned(
+                  key: ValueKey('position-${card.id}'),
+                  left: card.x * unitX,
+                  top: card.y * unitY,
+                  width: card.w * unitX - gap,
+                  height: card.h * unitY - gap,
+                  child: RepaintBoundary(
+                      child: EditableCard(
+                          key: ValueKey(card.id),
+                          card: card,
+                          controller: c,
+                          unitX: unitX,
+                          unitY: unitY))),
+          ]);
+    });
   }
 }
 

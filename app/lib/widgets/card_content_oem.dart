@@ -169,17 +169,27 @@ class _OemCard extends StatelessWidget {
                           children: [
                     UniIcon('air', size: Design.px(65), color: s.accent),
                     SizedBox(width: Design.px(26)),
-                    Text('—',
+                    Text(
+                        VehicleField.fromNative(controller.native.value, 'pm25')
+                            .display(decimals: 0),
                         style: TextStyle(
                             fontSize: Design.px(65),
                             fontWeight: FontWeight.w300)),
                     SizedBox(width: Design.px(26)),
                     Flexible(
-                        child: Text('空气质量未同步',
+                        child: Text(
+                            VehicleField.fromNative(
+                                        controller.native.value, 'pm25')
+                                    .valid
+                                ? 'PM2.5 · µg/m³'
+                                : '空气质量未同步',
                             style: TextStyle(
                                 fontSize: Design.px(21), color: s.muted))),
                   ]))),
-              const _StateLine('按车辆空气质量功能支持情况启用'),
+              _StateLine(VehicleField.fromNative(controller.native.value, 'aqi')
+                      .valid
+                  ? '车内 AQI ${VehicleField.fromNative(controller.native.value, 'aqi').display(decimals: 0)}'
+                  : '按车辆空气质量功能支持情况启用'),
             ] else ...[
               Expanded(
                   child: Center(

@@ -299,6 +299,11 @@ void main() {
     await settle();
     await c.command('refresh');
     await settle();
+    verify(
+        'Missing vehicle permission skips OEM SDK initialization',
+        ((c.native.value['vehicle'] as Map)['reason'] as String)
+                .contains('权限未授权') &&
+            (c.native.value['vehicle'] as Map)['connected'] == false);
     final nativeMedia = c.native.value['media'] as Map;
     expect(nativeMedia['authorized'], true,
         reason:
@@ -367,8 +372,10 @@ void main() {
             chosenNav['canEmbed'] == false);
     await c.command('select-navigation', value: 'auto');
     await settle();
-    await c.command('previous');
+    await c.command('seek', value: '1000');
     await settle();
+    verify('Native MediaSession exposes seek support',
+        (c.native.value['media'] as Map)['canSeek'] == true);
     verify(
         'Native seek resets lyric highlight to first line',
         find

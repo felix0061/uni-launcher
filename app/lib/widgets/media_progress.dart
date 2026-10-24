@@ -6,13 +6,15 @@ import '../theme/launcher_theme.dart';
 
 class MediaProgress extends StatefulWidget {
   final Map<String, dynamic> media;
-  const MediaProgress({super.key, required this.media});
+  final ValueChanged<int>? onSeek;
+  const MediaProgress({super.key, required this.media, this.onSeek});
   @override
   State<MediaProgress> createState() => _MediaProgressState();
 }
 
 class _MediaProgressState extends State<MediaProgress> {
   Timer? timer;
+  double? dragging;
   @override
   void initState() {
     super.initState();
@@ -47,24 +49,56 @@ class _MediaProgressState extends State<MediaProgress> {
     final s = SurfaceStyle.of(context),
         t = MediaTimeline.fromJson(widget.media);
     final p = t.at(DateTime.now().millisecondsSinceEpoch);
+    final canSeek = widget.onSeek != null &&
+        widget.media['canSeek'] == true &&
+        t.known &&
+        t.durationMs > 0;
+    final shown = dragging?.round() ?? p;
     return Column(children: [
-      ClipRRect(
-          borderRadius: BorderRadius.circular(Design.px(4)),
-          child: SizedBox(
-              width: double.infinity,
-              height: Design.px(4),
-              child: Stack(fit: StackFit.expand, children: [
-                ColoredBox(color: s.edge),
-                if (t.known && t.durationMs > 0)
-                  FractionallySizedBox(
-                      alignment: Alignment.centerLeft,
-                      widthFactor: (p / t.durationMs).clamp(0, 1),
-                      child: ColoredBox(color: s.accent))
-              ]))),
+      if (canSeek)
+        SizedBox(
+          height: Design.px(28),
+          child: SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              trackHeight: Design.px(4),
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+              activeTrackColor: s.accent,
+              inactiveTrackColor: s.edge,
+              thumbColor: s.accent,
+            ),
+            child: Slider(
+              key: const ValueKey('media-seek'),
+              min: 0,
+              max: t.durationMs.toDouble(),
+              value: shown.toDouble().clamp(0, t.durationMs.toDouble()),
+              semanticFormatterCallback: (v) => time(v.round()),
+              onChanged: (v) => setState(() => dragging = v),
+              onChangeEnd: (v) {
+                widget.onSeek!(v.round());
+                setState(() => dragging = null);
+              },
+            ),
+          ),
+        )
+      else
+        ClipRRect(
+            borderRadius: BorderRadius.circular(Design.px(4)),
+            child: SizedBox(
+                width: double.infinity,
+                height: Design.px(4),
+                child: Stack(fit: StackFit.expand, children: [
+                  ColoredBox(color: s.edge),
+                  if (t.known && t.durationMs > 0)
+                    FractionallySizedBox(
+                        alignment: Alignment.centerLeft,
+                        widthFactor: (p / t.durationMs).clamp(0, 1),
+                        child: ColoredBox(color: s.accent))
+                ]))),
       SizedBox(height: Design.px(11)),
       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
         for (final label in [
-          t.known ? time(p) : '--:--',
+          t.known ? time(shown) : '--:--',
           t.durationMs > 0 ? time(t.durationMs) : '--:--'
         ])
           Text(label,

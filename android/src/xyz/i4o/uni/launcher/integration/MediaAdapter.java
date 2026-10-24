@@ -23,6 +23,7 @@ public final class MediaAdapter {
     private final MediaSessionManager manager;
     private final ComponentName listener;
     private final Runnable changed;
+    private final NeteaseMediaAdapter netease;
     private final Handler handler=new Handler();
     private MediaController controller;
     private boolean authorized;
@@ -46,7 +47,7 @@ public final class MediaAdapter {
         public void onActiveSessionsChanged(List<MediaController> list){select(list);changed.run();}
     };
     public MediaAdapter(Context context,Runnable changed){
-        this.changed=changed;manager=(MediaSessionManager)context.getSystemService(Context.MEDIA_SESSION_SERVICE);
+        this.changed=changed;netease=new NeteaseMediaAdapter(changed);manager=(MediaSessionManager)context.getSystemService(Context.MEDIA_SESSION_SERVICE);
         listener=new ComponentName(context,MediaAccessService.class);
     }
     public void start(){
@@ -76,6 +77,7 @@ public final class MediaAdapter {
             int selected=MediaSourcePolicy.select(preferred,packages,playing);
             MediaController next=selected>=0?observed.get(selected):null;
             if(next!=controller){controller=next;lastCover=null;coverData="";artworkDirty=true;}
+            netease.setController(controller);
     }
     public JSONObject snapshot(){
         JSONObject j=new JSONObject();try{
@@ -89,6 +91,7 @@ public final class MediaAdapter {
                     .put("playing",p!=null&&p.getState()==PlaybackState.STATE_PLAYING);
                 long actions=p==null?0:p.getActions();
                 j.put("canNext",(actions&PlaybackState.ACTION_SKIP_TO_NEXT)!=0)
+                    .put("canSeek",(actions&PlaybackState.ACTION_SEEK_TO)!=0)
                     .put("canPrevious",(actions&PlaybackState.ACTION_SKIP_TO_PREVIOUS)!=0)
                     .put("canToggle",p!=null&&(actions&(p.getState()==PlaybackState.STATE_PLAYING?(PlaybackState.ACTION_PAUSE|PlaybackState.ACTION_PLAY_PAUSE):(PlaybackState.ACTION_PLAY|PlaybackState.ACTION_PLAY_PAUSE)))!=0)
                     .put("artwork",artwork(m));
@@ -100,6 +103,7 @@ public final class MediaAdapter {
                     .put("positionMs",position(p)).put("positionKnown",p!=null&&p.getPosition()>=0)
                     .put("sampledAtMs",System.currentTimeMillis())
                     .put("speed",p==null?0:p.getPlaybackSpeed());
+                netease.augmentSnapshot(j);
             }
         }catch(Exception ignored){}return j;
     }
@@ -139,11 +143,19 @@ public final class MediaAdapter {
         return Math.max(0,value);
     }
     public boolean command(String action){
+        return command(action,-1);
+    }
+    public boolean command(String action,long positionMs){
         if(controller==null)return false;
+        if(NeteaseMediaAdapter.supports(controller))return netease.command(action,positionMs);
         PlaybackState p=controller.getPlaybackState();if(p==null)return false;
         long actions=p.getActions();MediaController.TransportControls t=controller.getTransportControls();
         if("next".equals(action)&&(actions&PlaybackState.ACTION_SKIP_TO_NEXT)!=0)t.skipToNext();
         else if("previous".equals(action)&&(actions&PlaybackState.ACTION_SKIP_TO_PREVIOUS)!=0)t.skipToPrevious();
+        else if("seek".equals(action)&&positionMs>=0&&(actions&PlaybackState.ACTION_SEEK_TO)!=0){
+            MediaMetadata m=controller.getMetadata();long duration=m==null?0:m.getLong(MediaMetadata.METADATA_KEY_DURATION);
+            t.seekTo(duration>0?Math.min(positionMs,duration):positionMs);
+        }
         else if("toggle-play".equals(action)){
             if(p.getState()==PlaybackState.STATE_PLAYING&&(actions&(PlaybackState.ACTION_PAUSE|PlaybackState.ACTION_PLAY_PAUSE))!=0)t.pause();
             else if(p.getState()!=PlaybackState.STATE_PLAYING&&(actions&(PlaybackState.ACTION_PLAY|PlaybackState.ACTION_PLAY_PAUSE))!=0)t.play();
