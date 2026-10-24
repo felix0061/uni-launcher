@@ -1,0 +1,118 @@
+{
+  "version": "V04",
+  "checks": [
+    {
+      "name": "seven default OEM cards",
+      "passed": true
+    },
+    {
+      "name": "dock group order",
+      "passed": true
+    },
+    {
+      "name": "no desktop settings icon",
+      "passed": true
+    },
+    {
+      "name": "home tap",
+      "passed": true
+    },
+    {
+      "name": "home long press opens settings",
+      "passed": true
+    },
+    {
+      "name": "home background long press opens settings",
+      "passed": true
+    },
+    {
+      "name": "card long press enters layout editing",
+      "passed": true
+    },
+    {
+      "name": "radius 0",
+      "passed": true
+    },
+    {
+      "name": "radius 40",
+      "passed": true
+    },
+    {
+      "name": "radius 28",
+      "passed": true
+    },
+    {
+      "name": "theme preview synchronizes",
+      "passed": true
+    },
+    {
+      "name": "custom color",
+      "passed": true
+    },
+    {
+      "name": "climate dock and panel share state",
+      "passed": true
+    },
+    {
+      "name": "media information shares state",
+      "passed": true
+    },
+    {
+      "name": "vehicle panel",
+      "passed": true
+    },
+    {
+      "name": "camera panel",
+      "passed": true
+    },
+    {
+      "name": "delete card",
+      "passed": true
+    },
+    {
+      "name": "undo deletion",
+      "passed": true
+    },
+    {
+      "name": "edit preview city",
+      "passed": true
+    },
+    {
+      "name": "card resizes by dragging",
+      "passed": true
+    },
+    {
+      "name": "card moves by dragging",
+      "passed": true
+    },
+    {
+      "name": "overlap is rejected",
+      "passed": true
+    },
+    {
+      "name": "library has every primary OEM type",
+      "passed": true
+    },
+    {
+      "name": "full page creates next page",
+      "passed": true
+    },
+    {
+      "name": "cancel restores cards and pages",
+      "passed": true
+    },
+    {
+      "name": "empty desktop page survives reload",
+      "passed": true
+    },
+    {
+      "name": "no runtime errors",
+      "passed": true
+    }
+  ],
+  "runtimeErrors": [],
+  "officialTypesCovered": 9,
+  "providerComponentsMapped": 14,
+  "officialFieldParity": "not verified: provider apps/device unavailable",
+  "vehicleIntegration": false
+}

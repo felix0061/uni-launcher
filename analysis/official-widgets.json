@@ -1,0 +1,462 @@
+{
+  "schemaVersion": 1,
+  "sourceApk": "launcher/Launcher3_V2023-08-21_b5bd9b1.apk",
+  "scope": "all widgetpage XML resources plus explicit HVAC providers in LauncherModel",
+  "contentSchemaVerified": false,
+  "reason": "Provider application APKs and live RemoteViews are unavailable; Launcher declares providers, not their complete data fields.",
+  "types": [
+    {
+      "id": "media",
+      "label": "媒体",
+      "dcy11Default": true,
+      "designCoverage": true,
+      "fieldParity": "pending-provider-or-device-inspection",
+      "providerComponents": [
+        "ecarx.xsf.mediacenter/ecarx.xsf.mediacenter.widget.MediaWidgetProvider1x2",
+        "ecarx.xsf.mediacenter/ecarx.xsf.mediacenter.widget.MediaWidgetProviderSecond1x2"
+      ]
+    },
+    {
+      "id": "navigation",
+      "label": "导航",
+      "dcy11Default": true,
+      "designCoverage": true,
+      "fieldParity": "pending-provider-or-device-inspection",
+      "providerComponents": [
+        "ecarx.naviservice/ecarx.naviservice.widget.BaseWidgetProvider"
+      ]
+    },
+    {
+      "id": "weather",
+      "label": "天气",
+      "dcy11Default": true,
+      "designCoverage": true,
+      "fieldParity": "pending-provider-or-device-inspection",
+      "providerComponents": [
+        "com.ecarx.smartcloud/ecarx.home.module.widget.WeatherWidgetProvider1X1",
+        "com.ecarx.smartcloud/ecarx.home.module.widget.WeatherWidgetProvider1X2"
+      ]
+    },
+    {
+      "id": "calendar",
+      "label": "日历",
+      "dcy11Default": true,
+      "designCoverage": true,
+      "fieldParity": "pending-provider-or-device-inspection",
+      "providerComponents": [
+        "ecarx.calendar/ecarx.calendar.widget.WidgetDynamicProvider"
+      ]
+    },
+    {
+      "id": "member",
+      "label": "账号",
+      "dcy11Default": true,
+      "designCoverage": true,
+      "fieldParity": "pending-provider-or-device-inspection",
+      "providerComponents": [
+        "ecarx.membercenter/ecarx.membercenter.app.appwidget.GidWidget",
+        "ecarx.membercenter/ecarx.membercenter.widget.GidWidget2"
+      ]
+    },
+    {
+      "id": "cleanup",
+      "label": "清理",
+      "dcy11Default": true,
+      "designCoverage": true,
+      "fieldParity": "pending-provider-or-device-inspection",
+      "providerComponents": [
+        "ecarx.autosecure/ecarx.autosecure.widget.CleanWidgetProviderBesom1x3",
+        "ecarx.autosecure/ecarx.autosecure.widget.CleanWidgetProviderBesom"
+      ]
+    },
+    {
+      "id": "tpms",
+      "label": "胎压",
+      "dcy11Default": true,
+      "designCoverage": true,
+      "fieldParity": "pending-provider-or-device-inspection",
+      "providerComponents": [
+        "com.ecarx.xcvehicle/com.ecarx.xcvehicle.widget.TirePressureWidget1x2"
+      ]
+    },
+    {
+      "id": "air",
+      "label": "空气质量",
+      "dcy11Default": false,
+      "designCoverage": true,
+      "fieldParity": "pending-provider-or-device-inspection",
+      "providerComponents": [
+        "com.ecarx.hvac/com.ecarx.hvac.widget.AQIWidgetProvider2x1",
+        "com.ecarx.hvac/com.ecarx.hvac.widget.AQIWidgetProvider1x1"
+      ]
+    },
+    {
+      "id": "ride",
+      "label": "出行服务",
+      "dcy11Default": false,
+      "designCoverage": true,
+      "fieldParity": "pending-provider-or-device-inspection",
+      "providerComponents": [
+        "caocaokeji.vehicle.driver/caocaokeji.vehicle.driver.ui.widget.WindDriverWidget"
+      ]
+    }
+  ],
+  "providers": [
+    {
+      "component": "ecarx.xsf.mediacenter/ecarx.xsf.mediacenter.widget.MediaWidgetProvider1x2",
+      "type": "media",
+      "references": [
+        {
+          "resource": "res/xml/dcy11_widgetpage_default.xml",
+          "screen": 0,
+          "x": 0,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        },
+        {
+          "resource": "res/xml/nl3b_widgetpage_default_offline.xml",
+          "screen": 0,
+          "x": 0,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        }
+      ]
+    },
+    {
+      "component": "ecarx.naviservice/ecarx.naviservice.widget.BaseWidgetProvider",
+      "type": "navigation",
+      "references": [
+        {
+          "resource": "res/xml/dcy11_widgetpage_default.xml",
+          "screen": 0,
+          "x": 1,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        },
+        {
+          "resource": "res/xml/nl3b_widgetpage_default.xml",
+          "screen": 0,
+          "x": 2,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        },
+        {
+          "resource": "res/xml/nl3b_widgetpage_default_ah.xml",
+          "screen": 0,
+          "x": 2,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        },
+        {
+          "resource": "res/xml/nl3b_widgetpage_default_al.xml",
+          "screen": 0,
+          "x": 2,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        },
+        {
+          "resource": "res/xml/widgetpage_default.xml",
+          "screen": 0,
+          "x": 2,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        },
+        {
+          "resource": "res/xml/widgetpage_default_3x2.xml",
+          "screen": 0,
+          "x": 2,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        }
+      ]
+    },
+    {
+      "component": "com.ecarx.smartcloud/ecarx.home.module.widget.WeatherWidgetProvider1X1",
+      "type": "weather",
+      "references": [
+        {
+          "resource": "res/xml/dcy11_widgetpage_default.xml",
+          "screen": 0,
+          "x": 2,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 1
+        }
+      ]
+    },
+    {
+      "component": "ecarx.calendar/ecarx.calendar.widget.WidgetDynamicProvider",
+      "type": "calendar",
+      "references": [
+        {
+          "resource": "res/xml/dcy11_widgetpage_default.xml",
+          "screen": 0,
+          "x": 2,
+          "y": 1,
+          "spanX": 1,
+          "spanY": 1
+        }
+      ]
+    },
+    {
+      "component": "ecarx.membercenter/ecarx.membercenter.app.appwidget.GidWidget",
+      "type": "member",
+      "references": [
+        {
+          "resource": "res/xml/dcy11_widgetpage_default.xml",
+          "screen": 1,
+          "x": 0,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        }
+      ]
+    },
+    {
+      "component": "ecarx.autosecure/ecarx.autosecure.widget.CleanWidgetProviderBesom1x3",
+      "type": "cleanup",
+      "references": [
+        {
+          "resource": "res/xml/dcy11_widgetpage_default.xml",
+          "screen": 1,
+          "x": 1,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        }
+      ]
+    },
+    {
+      "component": "com.ecarx.xcvehicle/com.ecarx.xcvehicle.widget.TirePressureWidget1x2",
+      "type": "tpms",
+      "references": [
+        {
+          "resource": "res/xml/dcy11_widgetpage_default.xml",
+          "screen": 1,
+          "x": 2,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        }
+      ]
+    },
+    {
+      "component": "ecarx.membercenter/ecarx.membercenter.widget.GidWidget2",
+      "type": "member",
+      "references": [
+        {
+          "resource": "res/xml/nl3b_widgetpage_default.xml",
+          "screen": 0,
+          "x": 0,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        },
+        {
+          "resource": "res/xml/nl3b_widgetpage_default_ah.xml",
+          "screen": 0,
+          "x": 0,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        },
+        {
+          "resource": "res/xml/nl3b_widgetpage_default_al.xml",
+          "screen": 0,
+          "x": 0,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        },
+        {
+          "resource": "res/xml/widgetpage_default.xml",
+          "screen": 0,
+          "x": 0,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        },
+        {
+          "resource": "res/xml/widgetpage_default_3x2.xml",
+          "screen": 0,
+          "x": 0,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        }
+      ]
+    },
+    {
+      "component": "ecarx.xsf.mediacenter/ecarx.xsf.mediacenter.widget.MediaWidgetProviderSecond1x2",
+      "type": "media",
+      "references": [
+        {
+          "resource": "res/xml/nl3b_widgetpage_default.xml",
+          "screen": 0,
+          "x": 1,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        },
+        {
+          "resource": "res/xml/nl3b_widgetpage_default_ah.xml",
+          "screen": 0,
+          "x": 1,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        },
+        {
+          "resource": "res/xml/nl3b_widgetpage_default_al.xml",
+          "screen": 0,
+          "x": 1,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        },
+        {
+          "resource": "res/xml/widgetpage_default.xml",
+          "screen": 0,
+          "x": 1,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        },
+        {
+          "resource": "res/xml/widgetpage_default_3x2.xml",
+          "screen": 0,
+          "x": 1,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        }
+      ]
+    },
+    {
+      "component": "com.ecarx.smartcloud/ecarx.home.module.widget.WeatherWidgetProvider1X2",
+      "type": "weather",
+      "references": [
+        {
+          "resource": "res/xml/nl3b_widgetpage_default.xml",
+          "screen": 0,
+          "x": 3,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        },
+        {
+          "resource": "res/xml/nl3b_widgetpage_default_ah.xml",
+          "screen": 0,
+          "x": 3,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        },
+        {
+          "resource": "res/xml/nl3b_widgetpage_default_al.xml",
+          "screen": 0,
+          "x": 3,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        },
+        {
+          "resource": "res/xml/widgetpage_default.xml",
+          "screen": 0,
+          "x": 3,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        }
+      ]
+    },
+    {
+      "component": "caocaokeji.vehicle.driver/caocaokeji.vehicle.driver.ui.widget.WindDriverWidget",
+      "type": "ride",
+      "references": [
+        {
+          "resource": "res/xml/nl3b_widgetpage_default.xml",
+          "screen": 1,
+          "x": 0,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        },
+        {
+          "resource": "res/xml/nl3b_widgetpage_default_ah.xml",
+          "screen": 1,
+          "x": 0,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        },
+        {
+          "resource": "res/xml/nl3b_widgetpage_default_al.xml",
+          "screen": 1,
+          "x": 0,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        }
+      ]
+    },
+    {
+      "component": "ecarx.autosecure/ecarx.autosecure.widget.CleanWidgetProviderBesom",
+      "type": "cleanup",
+      "references": [
+        {
+          "resource": "res/xml/nl3b_widgetpage_default_offline.xml",
+          "screen": 0,
+          "x": 1,
+          "y": 0,
+          "spanX": 1,
+          "spanY": 2
+        }
+      ]
+    },
+    {
+      "component": "com.ecarx.hvac/com.ecarx.hvac.widget.AQIWidgetProvider2x1",
+      "type": "air",
+      "references": [
+        {
+          "method": "ecarx.launcher3.LauncherModel.<init>",
+          "condition": "hideHVACWidget checks App.isHvacPM25"
+        }
+      ]
+    },
+    {
+      "component": "com.ecarx.hvac/com.ecarx.hvac.widget.AQIWidgetProvider1x1",
+      "type": "air",
+      "references": [
+        {
+          "method": "ecarx.launcher3.LauncherModel.<init>",
+          "condition": "hideHVACWidget checks App.isHvacPM25"
+        }
+      ]
+    }
+  ],
+  "sameSourcePolicy": {
+    "providerAndVersionMustMatch": true,
+    "preserve": [
+      "field set",
+      "raw value",
+      "unit",
+      "precision",
+      "enum semantics",
+      "null/unavailable/stale state",
+      "source timestamp",
+      "media/navigation/account context",
+      "action semantics"
+    ],
+    "rejectUnverifiedReplacementSources": true,
+    "acceptance": "pending provider or live device field-by-field comparison"
+  }
+}

@@ -3,10 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>LYNK 05 · 自定义桌面视觉提案 V03</title>
+  <title>LYNK 05 · 自定义桌面视觉提案 V04</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="glass.css">
   <link rel="stylesheet" href="customize.css">
+  <link rel="stylesheet" href="oem-cards.css">
 </head>
 <body>
   <svg class="symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
@@ -43,24 +44,33 @@
     <symbol id="clock" viewBox="0 0 32 32"><circle cx="16" cy="16" r="12"/><path d="M16 8v9l6 3"/></symbol>
     <symbol id="pin" viewBox="0 0 32 32"><path d="M26 13c0 8-10 16-10 16S6 21 6 13a10 10 0 1 1 20 0Z"/><circle cx="16" cy="13" r="3"/></symbol>
     <symbol id="play" viewBox="0 0 32 32"><path d="m10 6 16 10-16 10Z"/></symbol>
+    <symbol id="minus" viewBox="0 0 32 32"><path d="M6 16h20"/></symbol>
+    <symbol id="arrow-right" viewBox="0 0 32 32"><path d="M5 16h22M18 7l9 9-9 9"/></symbol>
+    <symbol id="power" viewBox="0 0 32 32"><path d="M16 3v12M9 7a12 12 0 1 0 14 0"/></symbol>
+    <symbol id="calendar" viewBox="0 0 32 32"><rect x="4" y="7" width="24" height="22" rx="4"/><path d="M10 3v8M22 3v8M4 15h24M10 21h3m6 0h3"/></symbol>
+    <symbol id="user" viewBox="0 0 32 32"><circle cx="16" cy="10" r="6"/><path d="M5 29v-3a11 11 0 0 1 22 0v3"/></symbol>
+    <symbol id="broom" viewBox="0 0 32 32"><path d="m23 3-9 13M11 14l8 5-4 10-13-9ZM5 21l5-4m-1 7 5-5m-1 8 5-5"/></symbol>
+    <symbol id="tire" viewBox="0 0 32 32"><ellipse cx="16" cy="16" rx="10" ry="13"/><ellipse cx="16" cy="16" rx="5" ry="9"/><path d="m7 8 4 2m-5 6h5m-4 8 4-2m14-14-4 2m5 6h-5m4 8-4-2"/></symbol>
+    <symbol id="air" viewBox="0 0 32 32"><path d="M3 10h18c7 0 7-8 1-7M3 16h23c6 0 6 9 0 9M3 22h12c7 0 7 8 1 7"/></symbol>
+    <symbol id="ride" viewBox="0 0 32 32"><path d="m4 13 4-7h16l4 7v13h-4v-4H8v4H4ZM4 13h24M8 18h3m10 0h3"/><path d="M16 2v5"/></symbol>
   </defs></svg>
   <main class="board">
     <header class="editorial">
-      <div class="eyebrow">LYNK 05 / VISUAL STUDY 03</div>
-      <div class="intro-row"><div><h1>你的配色，你的桌面。</h1><p>毛玻璃卡片 · 五组主题色 · 自由编排</p></div><span class="stage">设计交互演示 / 示例数据</span></div>
+      <div class="eyebrow">LYNK 05 / VISUAL STUDY 04</div>
+      <div class="intro-row"><div><h1>你的配色，你的桌面。</h1><p>毛玻璃卡片 · 五组主题色 · 原厂卡片完整覆盖</p></div><span class="stage">设计交互演示 / 示例数据</span></div>
       <div class="review-actions"><a href="?view=single">体验桌面</a><a href="?view=settings">外观设置</a><a href="?view=edit">卡片编辑</a></div>
     </header>
     <section class="decisions" aria-label="本轮已采用的设计调整">
       <div><span>01 / 外观</span><strong>五组主题，自选颜色</strong><p>深浅模式独立选择，主题色实时预览</p></div>
-      <div><span>02 / 卡片</span><strong>添加、移动、缩放</strong><p>天气替换常用卡片，布局由你编排</p></div>
-      <div><span>03 / 底栏</span><strong>96 px · 纯图标入口</strong><p>保留音乐信息，最右侧齿轮进入桌面设置</p></div>
+      <div><span>02 / 卡片</span><strong>添加、移动、缩放</strong><p>七类默认原厂卡片，另含车型可选卡片</p></div>
+      <div><span>03 / 底栏</span><strong>96 px · 纯图标入口</strong><p>保留音乐信息，长按首页进入桌面设置</p></div>
     </section>
     <section class="proposal">
       <div class="section-title"><div><span class="eyebrow">01 / HOME</span><h2>导航、音乐，还有沿途天气。</h2></div><p>无侧边栏 · 纯图标底栏 · 天气卡片<br>统一底栏为概念，原车栏可调整性待实车确认</p></div>
       <div class="screens" id="screens"></div>
     </section>
     <section class="settings-section">
-      <div class="section-title"><div><span class="eyebrow">03 / PERSONALIZE</span><h2>外观与布局，都在桌面设置。</h2></div><p>底栏齿轮进入 · 顶部标签切换<br>下方预览可打开，体验配色与卡片编辑</p></div>
+      <div class="section-title"><div><span class="eyebrow">03 / PERSONALIZE</span><h2>外观与布局，都在桌面设置。</h2></div><p>长按首页进入 · 顶部标签切换<br>下方预览可打开，体验配色与卡片编辑</p></div>
       <div id="settings-studies" class="screens"></div>
     </section>
     <section class="editing-section">
@@ -68,17 +78,21 @@
       <div id="edit-study"></div>
     </section>
     <section class="dock-section">
-      <div class="section-title"><div><span class="eyebrow">02 / MUSIC DOCK</span><h2>一条底栏，应用与音乐随手可达。</h2></div><p>封面 / 歌名 / 上一首 / 播放暂停 / 下一首<br>点音乐区域展开，点温度进入完整空调层</p></div>
+      <div class="section-title"><div><span class="eyebrow">02 / MUSIC DOCK</span><h2>一条底栏，应用与音乐随手可达。</h2></div><p>按操作顺序组织，保持纯图标入口<br>首页 / 全部 / 空调 / 播放控制 / 音乐信息 / 车辆 / 影像</p></div>
       <div class="dock-studies" id="dock-studies"></div>
     </section>
+    <section class="oem-section">
+      <div class="section-title"><div><span class="eyebrow">05 / OEM CARDS</span><h2>原车信息，统一的新样式。</h2></div><p>七类 IP753 默认卡片 + 车型可选卡片<br>字段和数据需在原车提供者中进一步核对</p></div>
+      <div id="secondary-studies"></div><div id="oem-studies" class="screens"></div>
+    </section>
     <section class="component-section">
-      <div class="section-title"><div><span class="eyebrow">05 / COMPONENTS</span><h2>磨砂表面，清楚的操作层级。</h2></div><p>空调展开层的视觉方向<br>仅作界面设计，未连接车机</p></div>
+      <div class="section-title"><div><span class="eyebrow">06 / COMPONENTS</span><h2>磨砂表面，清楚的操作层级。</h2></div><p>空调展开层的视觉方向<br>仅作界面设计，未连接车机</p></div>
       <div id="climate-studies" class="climate-studies"></div>
       <div class="spec-grid"><div><strong>28 px</strong><span>默认卡片圆角</span></div><div><strong>24 px</strong><span>卡片间距</span></div><div><strong>96 px</strong><span>底栏设计高度</span></div><div><strong>5 + 自定</strong><span>主题配色</span></div></div>
       <p class="design-note">以上为 1920 × 1080 视觉画板标注，触控尺寸和窗口边界后续按车机实际密度校准。</p>
     </section>
     <section class="reference-section">
-      <div class="section-title"><div><span class="eyebrow">06 / REFERENCES</span><h2>参考的是秩序与层级。</h2></div><p>作者作品仅作风格研究<br>本提案的卡片、图标与地图示意为原创</p></div>
+      <div class="section-title"><div><span class="eyebrow">07 / REFERENCES</span><h2>参考的是秩序与层级。</h2></div><p>作者作品仅作风格研究<br>本提案的卡片、图标与地图示意为原创</p></div>
       <div class="references">
         <figure><img src="reference-images/piqo.img" alt="Piqo Studio 的深浅色车机概念参考"><figcaption><a href="https://dribbble.com/shots/18302473-Car-Dashboard-UI-Design" target="_blank" rel="noreferrer">Car Dashboard UI Design ↗</a><span>uixamjad / Piqo Studio · 深浅主题与内容分组</span></figcaption></figure>
         <figure><img src="reference-images/marcato.img" alt="Marcato Studio 的深色模块卡片参考"><figcaption><a href="https://dribbble.com/shots/24695936-Car-Infotainment-Systems" target="_blank" rel="noreferrer">Car Infotainment Systems ↗</a><span>Dannniel / Marcato Studio · 模块化卡片与少量强调</span></figcaption></figure>
@@ -86,9 +100,10 @@
         <figure><img src="reference-images/polestar.img" alt="Andrey Shchapov 的 Polestar HMI 概念参考"><figcaption><a href="https://www.andrey-design.com/work2/work2.html" target="_blank" rel="noreferrer">Automotive HMI Redesign ↗</a><span>Andrey Shchapov · 简约图标与边缘常用入口</span></figcaption></figure>
       </div>
     </section>
-    <footer class="board-footer">LYNK 05 · 自定义桌面提案 V03 · 2026.10.24 <span>样式评审阶段 · 未接入车辆</span></footer>
+    <footer class="board-footer">LYNK 05 · 自定义桌面提案 V04 · 2026.10.24 <span>样式评审阶段 · 未接入车辆</span></footer>
   </main>
   <div id="single-screen"></div>
+  <script src="oem-cards.js"></script>
   <script src="customize.js"></script>
   <script src="study.js"></script>
 </body>

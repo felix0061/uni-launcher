@@ -12,7 +12,7 @@ flowchart TD
   Store --> Media[媒体适配器]
   Store --> Vehicle[ECARX 车辆适配器]
   Store --> System[系统与应用适配器]
-  Widget --> OEM[导航 / 媒体 / 天气 / 胎压 Provider]
+  Widget --> OEM[媒体 / 导航 / 天气 / 日历 / 账号 / 清理 / 胎压 / 可选 AQI]
   Navi --> Broadcast[高德广播摘要]
   Navi --> Embed[可选 ActivityView 宿主]
   Media --> Session[MediaSession / 已验证音源协议]
@@ -50,8 +50,10 @@ Command<T>
 | HOME / 应用列表 | MAIN+HOME、PackageManager、应用变化回调 | 保留原桌面/官方应用面板入口 | 默认桌面选择、系统返回行为 | P0 |
 | 原车底栏 | 按实际窗口 Insets 保留原车区域 | 普通应用窗口模式 | 窗口所有者、层级、触控边界 | P0 |
 | 官方 Widget | AppWidgetHost + 枚举 Provider + 合法绑定 | 直接打开提供者应用 | DCY11 列出的 Provider 是否安装、权限、尺寸 | P0 |
-| 音乐 | MediaSessionManager + MediaController.Callback | 官方媒体 Widget，再按音源加适配器 | 腾讯车载/蓝牙媒体是否公开会话、控制 actions | P1 |
-| 导航摘要 | 高德标准广播，逐字段适配 | 官方导航 Widget / 启动导航 | 当前高德版本、广播开关、字段/时间单位 | P1 |
+| 音乐 | 与官方媒体中心同源的已验证数据/操作 | 经过同值比对的 MediaSession / 官方媒体 Widget | 当前音源、字段、控制 actions 与官方卡片一致 | P1 |
+| 导航摘要 | 与原车导航服务同源的字段映射 | 高德广播经比对后适配 / 官方 Widget / 启动导航 | 路线、字段、单位、无效与停止导航状态 | P1 |
+| 日历 / 账号 / 清理 | 各官方 Provider 应用已验证接口 | 原厂 Widget 或打开原车应用 | 完整字段、权限、动作、错误/空值、账号上下文 | P1–P2 |
+| 天气 / 空气质量 | 官方天气 / HVAC AQI 来源 | 原厂 Widget 或原车应用 | 城市、字段、单位、更新时间；AQI 按 PM2.5 能力启用 | P1–P2 |
 | 深浅主题 | Configuration.uiMode + 手动选择 | ECARX 亮暗信号经验证后补充 | 变化来源、枚举、Widget 自身配色 | P1 |
 | 空调 | ECarXCarClimateManager，读状态后允许写 | 打开原车空调面板 | 本车框架、授权、范围、命令回读与超时 | P2 |
 | 胎压 | ECarXCarVfmiscManager，只读 | 原厂胎压 Widget / 车辆应用 | 单位、有效值、四轮顺序、唤醒时机 | P2 |
@@ -61,13 +63,17 @@ Command<T>
 
 Android 9 对 OEM Widget 的样式控制有限，不能使用 Android 12 才引入的 `AppWidgetHostView.setColorResources`，也不能假定宿主能随意重绘第三方 RemoteViews。设计中的统一音乐/导航卡片由各自数据适配器驱动；兼容部件可保留原厂视觉。
 
+V04 用户要求统一新样式并保留官方信息。以 `analysis/official-widgets.json` 为覆盖清单，建立 `OfficialCardAdapter`：保留 Provider/版本、原始字段、单位/精度/枚举、空值/失效/过期语义、时间戳和点击动作，只改变布局和视觉 token。没有经过同值比对的第三方天气、系统内存读数、媒体通知或其他车型属性不能替代原车字段。
+
+当前缺 Provider APK 和实车观测，适配器仍为规划。后续验收逐卡记录：官方原图/布局 → 字段与状态清单 → 来源与权限 → 新 UI 同值快照 → 操作结果及回调。覆盖类型与数据一致性是分开的验收项，不能因样式已画齐就标记实时字段通过。
+
 ## 4. 各适配器的实现要点
 
 **WidgetHostAdapter**：固定自己的 hostId，持久化实例 ID、Provider、尺寸和用户；`bindAppWidgetIdIfAllowed` 不允许时走系统绑定授权；配对 `startListening/stopListening`，处理 Provider 升级/删除和宿主重建。官方定向 `MediaUpdate` 只是候选兼容操作，需核对接收方清单再调用。宿主不写官方 Launcher 数据库。
 
 **NavigationAdapter**：严格区分 SEND 接收与 RECV 控制；字段类型、米/秒单位、枚举、缺失值逐项验证。当前道路、导航转向和导航速度分别有来源标记，不将导航广播的 `CUR_SPEED` 当作已核实的车辆 CAN 车速。外来广播校验范围、最大文本/JSON 长度，防止异常内容阻塞首页。先展示和打开导航，再实现目的地动作；原型中“回家/公司”只是本地示例场景。
 
-**MediaAdapter**：只维护有限的有效媒体会话，监听 metadata、playbackState、sessionDestroyed 和 activeSession 变化；依据 actions 开启对应按钮。导航播报、通话焦点由原车音频体系处理。会话不可用时再探测官方媒体 Widget 和已确认的腾讯车载协议。通知监听权限通过用户/系统授权获得，不把清单声明当作已授权。
+**MediaAdapter**：与原车媒体中心的音源选择、metadata、playbackState 和 actions 保持一致；若标准会话经实测同值，可作为数据通道。导航播报、通话焦点由原车音频体系处理，不能把收到的任意活动会话当作原车当前音源。通知监听权限通过用户/系统授权获得，不把清单声明当作已授权。
 
 **VehicleAdapter**：连接 `ecarxcar_service`，按车型找到具体管理器；首次只读枚举支持项、初始状态和回调。保存每个 capability 的范围和编码，包括样本中温度 x2；命令按同一目标串行、限频，并以回调确认。服务断开时取消待确认命令、置灰控制，重连后重新读状态，不重放过期车控。胎压仅在单位/有效值确认后转换。
 
@@ -79,7 +85,7 @@ Android 9 对 OEM Widget 的样式控制有限，不能使用 Android 12 才引�
 
 | 阶段 | 产出 | 完成条件 |
 | --- | --- | --- |
-| M0：本次交付 | 两包静态证据、第三方参考、V03 设置/主题/天气/卡片编排浏览器演示、深浅稿与 Git；保留历史 | 视觉交互可评审；示例与真实接入区分；Android 功能留待后续 |
+| M0：本次交付 | V04 七类默认 / 九类总览、14 组件映射、指定顺序底栏、长按设置、自由卡片与全部面板、Git | 设计交互与导出完成；验证结果入库；字段一致性明确待确认 |
 | M1：车机基线 | 只读探测工具输出：包/权限/Widget/窗口/服务/框架方法 | 确认本车 Launcher 版本和底栏归属；清单中每项标实际可用性 |
 | M2：原生 MVP | HOME、应用抽屉、深浅主题、媒体/导航摘要、兼容 Widget | 车机重启/休眠恢复可回桌面；实际音乐和引导可更新；底栏可操作 |
 | M3：座舱整合 | 空调、胎压、数据状态与恢复 | 先完成只读对比，再逐项验证正常可逆的空调操作及回读 |

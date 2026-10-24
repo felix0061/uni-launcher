@@ -1,4 +1,4 @@
-// V03 browser-only design interactions. Vehicle integrations remain planned.
+// V04 browser design prototype. Official provider content is not connected.
 const designQuery = new URLSearchParams(location.search);
 const exportMode = designQuery.get('export') === '1';
 const palettePresets = [
@@ -11,31 +11,38 @@ const palettePresets = [
 const defaultCards = () => [
   {id:'nav-1',type:'nav',title:'导航',x:0,y:0,w:8,h:6,page:0},
   {id:'music-1',type:'music',title:'正在播放',x:8,y:0,w:4,h:4,page:0},
-  {id:'weather-1',type:'weather',title:'杭州',city:'杭州',forecast:true,x:8,y:4,w:4,h:2,page:0}
+  {id:'weather-1',type:'weather',title:'杭州',city:'杭州',forecast:false,x:8,y:4,w:4,h:2,page:0},
+  {id:'member-1',type:'member',title:'账号',x:0,y:0,w:4,h:6,page:1},
+  {id:'cleanup-1',type:'cleanup',title:'系统清理',x:4,y:0,w:4,h:3,page:1},
+  {id:'calendar-1',type:'calendar',title:'日历',x:4,y:3,w:4,h:3,page:1},
+  {id:'tpms-1',type:'tpms',title:'胎压',x:8,y:0,w:4,h:6,page:1}
 ];
 const cardCatalog = {
-  nav:{name:'导航',icon:'nav',description:'地图、转向与到达信息',w:8,h:6,minW:6,minH:3},
-  music:{name:'音乐',icon:'music',description:'封面、歌曲与播放进度',w:4,h:4,minW:3,minH:2},
-  weather:{name:'天气',icon:'cloud',description:'当地天气与短时预报',w:4,h:2,minW:3,minH:2},
+  nav:{name:'导航',icon:'nav',description:'原车导航与引导信息',source:'原车导航服务',oem:true,w:8,h:6,minW:6,minH:3},
+  music:{name:'音乐',icon:'music',description:'原车媒体与播放信息',source:'原车媒体中心',oem:true,w:4,h:4,minW:3,minH:2},
+  weather:{name:'天气',icon:'cloud',description:'原车城市与天气信息',source:'原车天气',oem:true,w:4,h:2,minW:3,minH:2},
+  ...oemCardDefinitions,
   clock:{name:'时钟',icon:'clock',description:'时间、日期与星期',w:4,h:2,minW:3,minH:2},
   shortcuts:{name:'快捷应用',icon:'apps',description:'你常用的四个应用',w:4,h:2,minW:3,minH:2},
-  vehicle:{name:'车辆信息',icon:'car',description:'已接入的车辆状态',w:4,h:2,minW:3,minH:2}
+  vehicle:{name:'车辆信息',icon:'car',description:'车辆信息兼容卡片',source:'原车车辆信息',w:4,h:3,minW:3,minH:2}
 };
 const preferences = {palette:'mint',custom:'#38A4A0',mode:'system',radius:28};
 let cards = defaultCards();
+let pageCount=2;
 if (!exportMode) {
   try {
-    const cached=JSON.parse(localStorage.getItem('lynk-design-v03')||'null');
-    if(cached && cached.version===3) {
+    const cached=JSON.parse(localStorage.getItem('lynk-design-v04')||localStorage.getItem('lynk-design-v03')||'null');
+    if(cached && [3,4].includes(cached.version)) {
       if([...palettePresets.map(p=>p.id),'custom'].includes(cached.preferences?.palette)) Object.assign(preferences,cached.preferences);
       if(Array.isArray(cached.cards) && cached.cards.every(c=>cardCatalog[c.type] && ['x','y','w','h','page'].every(k=>Number.isInteger(c[k])) && c.x>=0 && c.y>=0 && c.w>=cardCatalog[c.type].minW && c.h>=cardCatalog[c.type].minH && c.x+c.w<=12 && c.y+c.h<=6 && c.page>=0)) cards=cached.cards;
+      pageCount=Math.max(1,...cards.map(c=>c.page+1),Number.isInteger(cached.pageCount)?cached.pageCount:1);
     }
   } catch (_) {}
 }
-const ui={view:'home',page:0,editing:false,modal:null,selected:null,tab:'appearance',snapshot:null,undo:null,toast:'',playing:true};
+const ui={view:'home',page:0,editing:false,modal:null,selected:null,tab:'appearance',snapshot:null,undo:null,toast:'',playing:true,trackIndex:0,climate:{left:22.5,right:22.5,fan:3,power:true,auto:true,ac:true,sync:false,recirc:false}};
 preferences.radius=Number.isFinite(+preferences.radius)?Math.max(0,Math.min(40,Math.round(+preferences.radius))):28;
 function safe(value) {return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function persistDesign() {if(!exportMode)try{localStorage.setItem('lynk-design-v03',JSON.stringify({version:3,preferences,cards}));}catch(_){}}
+function persistDesign() {if(!exportMode)try{localStorage.setItem('lynk-design-v04',JSON.stringify({version:4,preferences,cards,pageCount}));}catch(_){}}
 function rgb(hex) {return (hex.match(/[a-f0-9]{2}/ig)||['38','A4','A0']).slice(0,3).map(n=>parseInt(n,16));}
 function mix(hex,target,amount) {return '#'+rgb(hex).map((v,i)=>Math.round(v*(1-amount)+target[i]*amount).toString(16).padStart(2,'0')).join('');}
 function themeStyle(theme) {
@@ -57,17 +64,18 @@ function statusBar() {
   return `<div class="oem-status"><div class="status-left"><b>09:41</b><span>LYNK & CO / 05</span></div><div class="status-right"><span class="status-weather">${icon('cloud')}24° 多云</span>${icon('bluetooth')}<span class="signal"><i></i><i></i><i></i><i></i></span><span>4G</span></div></div>`;
 }
 function cardBody(card) {
+  if(oemCardDefinitions[card.type]||card.type==='vehicle')return oemCardBody(card);
   switch(card.type) {
     case 'nav':return `${map}<div class="direction-box"><div class="turn-icon">${icon('turn')}</div><div class="direction-copy"><b>600 米后右转</b><p>进入城市大道</p></div></div><div class="compass">N</div><div class="map-tool"><span>＋</span><span>−</span></div><div class="destination"><div><small>前往 · 城市中心</small><div class="arrival"><b>10:08 到达</b><span>27 分钟 · 12.6 公里</span></div></div><div class="dest-arrow">${icon('nav')}</div></div>`;
-    case 'music':return `<div class="card-label"><span>${safe(card.title)}</span><span class="source"><i class="source-dot"></i>QQ 音乐</span></div><div class="listening"><div class="cover hero-cover">${art}</div><div class="song-copy"><h3>向海而行</h3><p>Coastline · 晨间驾驶歌单</p></div><div class="music-progress"><div class="track-line"></div><div class="music-times"><span>00:46</span><span>04:18</span></div></div><div class="listening-note"><span>播放队列 · 12 首</span>${icon('heart')}</div></div>`;
-    case 'weather':return `<div class="weather-heading"><span>${icon('pin')}${safe(card.city||card.title||'杭州')}</span><span>今日天气</span></div><div class="weather-current"><div><b>24<sup>°</sup></b><span>多云 <i>21° / 28°</i></span></div><div class="weather-art">${icon('sun')}${icon('cloud')}</div></div><div class="weather-foot"><span>空气优 · 东南风 2 级</span>${card.forecast===false?'':'<span>未来两小时无降雨</span>'}</div>`;
+    case 'music':{const m=mediaState();return `<div class="card-label"><span>${safe(card.title)}</span><span class="source"><i class="source-dot"></i>原车媒体</span></div><div class="listening"><div class="cover hero-cover">${art}</div><div class="song-copy"><h3>${m.title}</h3><p>${m.artist} · ${m.collection}</p></div><div class="music-progress"><div class="track-line"></div><div class="music-times"><span>00:46</span><span>04:18</span></div></div><div class="listening-note"><span>原车媒体中心 · 样式示例</span>${actionButton('music-info','arrow-right','打开音乐详情','media-detail-button')}</div></div>`;}
+    case 'weather':return `<div class="weather-heading"><span>${icon('pin')}${safe(card.city||card.title||'杭州')}</span><span>天气示例</span></div><div class="weather-current"><div><b>24<sup>°</sup></b><span>多云</span></div><div class="weather-art">${icon('sun')}${icon('cloud')}</div></div><div class="weather-foot"><span>原车天气</span><span>等待官方天气同步</span></div>`;
     case 'clock':return `<div class="card-label"><span>${safe(card.title)}</span>${icon('clock')}</div><div class="clock-time">09<span>:</span>41</div><div class="clock-date">10 月 24 日 · 星期六</div>`;
     case 'shortcuts':return `<div class="card-label"><span>${safe(card.title)}</span>${icon('apps')}</div><div class="quick-items">${[['nav','导航'],['phone','电话'],['music','音乐'],['settings','系统设置']].map(([i,t])=>`<div class="quick-item"><span class="quick-icon">${icon(i)}</span><span>${t}</span></div>`).join('')}</div>`;
-    case 'vehicle':return `<div class="card-label"><span>${safe(card.title)}</span>${icon('car')}</div><div class="vehicle-values"><span><b>—</b>电量</span><span><b>—</b>续航</span><span><b>—</b>胎压</span></div><div class="clock-date">车辆数据接入后显示</div>`;
+
   }
 }
 function widget(card,editing) {
-  return `<article class="widget-card ${card.type}-card ${card.h<=3?'compact':''} ${editing?'editable-card':''}" data-card="${safe(card.id)}" data-type="${card.type}" style="grid-column:${card.x+1}/span ${card.w};grid-row:${card.y+1}/span ${card.h}" aria-label="${safe(cardCatalog[card.type].name)}卡片">
+  return `<article class="widget-card ${card.type}-card ${card.h<=3?'compact':''} ${editing?'editable-card':''}" data-card="${safe(card.id)}" data-type="${card.type}" data-oem="${!!cardCatalog[card.type].oem}" style="grid-column:${card.x+1}/span ${card.w};grid-row:${card.y+1}/span ${card.h}" aria-label="${safe(cardCatalog[card.type].name)}卡片">
     <div class="widget-content">${cardBody(card)}</div>
     ${editing?`<div class="card-edit-tools"><button class="card-move" aria-label="移动${safe(cardCatalog[card.type].name)}卡片">${icon('move')}<span>${safe(cardCatalog[card.type].name)}</span></button><span class="size-badge">${card.w} × ${card.h}</span>${actionButton('edit-card','edit','编辑卡片','tiny-button',`data-id="${safe(card.id)}"`)}${actionButton('delete-card','trash','删除卡片','tiny-button',`data-id="${safe(card.id)}"`)}</div><button class="resize-handle" aria-label="调整${safe(cardCatalog[card.type].name)}卡片大小">${icon('resize')}</button>`:''}
   </article>`;
@@ -87,23 +95,26 @@ function appearanceSettings(theme) {
   </div><aside class="settings-preview"><div class="setting-heading"><h3>实时预览</h3><span>${theme==='light'?'浅色':'深色'} · ${safe(palettePresets.find(p=>p.id===preferences.palette)?.name||'自定义')}</span></div><div class="mini-screen-wrap">${screen(theme,{static:true})}</div><div class="preview-hint"><span class="preview-color" style="background:var(--accent)"></span><p>路线、播放按钮与选中状态<br>使用同一组主题色</p></div><button class="outline-button" data-action="home">${icon('home')}返回桌面查看</button></aside>`;
 }
 function layoutSettings() {
-  return `<div class="layout-settings settings-block"><div class="layout-copy"><span class="section-kicker">YOUR SPACE</span><h3>桌面，由你编排。</h3><p>长按卡片或桌面空白，进入编辑模式。<br>调整位置和大小，按你的习惯组合信息。</p><button class="solid-button" data-action="start-edit">${icon('edit')}编辑桌面布局</button><button class="text-button" data-action="reset-layout">恢复默认布局</button></div><div class="layout-instructions">${[['plus','添加卡片','从卡片库选择，空间不足时放入新页'],['move','移动与缩放','拖动位置，角点按网格吸附'],['edit','编辑内容','选择数据来源、城市与展示信息'],['trash','移除卡片','移除后可撤销，底栏入口始终保留']].map(([s,t,p])=>`<div>${icon(s)}<span><b>${t}</b><small>${p}</small></span></div>`).join('')}</div></div>`;
+  return `<div class="layout-settings settings-block"><div class="layout-copy"><span class="section-kicker">YOUR SPACE</span><h3>桌面，由你编排。</h3><p>长按卡片，进入编辑模式。<br>调整位置和大小，按你的习惯组合信息。</p><button class="solid-button" data-action="start-edit">${icon('edit')}编辑桌面布局</button><button class="text-button" data-action="reset-layout">恢复默认布局</button></div><div class="layout-instructions">${[['plus','添加卡片','从卡片库选择，空间不足时放入新页'],['move','移动与缩放','拖动位置，角点按网格吸附'],['edit','编辑内容','调整卡片名称、尺寸与展示密度'],['trash','移除卡片','移除后可撤销，底栏入口始终保留']].map(([s,t,p])=>`<div>${icon(s)}<span><b>${t}</b><small>${p}</small></span></div>`).join('')}</div></div>`;
 }
 function sourceSettings() {
-  return `<div class="source-settings">${[['nav','导航','地图、路线与转向信息','高德地图车机版'],['music','音乐','跟随当前正在播放的音源','当前播放音源'],['cloud','天气','当前位置或指定城市','杭州 · 指定城市'],['fan','座舱','温度、风量与原车功能入口','原车空调']].map(([s,t,d,v])=>`<div class="settings-block source-row">${icon(s)}<div><h3>${t}</h3><p>${d}</p></div><span>${v}</span><small>待接入</small></div>`).join('')}<p class="source-note">本页展示接入规划；设计演示不读取定位、媒体或车辆数据。</p></div>`;
+  const types=officialCardTypes.filter(t=>t!=='ride');
+  return `<div class="source-settings">${types.map(type=>{const c=cardCatalog[type];return `<div class="settings-block source-row">${icon(c.icon)}<div><h3>${c.name}</h3><p>${c.conditional?'按车型能力启用':'保持官方信息来源'}</p></div><span>${c.source}</span><small>待连接</small></div>`;}).join('')}<p class="source-note">样式演示使用占位数据；实际显示内容以原车应用提供的信息为准。</p></div>`;
 }
 function settingsScreen(theme) {
-  return `<div class="screen glass ${theme} settings-screen" style="${themeStyle(theme)}">${statusBar()}<div class="settings-content"><header class="settings-heading">${actionButton('home','arrow-left','返回桌面','back-button')}<div><h1>桌面设置</h1><p>外观、配色与卡片布局</p></div><span class="autosave-label">${icon('check')}更改自动保存</span></header><nav class="settings-tabs">${[['appearance','外观主题'],['layout','卡片布局'],['sources','功能接入']].map(([id,t])=>`<button data-action="settings-tab" data-tab="${id}" class="${ui.tab===id?'active':''}">${t}</button>`).join('')}</nav><div class="settings-body ${ui.tab==='appearance'?'appearance-body':''}">${ui.tab==='appearance'?appearanceSettings(theme):ui.tab==='layout'?layoutSettings():sourceSettings()}</div></div>${dock()}</div>`;
+  return `<div class="screen glass ${theme} settings-screen" style="${themeStyle(theme)}">${statusBar()}<div class="settings-content"><header class="settings-heading">${actionButton('home','arrow-left','返回桌面','back-button')}<div><h1>桌面设置</h1><p>外观、配色与卡片布局</p></div><span class="autosave-label">${icon('check')}更改自动保存</span></header><nav class="settings-tabs">${[['appearance','外观主题'],['layout','卡片布局'],['sources','功能接入']].map(([id,t])=>`<button data-action="settings-tab" data-tab="${id}" class="${ui.tab===id?'active':''}">${t}</button>`).join('')}</nav><div class="settings-body ${ui.tab==='appearance'?'appearance-body':''}">${ui.tab==='appearance'?appearanceSettings(theme):ui.tab==='layout'?layoutSettings():sourceSettings()}</div></div>${dock()}${modalMarkup(theme)}</div>`;
 }
 function modalMarkup(theme) {
   if(!ui.modal)return '';
-  if(ui.modal==='apps')return `<div class="modal-backdrop"><section class="modal-glass apps-sheet"><header><div><h2>全部应用</h2><p>应用抽屉样式示意</p></div>${actionButton('close-modal','close','关闭全部应用','close-button')}</header><div class="app-drawer">${[['nav','导航','demo-app'],['music','音乐','demo-app'],['phone','电话','demo-app'],['car','车辆','vehicle'],['fan','空调','climate'],['camera','全景','camera'],['settings','桌面设置','open-settings'],['edit','编辑桌面','start-edit']].map(([i,t,a])=>`<button data-action="${a}"><span>${icon(i)}</span><b>${t}</b></button>`).join('')}</div></section></div>`;
-  if(ui.modal==='library')return `<div class="modal-backdrop"><section class="modal-glass library-sheet"><header><div><h2>添加卡片</h2><p>按你的习惯，组合桌面信息</p></div>${actionButton('close-modal','close','关闭卡片库','close-button')}</header><div class="card-library">${Object.entries(cardCatalog).map(([type,c])=>`<button class="library-item" data-action="add-card" data-type="${type}"><div class="library-preview ${type}"><span>${icon(c.icon)}</span><i></i><i></i></div><div class="library-copy"><strong>${c.name}</strong><small>${c.description}</small><span>${icon('plus')}</span></div></button>`).join('')}</div><footer>可重复添加 · 空间不足时自动添加到新桌面页</footer></section></div>`;
-  const c=ui.draft||cards.find(c=>c.id===ui.selected);
-  if(!c)return '';
+  const experience=experienceSheet();if(experience)return experience;
+  if(ui.modal==='apps')return `<div class="modal-backdrop"><section class="modal-glass apps-sheet"><header><div><h2>全部应用</h2><p>原车应用入口 · 样式示例</p></div>${actionButton('close-modal','close','关闭全部应用','close-button')}</header><div class="app-drawer">${[['nav','导航','demo-app'],['music','音乐','music-info'],['phone','电话','demo-app'],['car','车辆','vehicle'],['fan','空调','climate'],['camera','全景','camera'],['settings','原车设置','demo-app'],['edit','编辑桌面','start-edit']].map(([i,t,a])=>`<button data-action="${a}"><span>${icon(i)}</span><b>${t}</b></button>`).join('')}</div></section></div>`;
+  if(ui.modal==='library')return collectionSheet();
+  const c=ui.draft||cards.find(c=>c.id===ui.selected);if(!c)return '';
   const catalog=cardCatalog[c.type];
-  return `<div class="modal-backdrop"><section class="modal-glass card-config"><header><div><h2>编辑${catalog.name}卡片</h2><p>设置内容与合适的展示尺寸</p></div>${actionButton('close-modal','close','关闭卡片设置','close-button')}</header><label class="field-label">${c.type==='weather'?'天气城市':'卡片名称'}<input name="card-title" value="${safe(c.type==='weather'?(c.city||'杭州'):c.title)}" maxlength="20"></label><div class="field-label">卡片尺寸<div class="size-picker">${[c.type==='weather'?[4,2]:[catalog.minW,catalog.minH],[Math.max(4,catalog.minW),Math.max(4,catalog.minH)],[Math.max(8,catalog.minW),6]].map(([w,h])=>`<button data-action="choose-size" data-w="${w}" data-h="${h}" class="${c.w===w&&c.h===h?'selected':''}"><span class="size-icon" style="aspect-ratio:${w}/${h}"></span><b>${w} × ${h}</b></button>`).join('')}</div></div>${c.type==='weather'?`<label class="checkbox-row"><span>显示短时天气提示</span><input name="weather-forecast" type="checkbox" ${c.forecast!==false?'checked':''}></label>`:`<div class="config-source"><span>数据来源</span><b>${({nav:'高德地图车机版',music:'当前播放音源',clock:'系统时间',shortcuts:'所选应用',vehicle:'车辆服务'})[c.type]}</b></div>`}<div class="modal-actions"><button class="text-button" data-action="close-modal">取消</button><button class="solid-button" data-action="save-card">保存卡片</button></div></section></div>`;
+  const sizes=[c.type==='weather'?[4,2]:[catalog.minW,catalog.minH],[Math.max(4,catalog.minW),Math.max(4,catalog.minH)],[Math.max(8,catalog.minW),6]];
+  return `<div class="modal-backdrop"><section class="modal-glass card-config"><header><div><h2>编辑${catalog.name}卡片</h2><p>调整展示，保持官方信息来源</p></div>${actionButton('close-modal','close','关闭卡片设置','close-button')}</header><label class="field-label">${c.type==='weather'?'预览城市（示例）':'卡片名称'}<input name="card-title" value="${safe(c.type==='weather'?(c.city||'杭州'):c.title)}" maxlength="20"></label><div class="field-label">卡片尺寸<div class="size-picker">${sizes.map(([w,h])=>`<button data-action="choose-size" data-w="${w}" data-h="${h}" class="${c.w===w&&c.h===h?'selected':''}"><span class="size-icon" style="aspect-ratio:${w}/${h}"></span><b>${w} × ${h}</b></button>`).join('')}</div></div><div class="config-source"><span>信息来源</span><b>${catalog.source||({clock:'系统时间',shortcuts:'所选原车应用'})[c.type]||'原车应用'}</b></div><div class="modal-actions"><button class="text-button" data-action="close-modal">取消</button><button class="solid-button" data-action="save-card">保存卡片</button></div></section></div>`;
 }
+
 function showToast(message,undo=null) {
   ui.toast=message;ui.undo=undo;
   const root=document.getElementById('single-screen');
@@ -120,7 +131,7 @@ function updateRadius(value) {
   persistDesign();
 }
 function renderStandalone() {
-  document.body.classList.remove('dock-only','pair','component');
+  document.body.classList.remove('dock-only','pair','component','cards-only');
   document.body.classList.add('single');
   document.getElementById('single-screen').innerHTML=ui.view==='settings'?settingsScreen(activeTheme()):screen(activeTheme());
   resize();
@@ -131,7 +142,7 @@ function findPlace(w,h,page,ignore) {
   for(let y=0;y<=6-h;y++)for(let x=0;x<=12-w;x++)if(canPlace({x,y,w,h,page},ignore))return{x,y,w,h,page};
   return null;
 }
-function beginEditing() {ui.snapshot=JSON.stringify(cards);ui.view='home';ui.editing=true;ui.modal=null;renderStandalone();}
+function beginEditing() {ui.snapshot=layoutSnapshot();ui.view='home';ui.editing=true;ui.modal=null;renderStandalone();}
 function handleDesignAction(button) {
   const a=button.dataset.action;
   if(a==='home'){if(ui.editing){showToast('请先完成或取消本次布局编辑');return;}ui.view='home';ui.modal=null;renderStandalone();}
@@ -142,26 +153,26 @@ function handleDesignAction(button) {
   if(a==='use-custom'){preferences.palette='custom';persistDesign();renderStandalone();}
   if(a==='start-edit')beginEditing();
   if(a==='finish-edit'){ui.editing=false;ui.modal=null;persistDesign();renderStandalone();showToast('桌面布局已保存');}
-  if(a==='cancel-edit'){if(ui.snapshot)cards=JSON.parse(ui.snapshot);ui.editing=false;ui.modal=null;ui.page=Math.min(ui.page,Math.max(0,...cards.map(c=>c.page)));renderStandalone();}
+  if(a==='cancel-edit'){restoreSnapshot(ui.snapshot);ui.editing=false;ui.modal=null;renderStandalone();}
   if(a==='open-library'){if(!ui.editing)beginEditing();ui.modal='library';renderStandalone();}
   if(a==='close-modal'){ui.modal=null;renderStandalone();}
   if(a==='add-card'){
     const type=button.dataset.type,c=cardCatalog[type];if(!c)return;
     let place=findPlace(c.w,c.h,ui.page),newPage=false;
-    if(!place){ui.page=Math.max(0,...cards.map(c=>c.page),ui.page)+1;place=findPlace(c.w,c.h,ui.page);newPage=true;}
+    if(!place){ui.page=pageCount++;place=findPlace(c.w,c.h,ui.page);newPage=true;}
     cards.push({id:'card-'+Date.now()+'-'+Math.random().toString(36).slice(2,6),type,title:c.name,city:type==='weather'?'杭州':undefined,forecast:true,...place});
     ui.modal=null;renderStandalone();showToast(newPage?'已添加到新的桌面页':'卡片已添加，可拖动调整位置');
   }
   if(a==='edit-card'){ui.selected=button.dataset.id;ui.draft={...cards.find(c=>c.id===ui.selected)};ui.modal='card';renderStandalone();}
   if(a==='delete-card'){
-    const backup=JSON.stringify(cards);cards=cards.filter(c=>c.id!==button.dataset.id);renderStandalone();showToast('卡片已移除',backup);
+    const backup=layoutSnapshot();cards=cards.filter(c=>c.id!==button.dataset.id);renderStandalone();showToast('卡片已移除',backup);
   }
-  if(a==='undo-delete'){if(ui.undo)cards=JSON.parse(ui.undo);ui.undo=null;ui.toast='';renderStandalone();}
+  if(a==='undo-delete'){restoreSnapshot(ui.undo);ui.undo=null;ui.toast='';renderStandalone();}
   if(a==='choose-size'){
     const card=ui.draft;if(!card)return;
     const input=document.querySelector('#single-screen [name="card-title"]');
     if(input){if(card.type==='weather')card.city=input.value;else card.title=input.value;}
-    if(card.type==='weather')card.forecast=document.querySelector('#single-screen [name="weather-forecast"]').checked;
+    if(card.type==='weather'&&document.querySelector('#single-screen [name="weather-forecast"]'))card.forecast=document.querySelector('#single-screen [name="weather-forecast"]').checked;
     const w=+button.dataset.w,h=+button.dataset.h;
     const candidate={...card,w,h};
     const place=card.x+w<=12&&card.y+h<=6&&canPlace(candidate,card.id)?candidate:findPlace(w,h,card.page,card.id);
@@ -173,32 +184,41 @@ function handleDesignAction(button) {
     Object.assign(card,ui.draft);
     const title=document.querySelector('#single-screen [name="card-title"]').value.trim();
     card.title=title||cardCatalog[card.type].name;
-    if(card.type==='weather'){card.city=title||'杭州';card.forecast=document.querySelector('#single-screen [name="weather-forecast"]').checked;}
+    if(card.type==='weather')card.city=title||'杭州';
     ui.modal=null;renderStandalone();
   }
   if(a==='switch-page'){ui.page=+button.dataset.page;renderStandalone();}
-  if(a==='new-page'){ui.page=Math.max(0,...cards.map(c=>c.page),ui.page)+1;renderStandalone();}
-  if(a==='reset-layout'){cards=defaultCards();ui.page=0;persistDesign();renderStandalone();showToast('已恢复默认卡片布局');}
+  if(a==='new-page'){ui.page=pageCount++;renderStandalone();}
+  if(a==='reset-layout'){cards=defaultCards();pageCount=2;ui.page=0;persistDesign();renderStandalone();showToast('已恢复默认卡片布局');}
   if(a==='toggle-play'){ui.playing=!ui.playing;renderStandalone();}
   if(a==='apps'){if(ui.editing){showToast('请先完成或取消本次布局编辑');return;}ui.modal='apps';renderStandalone();}
   if(a==='demo-app')showToast('设计演示：应用启动将在车机版本接入');
-  if(a==='vehicle'||a==='camera'||a==='climate')showToast('设计演示：此入口将在后续接入原车功能');
-  if(a==='previous'||a==='next')showToast('设计演示：音乐控制将在后续接入音源');
+  if(['vehicle','camera','climate','music-info'].includes(a)){ui.modal=a==='music-info'?'music':a;renderStandalone();}
+  if(a==='previous'||a==='next'){ui.trackIndex=(ui.trackIndex+1)%demoTracks.length;renderStandalone();}
+  if(a==='oem-open'){ui.selectedType=button.dataset.type;ui.modal='oem-open';renderStandalone();}
+  if(a==='temp-down'||a==='temp-up'){const zone=button.dataset.zone;ui.climate[zone]=Math.max(16,Math.min(30,ui.climate[zone]+(a==='temp-up'?.5:-.5)));if(ui.climate.sync)ui.climate[zone==='left'?'right':'left']=ui.climate[zone];renderStandalone();}
+  if(a==='fan-down'||a==='fan-up'){ui.climate.fan=Math.max(1,Math.min(7,ui.climate.fan+(a==='fan-up'?1:-1)));renderStandalone();}
+  if(a==='climate-power'){ui.climate.power=!ui.climate.power;renderStandalone();}
+  if(a==='climate-mode'){ui.climate[button.dataset.value]=!ui.climate[button.dataset.value];if(button.dataset.value==='sync'&&ui.climate.sync)ui.climate.right=ui.climate.left;renderStandalone();}
 }
 function initCustomization() {
   const view=designQuery.get('view');
-  if(['single','settings','edit','library','card-edit'].includes(view)){
+  if(['single','settings','edit','library','card-edit','secondary','climate','music','vehicle','camera'].includes(view)){
     ui.view=view==='settings'?'settings':'home';
-    if(['edit','library','card-edit'].includes(view)){ui.editing=true;ui.snapshot=JSON.stringify(cards);}
+    if(['edit','library','card-edit'].includes(view)){ui.editing=true;ui.snapshot=layoutSnapshot();}
     if(view==='library')ui.modal='library';
     if(view==='card-edit'){ui.modal='card';ui.selected=cards.find(c=>c.type==='weather')?.id;ui.draft={...cards.find(c=>c.id===ui.selected)};}
+    if(view==='secondary')ui.page=Math.min(1,pageCount-1);
+    if(['climate','music','vehicle','camera'].includes(view))ui.modal=view;
     renderStandalone();
   }
+  if(view==='cards'){document.body.classList.add('cards-only');document.getElementById('single-screen').innerHTML=oemGallery(activeTheme());}
+  initHomeHold();
   document.addEventListener('click',e=>{
     const button=e.target.closest('[data-action]');
     if(button){
       if(button.closest('.settings-screen'))ui.view='settings';
-      if(button.closest('.board .editing')&&!ui.editing){ui.editing=true;ui.snapshot=JSON.stringify(cards);}
+      if(button.closest('.board .editing')&&!ui.editing){ui.editing=true;ui.snapshot=layoutSnapshot();}
       handleDesignAction(button);
     }
   });
@@ -212,7 +232,7 @@ function initCustomization() {
   });
   document.addEventListener('input',e=>{if(e.target.matches('[data-setting="radius"]'))updateRadius(e.target.value);});
   let holdTimer=null,holdStart=null;
-  document.addEventListener('contextmenu',e=>{if(e.target.closest('#single-screen .desktop')&&!ui.editing){e.preventDefault();beginEditing();}});
+  document.addEventListener('contextmenu',e=>{if(e.target.closest('#single-screen .desktop')&&!ui.editing){e.preventDefault();if(e.target.closest('.widget-card'))beginEditing();else openDesktopSettings();}});
   document.addEventListener('pointerdown',e=>{
     const handle=e.target.closest('#single-screen .card-move, #single-screen .resize-handle');
     if(handle&&ui.editing){
@@ -239,10 +259,10 @@ function initCustomization() {
       return;
     }
     if(!ui.editing&&!e.target.closest('button,input')&&e.target.closest('#single-screen .desktop')){
-      holdStart={x:e.clientX,y:e.clientY};holdTimer=setTimeout(()=>{holdTimer=null;beginEditing();},600);
+      const onCard=!!e.target.closest('.widget-card');holdStart={x:e.clientX,y:e.clientY};holdTimer=setTimeout(()=>{holdTimer=null;if(onCard)beginEditing();else openDesktopSettings();},650);
     }
   });
   document.addEventListener('pointermove',e=>{if(holdTimer&&holdStart&&Math.hypot(e.clientX-holdStart.x,e.clientY-holdStart.y)>12){clearTimeout(holdTimer);holdTimer=null;}});
   ['pointerup','pointercancel'].forEach(type=>document.addEventListener(type,()=>{clearTimeout(holdTimer);holdTimer=null;}));
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(ui.modal){ui.modal=null;renderStandalone();}else if(ui.editing){if(ui.snapshot)cards=JSON.parse(ui.snapshot);ui.editing=false;ui.page=Math.min(ui.page,Math.max(0,...cards.map(c=>c.page)));renderStandalone();}else if(ui.view==='settings'){ui.view='home';renderStandalone();}}});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(ui.modal){ui.modal=null;renderStandalone();}else if(ui.editing){restoreSnapshot(ui.snapshot);ui.editing=false;ui.page=Math.min(ui.page,pageCount-1);renderStandalone();}else if(ui.view==='settings'){ui.view='home';renderStandalone();}}});
 }

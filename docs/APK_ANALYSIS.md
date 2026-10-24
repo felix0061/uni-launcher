@@ -37,6 +37,21 @@ DCY11 的 `res/xml/dcy11_widgetpage_default.xml` 指定了以下部件，均为�
 
 证据 O05。媒体更新还使用 `ecarx.launcher3.widget.MediaUpdate` 定向广播；常规更新为 `android.appwidget.action.APPWIDGET_UPDATE`，附 `appWidgetIds`。证据 O01。部件能展示和点击，不意味着宿主自动获得其内部歌曲、导航或车辆数据模型。
 
+V04 再次遍历全部 `*widgetpage*` XML，并检查 `LauncherModel` 构造器及 `hideHVACWidget`，共记录 **9 类、14 个 Provider 组件**，完整出处见 [official-widgets.json](../analysis/official-widgets.json)。除上表七类 DCY11 默认卡片外：
+
+| 类别 | 新发现 / 变体 | 适用范围 |
+| --- | --- | --- |
+| 媒体 | `MediaWidgetProviderSecond1x2` | 通用和 NL3B 配置 |
+| 账号 | `ecarx.membercenter.widget.GidWidget2` | 通用和 NL3B 配置 |
+| 天气 | `WeatherWidgetProvider1X2` | 通用和 NL3B 配置 |
+| 清理 | `CleanWidgetProviderBesom` | NL3B offline 配置 |
+| 出行服务 | `caocaokeji.vehicle.driver/.ui.widget.WindDriverWidget` | NL3B / AH / AL；不是 DCY11 默认项 |
+| 空气质量 | `com.ecarx.hvac/.widget.AQIWidgetProvider2x1`、`AQIWidgetProvider1x1` | 代码明确引用，`hideHVACWidget` 根据 `isHvacPM25` 过滤 |
+
+九类均已提供新视觉样式；七类 DCY11 默认卡片加入双页默认布局。空气质量按能力可选，出行服务仅作其他车型样式，不假定领克 05 可用。
+
+**字段证据边界**：当前没有这些外部 Provider APK 或实车卡片 RemoteViews。Launcher 的 XML 仅包含包、组件、页码和跨度，不包含日历事件、账号权益、清理统计等完整内部字段。V04 的“覆盖”指卡片类别、组件映射和视觉模板，不能写作实时字段一致性已验证。未确认数据用占位；后续按官方来源逐字段比对后才验收。
+
 官方应用网格配置为 DCY11 `6x2` 变体，列出高德车机、腾讯车载音源、蓝牙电话、账号、天气、主题、商店、设置、`com.ecarx.hmi`、车辆信息、DVR 等应用入口。摄像头变体分别配置 AVM/PAC；不得把其中一个摄像头类硬套到所有车辆。
 
 ## 3. 官方与系统、车辆的交换
@@ -99,7 +114,7 @@ DCY11 的 `res/xml/dcy11_widgetpage_default.xml` 指定了以下部件，均为�
 | 样本 | 资源/代码可观察的结构 | 值得继承的点 | 新桌面的取舍 |
 | --- | --- | --- | --- |
 | 官方 | 多页工作区、固定网格、Dock、Widget 编辑/缩放、昼夜图标 | 部件兼容、原车入口、车型配置、系统生命周期协作 | 首页集中导航与音乐；完整应用网格移到抽屉 |
-| 嘟嘟 | Dock、Prompt、MinimalismPaperView、可调分区、多个卡片/挂件；无界布局类；皮肤与深浅动画资源 | 统一音源适配、车控回调、可配置常用入口、应用嵌入 | 固定主布局，保留少量排序能力，配置移入设置 |
+| 嘟嘟 | Dock、Prompt、MinimalismPaperView、可调分区、多个卡片/挂件；无界布局类；皮肤与深浅动画资源 | 统一音源适配、车控回调、可配置常用入口、应用嵌入 | V04 采用自由卡片网格与独立设置，保留固定的底栏操作顺序 |
 
 证据来自解码 XML、类名和方法；没有把反汇编出来的 XML 当作真实运行截图。嘟嘟资源名称被混淆，某些尺寸由运行时代码设置，静态 XML 的占位值不能当作最终排版尺寸。未评价两者实际启动速度、内存、触控延迟和可靠性，这些需要同机测量。
 

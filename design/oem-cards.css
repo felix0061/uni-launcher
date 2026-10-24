@@ -1,0 +1,124 @@
+.screen .music-dock{grid-template-columns:142px 1px 480px 1px 194px minmax(0,1fr) 1px 64px 64px;gap:20px}
+.screen .dock-climate{gap:4px;justify-content:space-between}
+.dock-temp-zone{display:flex;align-items:center}
+.screen .dock-temp-step{height:64px;width:40px;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.dock-temp-step .icon{width:21px;height:21px}
+.screen .dock-zone{min-width:88px;width:88px}
+.screen .dock-climate>.dock-control{width:56px}
+.screen .dock-climate>.accent{color:var(--accent)}
+.screen .dock-climate.off{opacity:.55}
+.screen .dock-info{width:100%;text-align:left;gap:16px;min-width:0}
+.screen .dock-track-copy{max-width:100%;min-width:0}
+.screen .dock-transport{justify-content:center}
+.screen .dock-control[data-home-hold]{touch-action:none}
+.media-detail-button{width:28px;height:28px;color:var(--accent)!important}
+.media-detail-button .icon{width:25px;height:25px}
+.oem-card-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:32px;flex:none}
+.oem-card-heading>span{display:flex;align-items:center;gap:12px;font-size:25px;white-space:nowrap}
+.oem-card-heading .icon{width:27px;height:27px;color:var(--accent)}
+.oem-card-heading small{font-size:16px;color:var(--muted);white-space:nowrap}
+.calendar-card .widget-content,.member-card .widget-content,.cleanup-card .widget-content,.tpms-card .widget-content,.air-card .widget-content,.ride-card .widget-content{padding:28px 30px;display:flex;flex-direction:column}
+.calendar-date{display:flex;align-items:center;gap:26px;margin:18px 0}
+.calendar-date>b{font-size:94px;font-weight:300;color:var(--accent);line-height:1}
+.calendar-date>div>span{display:block;font-size:25px;margin-bottom:12px}
+.calendar-date small{display:block;font-size:20px;color:var(--muted)}
+.calendar-agenda{display:flex;align-items:center;gap:16px;border-top:1px solid var(--glass-edge);padding-top:20px;margin-top:auto}
+.calendar-agenda>i{display:block;width:4px;height:39px;border-radius:3px;background:var(--accent)}
+.calendar-agenda strong{display:block;font-size:22px;font-weight:400;margin-bottom:10px}
+.calendar-agenda span{display:block;font-size:18px;color:var(--muted)}
+.member-profile{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:0}
+.member-avatar{height:140px;width:140px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--glass-soft);border:1px solid var(--glass-edge);color:var(--accent)}
+.member-avatar .icon{height:70px;width:70px;stroke-width:1.2}
+.member-profile h3{font-size:34px;font-weight:400;margin:28px 0 14px}
+.member-profile p{font-size:22px;color:var(--muted);margin:0}
+.screen .oem-open{width:100%;height:56px;font-size:20px;flex:none}
+.oem-open .icon{width:22px;height:22px}
+.cleanup-summary{display:flex;align-items:center;gap:26px;flex:1;min-height:0;padding:12px 0}
+.cleanup-summary>span{width:92px;height:92px;display:flex;align-items:center;justify-content:center;border-radius:calc(var(--card-radius)*.8);background:var(--glass-soft);color:var(--accent)}
+.cleanup-summary .icon{width:49px;height:49px}
+.cleanup-summary b{font-size:68px;line-height:1;font-weight:300}
+.cleanup-summary p{font-size:20px;color:var(--muted);margin:14px 0 0}
+.tpms-visual{position:relative;flex:1;min-height:180px;max-height:440px;width:100%;margin:auto 0}
+.tpms-car{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:145px;height:280px;fill:var(--glass-soft);stroke:var(--muted);stroke-width:1.6}
+.tpms-car .tires{stroke:var(--accent);stroke-width:8;stroke-linecap:round}
+.tpms-value{position:absolute;text-align:center;width:90px}
+.tpms-value small{display:block;font-size:20px;color:var(--muted)}
+.tpms-value b{display:block;font-size:46px;font-weight:300;margin-top:12px}
+.front-left{top:16%;left:0}.front-right{top:16%;right:0}
+.rear-left{bottom:12%;left:0}.rear-right{bottom:12%;right:0}
+.oem-state-line{font-size:18px;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:10px;flex:none;min-height:26px;text-align:center}
+.oem-state-line i{width:6px;height:6px;border-radius:50%;background:var(--muted)}
+.air-summary{flex:1;display:flex;align-items:center;justify-content:center;gap:26px;min-height:0}
+.air-summary>.icon{color:var(--accent);height:65px;width:65px;stroke-width:1.2}
+.air-summary b{font-size:65px;font-weight:300}.air-summary span{font-size:21px;color:var(--muted)}
+.ride-summary{flex:1;display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap}
+.ride-summary>.icon{width:60px;height:60px;color:var(--accent)}
+.ride-summary h3{font-size:30px;font-weight:400;margin:0}
+.ride-summary p{width:100%;font-size:20px;color:var(--muted);margin:0;text-align:center}
+.compact .member-avatar{width:72px;height:72px}.compact .member-avatar .icon{width:38px;height:38px}
+.compact .member-profile h3{font-size:26px;margin:16px 0 10px}.compact .member-profile p{font-size:18px}
+.compact .tpms-car{height:170px;width:100px}.compact .tpms-visual{max-height:220px;min-height:160px}
+.compact .tpms-value b{font-size:32px;margin-top:5px}.compact .tpms-value small{font-size:17px}
+.compact .front-left,.compact .front-right{top:8%}.compact .rear-left,.compact .rear-right{bottom:8%}
+.editing .oem-card-heading{min-height:26px}.editing .oem-card-heading>span{font-size:21px}.editing .oem-card-heading small{font-size:15px}
+.editing .calendar-date>b{font-size:65px}.editing .calendar-date{margin:12px 0}.editing .calendar-agenda{padding-top:12px}
+.editing .calendar-agenda strong{font-size:19px;margin-bottom:6px}.editing .calendar-agenda span{font-size:16px}
+.editing .cleanup-summary>span{width:70px;height:70px}.editing .cleanup-summary b{font-size:46px}.editing .cleanup-summary p{font-size:18px}
+.editing .oem-open{height:45px;font-size:18px}.editing .compact .oem-open{display:none}
+.library-sheet{width:1560px}.library-scroll{max-height:610px;overflow-y:auto;scrollbar-width:thin;padding-right:10px}
+.library-scroll h3{font-weight:400;font-size:22px;margin:0 0 18px;color:var(--muted)}.library-scroll h3:not(:first-child){margin-top:28px}
+.library-scroll .card-library{grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+.library-scroll .library-preview{height:86px;padding:15px}.library-scroll .library-preview>span{height:54px;width:54px}
+.library-scroll .library-preview .icon{width:30px;height:30px}
+.library-scroll .library-preview>i{left:92px;top:32px;width:80px}.library-scroll .library-preview>i:last-child{top:54px;width:56px}
+.library-scroll .library-copy{padding-top:14px}.library-scroll .library-copy strong{font-size:23px}.library-scroll .library-copy small{font-size:15px}
+.library-copy em{font-size:13px;font-style:normal;color:var(--muted);margin-left:10px}
+.source-settings{height:100%;overflow-y:auto;padding:0 0 12px;grid-template-rows:repeat(4,132px);gap:16px}
+.source-row{padding:22px 24px;gap:16px}.source-row h3{font-size:25px}.source-row p{font-size:16px}
+.source-row>span{font-size:18px}.source-row small{font-size:15px}.source-note{font-size:18px}
+.climate-sheet{width:1120px}.climate-sheet-zones{display:flex;gap:50px;margin:44px 0}
+.climate-sheet-zones>div{flex:1;text-align:center}.climate-sheet-zones>div>span{font-size:23px;color:var(--muted)}
+.climate-sheet-zones>div>div{display:flex;align-items:center;justify-content:space-between;margin-top:24px}
+.climate-sheet-zones b{font-size:64px;font-weight:300}.climate-sheet-zones sup{font-size:30px}
+.screen .climate-step{display:flex;align-items:center;justify-content:center;background:var(--glass-soft);border-radius:calc(var(--card-radius)*.64);width:64px;height:64px}
+.climate-sheet-fan{display:flex;align-items:center;justify-content:center;gap:25px;margin:30px 0 44px;font-size:24px}
+.climate-sheet-fan>.icon{color:var(--accent)}.climate-sheet-fan b{font-size:38px;font-weight:400;width:46px;text-align:center}
+.climate-sheet-modes{display:flex;gap:18px}.screen .climate-sheet-modes button{height:64px;flex:1;border:1px solid var(--glass-edge);background:var(--glass-soft);border-radius:calc(var(--card-radius)*.64);font-size:23px}
+.screen .climate-sheet-modes button.selected{background:var(--accent);color:var(--accent-text)}
+.music-sheet{width:1040px}.music-detail{display:flex;align-items:center;gap:44px;padding:25px 0}
+.music-detail .hero-cover{width:260px;height:260px;margin:0}.music-detail>div:last-child{flex:1}
+.music-detail h3{font-size:42px;font-weight:400;margin:0 0 18px}.music-detail p{font-size:22px;color:var(--muted)}
+.music-detail .dock-transport{justify-content:flex-start;margin-top:38px;gap:24px}
+.vehicle-sheet{width:900px}.vehicle-panel-body{height:540px;display:flex;flex-direction:column;padding:18px 50px}
+.vehicle-panel-body>.oem-card-heading{display:none}.vehicle-panel-body .tpms-value{width:150px}
+.camera-sheet{width:1320px}.camera-placeholder{height:520px;background:#07151d66;display:flex;align-items:center;justify-content:center;flex-direction:column;border-radius:var(--card-radius)}
+.camera-placeholder>.icon{height:86px;width:86px;color:var(--accent);stroke-width:1.2}.camera-placeholder h3{font-size:36px;font-weight:400;margin:28px 0 18px}
+.camera-placeholder p{font-size:22px;color:var(--muted);margin:0}.source-sheet{width:880px}
+.source-placeholder{height:330px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.source-placeholder>.icon{height:64px;width:64px;color:var(--accent)}.source-placeholder h3{font-size:32px;font-weight:400;margin:26px 0 16px}
+.source-placeholder p{font-size:22px;color:var(--muted)}
+.oem-section{margin-top:76px}.oem-section>#secondary-studies{margin-bottom:44px}.oem-section .screens{gap:44px}
+.gallery-wrap{width:100%;aspect-ratio:1920/1464;overflow:hidden;position:relative;border-radius:18px}
+.screen.oem-gallery{display:block;width:1920px;height:1464px;padding:48px}
+.oem-gallery-header{height:128px;display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+.oem-gallery-header>div>span{font-size:16px;letter-spacing:3px;color:var(--accent)}
+.oem-gallery-header h1{font-size:42px;font-weight:400;margin:18px 0 15px}
+.oem-gallery-header p{font-size:21px;color:var(--muted);margin:0}
+.gallery-demo{font-size:18px;color:var(--muted);border:1px solid var(--glass-edge);border-radius:24px;padding:13px 20px}
+.oem-gallery-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,384px);gap:24px}
+.oem-gallery-grid .widget-card{grid-column:auto!important;grid-row:auto!important}
+.oem-gallery .nav-card .direction-box{padding:15px 20px;gap:15px}
+.oem-gallery .nav-card .turn-icon{width:50px;height:50px}.oem-gallery .nav-card .turn-icon .icon{width:30px;height:30px}
+.oem-gallery .nav-card .direction-copy b{font-size:25px}.oem-gallery .nav-card .direction-copy p{font-size:18px;margin-top:5px}
+.oem-gallery .nav-card .destination{padding:16px 20px}.oem-gallery .nav-card .destination small{font-size:16px}
+.oem-gallery .nav-card .arrival b{font-size:25px}.oem-gallery .nav-card .arrival span{font-size:16px}
+.oem-gallery .nav-card .map-tool{display:none}.oem-gallery .nav-card .compass{right:15px;top:18px}
+.oem-gallery .member-avatar{width:76px;height:76px}.oem-gallery .member-avatar .icon{width:40px;height:40px}
+.oem-gallery .member-profile h3{margin:18px 0 10px;font-size:28px}.oem-gallery .member-profile p{font-size:18px}
+.oem-gallery .tpms-visual{min-height:170px;max-height:220px}.oem-gallery .tpms-car{height:190px}
+.oem-gallery .calendar-date>b{font-size:82px}.oem-gallery .calendar-date{margin:14px 0}
+.oem-gallery .calendar-agenda{padding-top:17px}.oem-gallery .oem-open{height:50px}
+body.cards-only .board{display:none}body.cards-only #single-screen{display:block;width:1920px;height:1464px}
+body.cards-only #single-screen>.screen{position:relative}
+body.pair .oem-section{display:none}
+@media(max-width:850px){.oem-section{margin-top:48px}}

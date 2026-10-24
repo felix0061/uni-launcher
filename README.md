@@ -5,11 +5,13 @@
 - [APK 能力分析](docs/APK_ANALYSIS.md)：系统身份、Widget、ECARX 车辆接口、导航、媒体、界面结构与证据边界。
 - [产品与界面设计](docs/PRODUCT_DESIGN.md)：布局、主题、组件、操作和异常状态。
 - [接入与实施计划](docs/INTEGRATION_PLAN.md)：适配器、数据契约、分期任务、实车验证。
-- [视觉方向说明](design/VISUAL_DIRECTION.md)：当前 V03：桌面设置、五组/自定义配色、0–40px 圆角、天气、自由卡片与纯图标底栏。
+- [视觉方向说明](design/VISUAL_DIRECTION.md)：V04：原厂卡片覆盖、指定顺序底栏、长按首页设置、主题/圆角与自由卡片。
 - [样式评审板](design/index.html)：含首页、设置和卡片编辑；点击“体验桌面”进入浏览器交互演示。
 - [深浅色对照](design/home-pair.png)、[深色首页](design/home-dark.png)、[浅色首页](design/home-light.png)、[音乐底栏细节](design/dock-detail.png)。
 - [桌面设置](design/settings-dark.png)、[编辑布局](design/card-edit-mode.png)、[卡片库](design/card-library.png)、[单卡设置](design/card-settings.png)。
 - [0 圆角直角预览](design/home-square.png)。
+- [原厂卡片总览：深色](design/oem-cards-dark.png)、[浅色](design/oem-cards-light.png)、[第二页](design/secondary-dark.png)。
+- [官方提供组件映射](analysis/official-widgets.json)、[交互验证结果](analysis/design-verification.json)。
 - [证据索引](analysis/evidence.json)、[APK 清单](analysis/inventory.json)。
 
 ## 查看设计
@@ -20,7 +22,11 @@
 python3 -m http.server 8765 --bind 127.0.0.1 --directory design
 ```
 
-访问 `http://127.0.0.1:8765`。V03 可演示主题/自定义颜色与卡片添加、拖动、缩放、编辑、删除；底栏齿轮打开设置，长按卡片进入编辑，偏好保存于浏览器本地。`?view=settings`、`?view=edit`、`?view=library` 可直接进入对应设计状态，`export=1` 禁用偏好读写以便确定性导图。所有车辆、地图、天气、媒体数据均为示例，不连接车辆、不加载地图服务；原车栏归属和可用窗口须实车核对。参考图保留于本地忽略目录 `design/reference-images/`，作者和公开来源记录在 `design/references.json`；原创源文件及 PNG 纳入 Git。
+访问 `http://127.0.0.1:8765`。底栏顺序为：首页/全部、空调操作、音乐控制、音乐信息、车辆信息、360。长按首页按钮或首页空白进入设置，长按卡片进入编辑；可操作主题、圆角、卡片与各展开面板。卡片和空白页均保存于浏览器，兼容读取 V03 偏好。
+
+`?view=secondary` 查看第二页，`?view=cards` 查看全部官方卡片样式；`settings`、`edit`、`library`、`climate`、`music`、`vehicle`、`camera` 可直接进入对应状态，`export=1` 禁用偏好读写便于导图。全部数据为示例或占位，未连接车辆。已覆盖 9 类 / 14 提供组件，官方完整字段尚缺 Provider APK 或实车证据，不能视为已实现同值接入。参考图仅作本地研究，出处保留于 `design/references.json`。
+
+本地安装 Chrome 与 Node.js 后，在本目录运行 `node tools/render_design.mjs`，会用独立临时浏览器配置验证交互并导出全部设计图，结果写入 `analysis/design-verification.json`；不使用个人浏览器资料。
 
 ## 复现静态分析
 

@@ -17,20 +17,25 @@ const map = `<svg class="map" viewBox="0 0 1144 732" preserveAspectRatio="xMidYM
 
 
 function dock() {
+  const m=mediaState();
+  const zone=(id,label)=>`<div class="dock-temp-zone">${actionButton('temp-down','minus','降低'+label+'温度','dock-temp-step',`data-zone="${id}"`)}<button class="dock-zone" data-action="climate" aria-label="${label}空调 ${temperature(id)} 度" title="${label}空调"><b>${temperature(id)}<sup>°</sup></b></button>${actionButton('temp-up','plus','升高'+label+'温度','dock-temp-step',`data-zone="${id}"`)}</div>`;
   return `<div class="dock-lane"><div class="music-dock">
-    <div class="dock-navigation">${actionButton('home','home','首页','dock-control dock-home')}${actionButton('apps','apps','全部应用','dock-control')}</div>
+    <div class="dock-navigation" data-dock-group="navigation">${actionButton('home','home','首页；长按进入桌面设置','dock-control dock-home','data-home-hold')}${actionButton('apps','apps','全部应用','dock-control')}</div>
     <span class="dock-separator"></span>
-    <div class="dock-media"><div class="dock-track"><div class="cover">${art}</div><div class="dock-track-copy"><b>向海而行</b><p>Coastline · QQ 音乐</p></div></div><div class="dock-transport">${actionButton('previous','back','上一首','dock-control')}${actionButton('toggle-play',ui.playing?'pause':'play',ui.playing?'暂停':'播放','dock-play')}${actionButton('next','next','下一首','dock-control')}</div></div>
+    <div class="dock-climate ${ui.climate.power?'':'off'}" data-dock-group="climate">${zone('left','主驾')}${actionButton('climate','fan','空调与风量','dock-control dock-fan')}${zone('right','副驾')}${actionButton('climate-power','power','空调开关','dock-control '+(ui.climate.power?'accent':''))}</div>
     <span class="dock-separator"></span>
-    <div class="dock-climate"><button class="dock-zone" data-action="climate" aria-label="主驾空调 22.5 度" title="主驾空调"><b>22.5<sup>°</sup></b></button>${actionButton('climate','fan','空调与风量','dock-control dock-fan')}<button class="dock-zone" data-action="climate" aria-label="副驾空调 22.5 度" title="副驾空调"><b>22.5<sup>°</sup></b></button></div>
+    <div class="dock-transport" data-dock-group="transport">${actionButton('previous','back','上一首','dock-control')}${actionButton('toggle-play',ui.playing?'pause':'play',ui.playing?'暂停':'播放','dock-play')}${actionButton('next','next','下一首','dock-control')}</div>
+    <button class="dock-track dock-info" data-action="music-info" data-dock-group="info" aria-label="音乐信息，打开详情"><div class="cover">${art}</div><div class="dock-track-copy"><b>${m.title}</b><p>${m.artist} · 原车媒体中心</p></div></button>
     <span class="dock-separator"></span>
-    <div class="dock-vehicle">${actionButton('vehicle','car','车辆','dock-control')}${actionButton('camera','camera','360 全景','dock-control')}${actionButton('open-settings','settings','桌面设置','dock-control dock-settings')}</div>
+    <div data-dock-group="vehicle">${actionButton('vehicle','car','车辆信息','dock-control')}</div>
+    <div data-dock-group="camera">${actionButton('camera','camera','360 影像','dock-control')}</div>
   </div></div>`;
 }
+
 function screen(theme,options={}) {
   const staticView=options.static===true,editing=options.editing||(!staticView&&ui.editing);
-  const items=staticView?defaultCards():cards,page=staticView?0:ui.page;
-  const count=Math.max(1,...items.map(c=>c.page+1),page+1);
+  const items=staticView?defaultCards():cards,page=staticView?(options.page||0):ui.page;
+  const count=staticView?Math.max(1,...items.map(c=>c.page+1),page+1):pageCount;
   return `<div class="screen ${theme} calm glass v03-home ${editing?'editing':''}" style="${themeStyle(theme)}" aria-label="领克05 ${theme==='dark'?'深色':'浅色'}自定义卡片桌面，示例数据">
     ${statusBar()}
     <div class="desktop">${editing?editorToolbar():''}<div class="card-grid">${items.filter(c=>c.page===page).map(c=>widget(c,editing)).join('')}${!items.some(c=>c.page===page)?`<button class="empty-grid" data-action="open-library">${icon('plus')}<strong>添加一张卡片</strong><span>从导航、音乐、天气开始</span></button>`:''}</div>${pageDots(page,count,editing)}</div>
@@ -38,7 +43,7 @@ function screen(theme,options={}) {
   </div>`;
 }
 function dockStudy(theme) {
-  return `<div class="screen dock-study ${theme} calm glass" style="${themeStyle(theme)}" role="img" aria-label="${theme==='dark'?'深色':'浅色'}96像素纯图标音乐底栏，最右侧齿轮进入桌面设置"><span class="dock-mini-label">${theme==='dark'?'NIGHT / 深色音乐底栏':'DAY / 浅色音乐底栏'}</span>${dock()}</div>`;
+  return `<div class="screen dock-study ${theme} calm glass" style="${themeStyle(theme)}" role="img" aria-label="${theme==='dark'?'深色':'浅色'}96像素纯图标音乐底栏，长按首页进入桌面设置"><span class="dock-mini-label">${theme==='dark'?'NIGHT / 深色音乐底栏':'DAY / 浅色音乐底栏'}</span>${dock()}</div>`;
 }
 
 
@@ -55,12 +60,15 @@ function resize() {
   document.querySelectorAll('.screen-wrap').forEach(el=>{el.firstElementChild.style.transform=`scale(${el.clientWidth/1920})`;});
   document.querySelectorAll('.climate-wrap').forEach(el=>{el.firstElementChild.style.transform=`scale(${el.clientWidth/900})`;});
   document.querySelectorAll('.mini-screen-wrap').forEach(el=>{el.firstElementChild.style.transform=`scale(${el.clientWidth/1920})`;});
+  document.querySelectorAll('.gallery-wrap').forEach(el=>{el.firstElementChild.style.transform=`scale(${el.clientWidth/1920})`;});
   document.querySelectorAll('.dock-wrap').forEach(el=>{el.firstElementChild.style.transform=`scale(${el.clientWidth/1920})`;});
 }
 function render() {
-  document.getElementById('screens').innerHTML=['dark','light'].map(theme=>`<figure class="screen-figure"><figcaption class="screen-caption"><b>${theme==='dark'?'夜航 / NIGHT':'晨光 / DAY'}</b><span>V03 · 自定义卡片 / 天气 / 图标底栏</span></figcaption><div class="screen-wrap">${screen(theme,{static:true})}</div></figure>`).join('');
+  document.getElementById('screens').innerHTML=['dark','light'].map(theme=>`<figure class="screen-figure"><figcaption class="screen-caption"><b>${theme==='dark'?'夜航 / NIGHT':'晨光 / DAY'}</b><span>V04 · 原厂卡片 / 自由布局 / 图标底栏</span></figcaption><div class="screen-wrap">${screen(theme,{static:true})}</div></figure>`).join('');
   document.getElementById('settings-studies').innerHTML=['dark','light'].map(theme=>`<figure class="screen-figure"><figcaption class="screen-caption"><b>${theme==='dark'?'深色':'浅色'} · 桌面设置</b><a href="?view=settings&theme=${theme}">打开交互预览 ↗</a></figcaption><div class="screen-wrap">${settingsScreen(theme)}</div></figure>`).join('');
   document.getElementById('edit-study').innerHTML=`<div class="screen-wrap">${screen('dark',{static:true,editing:true})}</div>`;
+  document.getElementById('oem-studies').innerHTML=['dark','light'].map(theme=>`<figure class="screen-figure"><figcaption class="screen-caption"><b>${theme==='dark'?'深色':'浅色'} · 原厂卡片样式总览</b><a href="?view=cards&theme=${theme}">查看完整卡片 ↗</a></figcaption><div class="gallery-wrap">${oemGallery(theme)}</div></figure>`).join('');
+  document.getElementById('secondary-studies').innerHTML=`<div class="screen-wrap">${screen('dark',{static:true,page:1})}</div>`;
   document.getElementById('dock-studies').innerHTML=['dark','light'].map(theme=>`<div class="dock-wrap">${dockStudy(theme)}</div>`).join('');
   document.getElementById('climate-studies').innerHTML=['dark','light'].map(theme=>`<figure class="climate-figure"><figcaption>${theme==='dark'?'深色空调层':'浅色空调层'}</figcaption><div class="climate-wrap">${climate(theme)}</div></figure>`).join('');
   const view=params.get('view');
