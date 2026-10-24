@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-10-24T10:46:17.483400+00:00",
+  "checkedAt": "2026-10-24T10:48:13.006447+00:00",
   "package": "xyz.i4o.uni.launcher",
   "version": "0.3.0",
   "toolchain": {
@@ -41,7 +41,7 @@
       "path": "build/app/outputs/flutter-apk/app-arm64-v8a-release.apk",
       "abi": "arm64-v8a",
       "bytes": 17911355,
-      "sha256": "45ac4a21604cf74f329e74d898b01961a91660c83fd635284c659161478a3d86",
+      "sha256": "97d8a891980186d15a608787dd0be8e8d287a8a98f9322ae900aa345db3f8a4f",
       "versionCode": 2003,
       "signatureVerified": true,
       "certificateSha256": "bba7d5b864934b8ff144b08d1f58a866c883261500f9e9f201b96c2a3dc1ea1f"
@@ -50,7 +50,7 @@
       "path": "build/app/outputs/flutter-apk/app-x86_64-release.apk",
       "abi": "x86_64",
       "bytes": 19419205,
-      "sha256": "3d9c73f7ad3c531d3a746fa15d84b995b389a6dc0604bceb08fda49c9b864eb7",
+      "sha256": "39f5151c1ac8ae47f9de8be2e306bf60ad93163001b4d29f1a83d83db696a589",
       "versionCode": 4003,
       "signatureVerified": true,
       "certificateSha256": "bba7d5b864934b8ff144b08d1f58a866c883261500f9e9f201b96c2a3dc1ea1f"
