@@ -6,3 +6,6 @@ __pycache__/
 *.apk
 *.pk8
 *.keystore
+/android/build/
+/android/dist/
+/android/node_modules/

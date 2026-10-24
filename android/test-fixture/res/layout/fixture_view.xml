@@ -1,0 +1,4 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center" android:background="#183039">
+  <TextView android:id="@android:id/text1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="UNI emulator fixture widget" android:textColor="#71E4CE" android:textSize="32sp"/>
+  <TextView android:id="@android:id/text2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Synthetic RemoteViews" android:textColor="#FFFFFF" android:textSize="24sp"/>
+</LinearLayout>

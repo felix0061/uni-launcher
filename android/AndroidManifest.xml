@@ -1,0 +1,14 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="xyz.i4o.uni.launcher" android:versionCode="1" android:versionName="0.1.0">
+  <uses-sdk android:minSdkVersion="23" android:targetSdkVersion="28"/>
+  <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"/>
+  <application android:label="UNI 桌面" android:icon="@drawable/uni_icon" android:theme="@android:style/Theme.Material.NoActionBar" android:allowBackup="false" android:debuggable="true" android:hardwareAccelerated="true" android:supportsRtl="true" android:usesCleartextTraffic="false">
+    <activity android:name=".MainActivity" android:exported="true" android:screenOrientation="landscape" android:configChanges="orientation|screenSize|keyboardHidden|uiMode" android:launchMode="singleTask">
+      <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+      <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.HOME"/><category android:name="android.intent.category.DEFAULT"/></intent-filter>
+    </activity>
+    <activity android:name=".integration.OfficialWidgetActivity" android:exported="false" android:screenOrientation="landscape"/>
+    <service android:name=".integration.MediaAccessService" android:label="UNI 桌面媒体访问" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" android:exported="true">
+      <intent-filter><action android:name="android.service.notification.NotificationListenerService"/></intent-filter>
+    </service>
+  </application>
+</manifest>

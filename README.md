@@ -1,6 +1,9 @@
 # LYNK 05 桌面研究与设计
 
-针对领克 05 PHEV / IP753 / Android 9 的桌面方案，包含两个本地 APK 的静态分析、第三方设计参考和卡片式界面样式。按用户最新要求，本阶段先评审视觉风格，功能实现留到后续。
+针对领克 05 PHEV / IP753 / Android 9 的桌面项目，包含 APK 分析、设计和首版 Android 实现。包名 `xyz.i4o.uni.launcher`；源码、测试和报告由本地 Git 管理，先模拟器验证，再配合实车接入。
+
+- [Android 实现与构建](android/README.md)、[模拟器验证报告](android/verification/emulator-report.json)。
+- [实际模拟器深色首页](android/verification/home-dark.png)、[浅色首页](android/verification/home-light.png)、[未连接状态](android/verification/home-live-unavailable.png)。
 
 - [APK 能力分析](docs/APK_ANALYSIS.md)：系统身份、Widget、ECARX 车辆接口、导航、媒体、界面结构与证据边界。
 - [产品与界面设计](docs/PRODUCT_DESIGN.md)：布局、主题、组件、操作和异常状态。

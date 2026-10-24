@@ -1,6 +1,6 @@
 # 接入架构与实施计划
 
-本文件保留后续实施规划。用户最新要求先评审视觉风格，当前交付限于静态分析与样式设计；以下 Android 功能均未实现。接入规划优先沿用官方已展示的宿主能力，私有接口由适配器封装；一个 Launcher APK 内部模块化。
+本文件保留接入规划；现已开始 Android 首版实现，包名 `xyz.i4o.uni.launcher`。已实现范围见 [Android README](../android/README.md)，实车协议和字段一致性仍待设备验证。一个 Launcher APK 内部模块化，沿用官方宿主与原厂来源。
 
 ## 1. 架构
 
@@ -20,7 +20,7 @@ flowchart TD
   System --> Platform[PackageManager / Configuration / Window Insets]
 ```
 
-建议 Android 实装采用 Kotlin + 原生 View/XML/RecyclerView，围绕 Android 9 验证，保持渲染层和硬件调用分开。网页仅用于当前评审原型。性能指标作为验收目标：暖回桌面 300ms 内出现主界面、桌面稳定后避免持续轮询和常驻动画；具体冷启动、帧率、PSS 预算在 IP753 上测量后确定，不把 PC 原型流畅度当作实车指标。
+当前采用 Java 原生宿主、独立集成适配器与离线 WebView 组件，复用已评审样式和卡片编辑代码，围绕 Android 9 验证；渲染层和硬件调用分开。性能指标仍为实车验收目标：暖回桌面 300ms 内出现主界面、稳定后避免高频轮询；冷启动、帧率、PSS 在 IP753 上实测，不能以模拟器代替。
 
 ## 2. 接口契约
 
