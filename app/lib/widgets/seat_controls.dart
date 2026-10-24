@@ -22,7 +22,7 @@ class SeatControls extends StatelessWidget {
             style: TextStyle(
                 fontSize: Design.px(24), fontWeight: FontWeight.w500)),
         const Spacer(),
-        Text(demo ? '主驾加热 / 通风互斥' : '等待车辆连接',
+        Text(demo ? '主驾加热 / 通风互斥' : '只读状态 · 控制待实车确认',
             style: TextStyle(fontSize: Design.px(18), color: s.muted)),
       ]),
       SizedBox(height: Design.px(6)),
@@ -33,7 +33,7 @@ class SeatControls extends StatelessWidget {
       ])
         _row(context, control),
       SizedBox(height: Design.px(18)),
-      Text(demo ? '示例档位 · 不控制车辆' : '座椅状态暂不可用，可打开原车空调操作',
+      Text(demo ? '示例档位 · 不控制车辆' : '有读数时显示当前档位；操作请使用原车空调',
           style: TextStyle(fontSize: Design.px(17), color: s.muted)),
     ]);
   }

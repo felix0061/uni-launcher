@@ -58,7 +58,9 @@ void main() {
     c.openSettings();
     c.tab('sources');
     await t.pumpAndSettle();
-    await t.ensureVisible(find.byKey(const ValueKey('hide-navigation')));
+    await t.scrollUntilVisible(
+        find.byKey(const ValueKey('hide-navigation')), 300,
+        scrollable: find.byType(Scrollable).first);
     await t.pumpAndSettle();
     await t.tap(find.byKey(const ValueKey('hide-navigation')));
     await t.pumpAndSettle();

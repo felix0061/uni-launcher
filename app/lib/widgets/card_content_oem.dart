@@ -153,8 +153,14 @@ class _OemCard extends StatelessWidget {
                         ])),
                   ])),
             ] else if (card.type == 'tpms' || card.type == 'vehicle') ...[
-              const Expanded(child: TireDiagram()),
-              const _StateLine('等待车辆数据', dot: true),
+              Expanded(child: TireDiagram(native: controller.native.value)),
+              _StateLine(
+                  VehicleField.fromNative(
+                              controller.native.value, 'pressureFrontLeft')
+                          .valid
+                      ? '胎压原始值 · 单位待核对'
+                      : '等待车辆数据',
+                  dot: true),
             ] else if (card.type == 'air') ...[
               Expanded(
                   child: Center(
@@ -246,7 +252,8 @@ class _TireColors extends ColorMapper {
 }
 
 class TireDiagram extends StatelessWidget {
-  const TireDiagram({super.key});
+  final Map<String, dynamic> native;
+  const TireDiagram({super.key, this.native = const {}});
   @override
   Widget build(BuildContext context) {
     final s = SurfaceStyle.of(context);
@@ -265,10 +272,10 @@ class TireDiagram extends StatelessWidget {
                             height * .85, Design.px(compact ? 170 : 280)),
                         colorMapper: _TireColors(s))),
                 for (final corner in const [
-                  ('左前', true, true),
-                  ('右前', false, true),
-                  ('左后', true, false),
-                  ('右后', false, false),
+                  ('左前', true, true, 'pressureFrontLeft'),
+                  ('右前', false, true, 'pressureFrontRight'),
+                  ('左后', true, false, 'pressureRearLeft'),
+                  ('右后', false, false, 'pressureRearRight'),
                 ])
                   Positioned(
                       left: corner.$2 ? 0 : null,
@@ -283,7 +290,9 @@ class TireDiagram extends StatelessWidget {
                                 height: 1.2,
                                 color: s.muted)),
                         SizedBox(height: Design.px(compact ? 5 : 12)),
-                        Text('—',
+                        Text(
+                            VehicleField.fromNative(native, corner.$4)
+                                .display(),
                             style: TextStyle(
                                 fontSize: Design.px(compact ? 32 : 46),
                                 height: 1.2,
@@ -297,13 +306,19 @@ class TireDiagram extends StatelessWidget {
 class _WeatherCard extends StatelessWidget {
   final LauncherCard card;
   final bool demo, editing;
+  final Map<String, dynamic> native;
   const _WeatherCard(
-      {required this.card, required this.demo, required this.editing});
+      {required this.card,
+      required this.demo,
+      required this.editing,
+      required this.native});
   @override
   Widget build(BuildContext context) {
     final s = SurfaceStyle.of(context);
     // The title can also be used as a demo preview city; live weather stays unknown.
-    final city = demo ? (card.title == '天气' ? '杭州' : card.title) : '天气';
+    final weather = WeatherSnapshot.fromNative(native);
+    final city =
+        demo ? (card.title == '天气' ? weather.city : card.title) : weather.city;
     return _CardCanvas(
         minHeight: editing ? 180 : 230,
         child:
@@ -316,13 +331,13 @@ class _WeatherCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: Design.px(23), height: 1.2))),
-            Text(demo ? '天气示例' : '原车天气',
+            Text(weather.source,
                 style: TextStyle(fontSize: Design.px(20), color: s.muted)),
           ]),
           Expanded(
               child: Row(children: [
             Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(demo ? '24' : '—',
+              Text(weather.temperature?.toString() ?? '—',
                   style: TextStyle(
                       fontSize: Design.px(editing ? 48 : 65),
                       height: 1,
@@ -336,26 +351,13 @@ class _WeatherCard extends StatelessWidget {
             ]),
             SizedBox(width: Design.px(20)),
             Expanded(
-                child: Text(demo ? '多云' : '未同步',
+                child: Text(weather.description,
                     style: TextStyle(fontSize: Design.px(25)))),
-            SizedBox(
-                width: Design.px(editing ? 90 : 112),
-                height: Design.px(editing ? 72 : 98),
-                child: Stack(children: [
-                  Positioned(
-                      right: Design.px(3),
-                      top: 0,
-                      child: Opacity(
-                          opacity: .75,
-                          child: UniIcon('sun',
-                              size: Design.px(editing ? 54 : 68),
-                              color: s.accent))),
-                  Positioned(
-                      left: 0,
-                      bottom: 0,
-                      child: UniIcon('cloud',
-                          size: Design.px(editing ? 72 : 96), color: s.accent)),
-                ])),
+            WeatherIcon(
+                condition: weather.condition,
+                night: weather.night,
+                size: Design.px(editing ? 80 : 100),
+                color: s.accent),
           ])),
           if (!editing)
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [

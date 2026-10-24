@@ -12,7 +12,7 @@ Future<void> showAppsPanel(BuildContext context, LauncherController c) =>
 Future<void> showMediaPanel(BuildContext context, LauncherController c) =>
     showLauncherSheet<void>(context,
         title: '正在播放',
-        subtitle: c.native.value['demo'] == true ? '原车媒体中心 · 样式示例' : '原车媒体中心',
+        subtitle: mediaSourceLabel(c.native.value),
         closeLabel: '关闭音乐详情',
         width: Design.px(1040),
         builder: (context) => MediaPanel(controller: c));

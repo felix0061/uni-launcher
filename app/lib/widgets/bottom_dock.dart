@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../controller/launcher_controller.dart';
 import '../theme/design_tokens.dart';
 import '../theme/launcher_theme.dart';
@@ -8,6 +7,9 @@ import 'glass_surface.dart';
 import 'launcher_dialog.dart';
 import 'uni_icon.dart';
 import 'lyrics_view.dart';
+import 'media_artwork.dart';
+import '../model/vehicle_data.dart';
+import 'vehicle_readout.dart';
 import 'climate_panel.dart';
 export 'climate_panel.dart' show showClimatePanel;
 
@@ -67,7 +69,7 @@ class BottomDock extends StatelessWidget {
                           child: Text(
                               demo
                                   ? '${(climate[id] as num? ?? 22.5).toStringAsFixed(1)}°'
-                                  : '—°',
+                                  : '${VehicleField.fromNative(native, id).display()}°',
                               style: TextStyle(fontSize: Design.px(32)))))),
               IconAction(
                   icon: Icons.add,
@@ -136,17 +138,27 @@ class BottomDock extends StatelessWidget {
                                 'previous',
                                 Icons.skip_previous_outlined,
                                 '上一首',
-                                canPlay ? () => c.command('previous') : null,
+                                canPlay &&
+                                        (demo || media['canPrevious'] == true)
+                                    ? () => c.command('previous')
+                                    : null,
                                 width: 60),
                             action(
                                 'play-pause',
                                 playing ? Icons.pause : Icons.play_arrow,
                                 playing ? '暂停' : '播放',
-                                canPlay ? () => c.command('toggle-play') : null,
+                                canPlay && (demo || media['canToggle'] == true)
+                                    ? () => c.command('toggle-play')
+                                    : null,
                                 solid: true,
                                 width: 58),
-                            action('next', Icons.skip_next_outlined, '下一首',
-                                canPlay ? () => c.command('next') : null,
+                            action(
+                                'next',
+                                Icons.skip_next_outlined,
+                                '下一首',
+                                canPlay && (demo || media['canNext'] == true)
+                                    ? () => c.command('next')
+                                    : null,
                                 width: 60)
                           ])),
                   gap(),
@@ -161,10 +173,8 @@ class BottomDock extends StatelessWidget {
                                 child: SizedBox(
                                     width: Design.px(60),
                                     height: Design.px(60),
-                                    child: demo
-                                        ? SvgPicture.asset(
-                                            'assets/art/cover.svg')
-                                        : UniIcon('music', color: s.accent))),
+                                    child: MediaArtwork(
+                                        media: media, demo: demo))),
                             SizedBox(width: Design.px(16)),
                             Expanded(
                                 child: Column(
@@ -211,20 +221,14 @@ class BottomDock extends StatelessWidget {
 Future<void> showVehiclePanel(BuildContext context, LauncherController c) =>
     showLauncherSheet<void>(context,
         title: '车辆信息',
-        subtitle: '原车车辆信息 · 等待连接',
+        subtitle: '原车数据 · 只读',
         closeLabel: '关闭车辆信息',
         width: Design.px(900),
-        height: Design.px(720),
-        builder: (context) => Column(children: [
-              const Expanded(child: TireDiagram()),
-              Text('等待车辆数据',
-                  style: TextStyle(
-                      color: SurfaceStyle.of(context).muted,
-                      fontSize: Design.px(18))),
-              TextButton(
-                  onPressed: () => c.command('open-official', value: 'vehicle'),
-                  child: const Text('打开原车车辆应用'))
-            ]));
+        height: Design.px(780),
+        builder: (context) => ValueListenableBuilder<Map<String, dynamic>>(
+            valueListenable: c.native,
+            builder: (context, n, _) =>
+                VehicleReadout(controller: c, native: n)));
 Future<void> showCameraPanel(BuildContext context, LauncherController c) =>
     showLauncherSheet<void>(context,
         title: '360 影像',

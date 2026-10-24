@@ -18,6 +18,7 @@ import io.flutter.plugin.common.EventChannel;
 import xyz.i4o.uni.launcher.core.ClimateState;
 import xyz.i4o.uni.launcher.core.CommandPolicy;
 import xyz.i4o.uni.launcher.integration.*;
+import xyz.i4o.uni.launcher.platform.EmbeddedNavigationFactory;
 
 /** Flutter renderer, sharing the verified native integration classes with the baseline. */
 public final class MainActivity extends FlutterActivity {
@@ -26,7 +27,9 @@ public final class MainActivity extends FlutterActivity {
     private AppRepository apps;
     private OfficialCatalog catalog;
     private MediaAdapter media;
-    private VehicleAdapter vehicle;
+    private VehicleTelemetry vehicle;
+    private NavigationApps navigation;
+    private EmbeddedNavigationFactory mapFactory;
     private JSONArray installed=new JSONArray();
     private final ClimateState simulator=new ClimateState();
     private String cached="{}";
@@ -38,6 +41,8 @@ public final class MainActivity extends FlutterActivity {
     private final BroadcastReceiver packages=new BroadcastReceiver(){public void onReceive(Context c,Intent i){installed=apps.refresh();publish();}};
     @Override public void configureFlutterEngine(FlutterEngine engine){
         super.configureFlutterEngine(engine);
+        mapFactory=new EmbeddedNavigationFactory(this,engine.getDartExecutor().getBinaryMessenger());
+        engine.getPlatformViewsController().getRegistry().registerViewFactory("xyz.i4o.uni.launcher/navigation",mapFactory);
         channel=new MethodChannel(engine.getDartExecutor().getBinaryMessenger(),"xyz.i4o.uni.launcher/platform");
         channel.setMethodCallHandler((call,result)->{
             try{
@@ -56,8 +61,8 @@ public final class MainActivity extends FlutterActivity {
         super.onCreate(saved);getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
         prefs=getSharedPreferences("launcher",0);chrome=new NavigationChrome(this,prefs);
         if(!prefs.contains("demo"))prefs.edit().putBoolean("demo",Build.FINGERPRINT.contains("generic")||Build.MODEL.contains("sdk_gphone")||Build.MODEL.contains("Android SDK")).apply();
-        apps=new AppRepository(this);catalog=new OfficialCatalog(this);vehicle=new OfficialVehicleAdapter(this);
-        media=new MediaAdapter(this,()->publish());installed=apps.refresh();
+        apps=new AppRepository(this);catalog=new OfficialCatalog(this);vehicle=new VehicleTelemetry(this,()->publish());navigation=new NavigationApps(this,prefs);
+        media=new MediaAdapter(this,()->publish());media.setPreferredPackage(prefs.getString("mediaPackage","auto"));installed=apps.refresh();
         IntentFilter filter=new IntentFilter();filter.addAction(Intent.ACTION_PACKAGE_ADDED);filter.addAction(Intent.ACTION_PACKAGE_REMOVED);filter.addAction(Intent.ACTION_PACKAGE_CHANGED);filter.addDataScheme("package");registerReceiver(packages,filter);
         publish();
     }
@@ -67,14 +72,17 @@ public final class MainActivity extends FlutterActivity {
             JSONObject climate=new JSONObject().put("left",simulator.left).put("right",simulator.right).put("fan",simulator.fan).put("power",simulator.power)
                 .put("auto",simulator.auto).put("ac",simulator.ac).put("sync",simulator.sync).put("recirc",simulator.recirc)
                 .put("driverHeat",simulator.driverHeat).put("driverVent",simulator.driverVent).put("passengerHeat",simulator.passengerHeat);
+            JSONObject telemetry=vehicle.snapshot();
+            if(!prefs.getBoolean("demo",false))climate=telemetry.optJSONObject("climate")==null?new JSONObject():telemetry.getJSONObject("climate");
+            state.put("navigation",navigation.snapshot()).put("integrationPreferences",new JSONObject().put("mediaPackage",prefs.getString("mediaPackage","auto"))) ;
             state.put("demo",prefs.getBoolean("demo",false)).put("hideNavigation",prefs.getBoolean("hideNavigation",false))
                 .put("globalNavigation",prefs.getBoolean("globalNavigation",false))
                 .put("globalNavigationGranted",checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS")==android.content.pm.PackageManager.PERMISSION_GRANTED)
                 .put("dark",(getResources().getConfiguration().uiMode&Configuration.UI_MODE_NIGHT_MASK)==Configuration.UI_MODE_NIGHT_YES)
-                .put("apps",installed).put("climate",climate).put("vehicle",vehicle.snapshot()).put("media",media.snapshot()).put("version","0.3.0-flutter");
+                .put("apps",installed).put("climate",climate).put("vehicle",vehicle.snapshot()).put("media",media.snapshot()).put("version","0.4.0-flutter");
             state.put("savedDesign",prefs.getString("savedDesign", ""));
             if(prefs.getBoolean("demo",false))state.put("media",new JSONObject().put("available",true).put("playing",demoPlaying)
-                .put("title",demoTrack%2==0?"向海而行":"山海之间").put("artist",demoTrack%2==0?"Coastline":"Northbound").put("collection","晨间驾驶歌单").put("source","simulator")
+                .put("title",demoTrack%2==0?"向海而行":"山海之间").put("artist",demoTrack%2==0?"Coastline":"Northbound").put("collection","晨间驾驶歌单").put("source","simulator").put("canNext",true).put("canPrevious",true).put("canToggle",true)
                 .put("lyrics","[00:00.00]晨光沿着海岸慢慢亮起\n[00:03.00]风把远方带进了呼吸\n[00:06.00]穿过山与海的交界\n[00:09.00]每一程都有新的风景\n[00:12.00]跟着潮声向前去\n[00:15.00]让今天从容开启")
                 .put("lyricsSource","demo").put("durationMs",258000).put("positionMs",demoPosition()).put("positionKnown",true)
                 .put("sampledAtMs",System.currentTimeMillis()).put("speed",1));
@@ -107,7 +115,21 @@ public final class MainActivity extends FlutterActivity {
             String key="hide-navigation".equals(action)?"hideNavigation":"global-navigation".equals(action)?"globalNavigation":"demo";
             prefs.edit().putBoolean(key,request.optBoolean("enabled",false)).commit();chrome.apply();publish();return;
         }
-        if("refresh".equals(action)){installed=apps.refresh();media.start();vehicle.close();vehicle=new OfficialVehicleAdapter(this);publish();return;}
+        if("select-player".equals(action)||"select-navigation".equals(action)){
+            if(!"auto".equals(value)&&getPackageManager().getLaunchIntentForPackage(value)==null){toast("所选应用未安装或不可启动");return;}
+            String key="select-player".equals(action)?"mediaPackage":"navigationPackage";
+            prefs.edit().putString(key,value).commit();
+            if("select-player".equals(action))media.setPreferredPackage(value);
+            publish();return;
+        }
+        if("embed-navigation".equals(action)){prefs.edit().putBoolean("embedNavigation",request.optBoolean("enabled",true)).commit();publish();return;}
+        if("launch-navigation".equals(action)){if(!apps.launchPackage(navigation.selected()))toast("请选择已安装的导航应用");return;}
+        if("launch-player".equals(action)){
+            String selected=prefs.getString("mediaPackage","auto");
+            if("auto".equals(selected))selected=media.snapshot().optString("source","ecarx.xsf.mediacenter");
+            if(!apps.launchPackage(selected))toast("请选择已安装的音乐播放器");return;
+        }
+        if("refresh".equals(action)){installed=apps.refresh();media.start();vehicle.stop();vehicle.start();publish();return;}
         if("launch-app".equals(action)){if(!apps.launch(value))toast("应用未安装或无法启动");return;}
         if("media-access".equals(action)){try{startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"));}catch(Exception e){toast("系统没有提供媒体授权入口");}return;}
         if("official-widget".equals(action)){
@@ -133,10 +155,11 @@ public final class MainActivity extends FlutterActivity {
 
     private void publish(){if(prefs==null||media==null||vehicle==null)return;updateSnapshot();if(sink!=null)sink.success(cached);}
     private void toast(String text){Toast.makeText(this,text,Toast.LENGTH_SHORT).show();}
-    @Override protected void onResume(){super.onResume();if(chrome!=null){chrome.apply();media.start();publish();}}
-    @Override protected void onPause(){if(media!=null)media.stop();super.onPause();}
+    @Override protected void onStart(){super.onStart();if(media!=null){media.start();vehicle.start();if(mapFactory!=null)mapFactory.setVisible(true);publish();}}
+    @Override protected void onResume(){super.onResume();if(chrome!=null){chrome.apply();publish();}}
+    @Override protected void onStop(){if(media!=null){media.stop();vehicle.stop();}if(mapFactory!=null)mapFactory.setVisible(false);super.onStop();}
     @Override public void onWindowFocusChanged(boolean focus){super.onWindowFocusChanged(focus);if(focus&&chrome!=null)chrome.apply();}
     @Override public void onConfigurationChanged(Configuration c){super.onConfigurationChanged(c);publish();}
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);if(channel!=null)channel.invokeMethod("home",null);}
-    @Override protected void onDestroy(){unregisterReceiver(packages);media.stop();vehicle.close();if(channel!=null)channel.setMethodCallHandler(null);sink=null;super.onDestroy();}
+    @Override protected void onDestroy(){unregisterReceiver(packages);if(mapFactory!=null)mapFactory.close();media.stop();vehicle.close();if(channel!=null)channel.setMethodCallHandler(null);sink=null;super.onDestroy();}
 }

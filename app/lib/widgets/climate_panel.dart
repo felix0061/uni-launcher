@@ -4,6 +4,7 @@ import '../theme/design_tokens.dart';
 import '../theme/launcher_theme.dart';
 import 'glass_surface.dart';
 import 'uni_icon.dart';
+import '../model/vehicle_data.dart';
 import 'launcher_dialog.dart';
 import 'seat_controls.dart';
 import 'card_content.dart' show mapOf;
@@ -56,7 +57,7 @@ Future<void> showClimatePanel(BuildContext context, LauncherController c) =>
                                 Text(
                                     demo
                                         ? '${(climate[zone] as num? ?? 22.5).toStringAsFixed(1)}°'
-                                        : '—°',
+                                        : '${VehicleField.fromNative(n, zone).display()}°',
                                     style: TextStyle(
                                         fontSize: Design.px(64),
                                         fontWeight: FontWeight.w300)),
@@ -81,7 +82,11 @@ Future<void> showClimatePanel(BuildContext context, LauncherController c) =>
                       SizedBox(width: Design.px(25)),
                       SizedBox(
                           width: Design.px(46),
-                          child: Text(demo ? '${climate['fan'] ?? 3}' : '—',
+                          child: Text(
+                              demo
+                                  ? '${climate['fan'] ?? 3}'
+                                  : VehicleField.fromNative(n, 'fan')
+                                      .display(decimals: 0),
                               textAlign: TextAlign.center,
                               style: TextStyle(fontSize: Design.px(38)))),
                       SizedBox(width: Design.px(25)),
@@ -114,15 +119,16 @@ Future<void> showClimatePanel(BuildContext context, LauncherController c) =>
                                         style: OutlinedButton.styleFrom(
                                             padding: EdgeInsets.zero,
                                             backgroundColor:
-                                                demo && climate[mode.$1] == true
+                                                (demo || VehicleField.fromNative(n, mode.$1).valid) &&
+                                                        climate[mode.$1] == true
                                                     ? s.accent
                                                     : s.soft,
                                             foregroundColor:
-                                                demo && climate[mode.$1] == true
+                                                (demo || VehicleField.fromNative(n, mode.$1).valid) &&
+                                                        climate[mode.$1] == true
                                                     ? s.accentText
                                                     : s.text,
-                                            side: BorderSide(
-                                                color: demo && climate[mode.$1] == true ? Colors.transparent : s.edge)),
+                                            side: BorderSide(color: (demo || VehicleField.fromNative(n, mode.$1).valid) && climate[mode.$1] == true ? Colors.transparent : s.edge)),
                                         child: Text(mode.$2, style: TextStyle(fontSize: Design.px(23)))))))
                     ]),
                     SeatControls(controller: c, native: n),

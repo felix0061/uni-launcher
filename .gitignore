@@ -9,3 +9,5 @@ __pycache__/
 /android/build/
 /android/dist/
 /android/node_modules/
+
+/car-reports/

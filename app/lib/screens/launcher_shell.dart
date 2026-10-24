@@ -31,9 +31,14 @@ class LauncherShell extends StatelessWidget {
                             child: Column(children: [
                               Header(controller: controller),
                               Expanded(
-                                  child: controller.settings
-                                      ? SettingsScreen(controller: controller)
-                                      : Desktop(controller: controller)),
+                                  child: IndexedStack(
+                                      index: controller.settings ? 1 : 0,
+                                      children: [
+                                    Desktop(controller: controller),
+                                    controller.settings
+                                        ? SettingsScreen(controller: controller)
+                                        : const SizedBox.shrink(),
+                                  ])),
                               Padding(
                                   padding: EdgeInsets.fromLTRB(Design.px(32), 0,
                                       Design.px(32), Design.px(16)),

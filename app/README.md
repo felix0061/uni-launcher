@@ -1,6 +1,14 @@
-# UNI Launcher 0.3.0 · Flutter Android
+# UNI Launcher 0.4.0 · Flutter Android
 
 包名 `xyz.i4o.uni.launcher`，面向领克 05 IP753 / Android 9。界面由 Flutter 绘制，Android 平台通道复用已有 Java 适配器。源代码直接保存在本目录并由仓库的本地 Git commit 管理，不另行打包源码。
+
+## 0.4.0 接入补充
+
+- 导航卡片使用 Android 9 ActivityView 容器显示实际导航应用，支持关联应用、嵌入开关、全屏和失败回退。普通权限模拟器只验证降级，真高德嵌入仍待车机授权与实测。
+- 可关联已安装的网易云、QQ、原车音乐等播放器。读取及控制绑定同一应用会话，增加封面和可用操作判断；无会话不控制其他播放器。
+- 车辆增加后台限频的 ECARX 候选只读通道和新鲜度校验，展示温度、风量、模式、三项座椅及四轮原始胎压；真实写操作仍禁用。
+- 38 类矢量天气图标，昼夜和未知状态由公共组件处理；原厂天气数据接口仍待核对。
+- 完整差距、证据和上车条件见[官方能力对照](../docs/OEM_PARITY_0_4.md)。
 
 ## 界面与设置
 
@@ -44,7 +52,7 @@
 - 已接入 Android 的应用列表/图标/启动、媒体会话状态与控制、原厂 Widget 兼容页、窗口导航栏隐藏，以及需系统授权的全局隐藏。媒体会话与原车媒体中心同源同值仍待实车比对。
 - 车辆适配器保留官方 `Car.create → getICarFunction → getFunctionValue` 只读探测。当前不具备本车完整空调写契约，实车空调写命令返回不可用；演示温度回读不是实车验收。
 - 统一风格的天气、账号、日历、清理、胎压、AQI 卡片仍待 Provider APK/实车字段验证；提供打开原厂 Widget/应用的兼容路径。原厂 RemoteViews 自身样式不由 Flutter 任意重绘。
-- 导航图为明确标注的演示；实时摘要、地图嵌入、倒车接管、休眠恢复、窗口边界及长时性能待实车验证。
+- 演示路线只用于无原生导航状态的界面预览；实际 Android 首页使用导航容器或明确的全屏回退。真高德嵌入、实时摘要、倒车接管、休眠恢复、窗口边界及长时性能待实车验证。
 
 ## 构建
 
@@ -60,7 +68,7 @@ flutter build apk --release --target-platform android-arm64,android-x64 --split-
 
 构建产物在 `build/app/outputs/flutter-apk/`。`app-arm64-v8a-release.apk` 是后续车机验证候选，`app-x86_64-release.apk` 供模拟器；这两个 ABI 构建自相同源码，arm64 尚未经过实车运行验证。
 
-分 ABI APK 的 versionCode 由 Flutter 添加 ABI 前缀，本次 arm64 为 2003、x86_64 为 4003；后续升级应提高 `pubspec.yaml` 的构建号。当前签名、大小和 SHA-256 记录于[构建报告](verification/build-report.json)。
+分 ABI APK 的 versionCode 由 Flutter 添加 ABI 前缀，本次 arm64 为 2004、x86_64 为 4004；后续升级应提高 `pubspec.yaml` 的构建号。当前签名、大小和 SHA-256 记录于[构建报告](verification/build-report.json)。
 
 本机 Flutter SDK 位于 `/data/tools/flutter`、Android SDK 位于 `/data/tools/linkco-android/sdk`。需要本地代理环境时可用 `python3 tools/flutter_task.py <flutter 参数>`；脚本为 Gradle 继承已有代理，测试连接本机 VM service 时绕过代理。可用 `FLUTTER_SDK` 覆盖 Flutter 路径。SDK、Gradle 缓存和 build 均不提交。
 
@@ -75,7 +83,7 @@ python3 tools/flutter_task.py drive \
   --debug -d emulator-5580
 ```
 
-测试只使用模拟空调动作；会重置这个模拟器内 UNI 的主题/布局、调整演示和导航栏开关。执行前应指定模拟器，不把测试脚本用于实车。
+测试使用模拟空调及两个独立的合成播放器；会重置这个模拟器内 UNI 的主题/布局、调整演示和导航栏开关。执行前应指定模拟器，不把测试脚本用于实车。
 
 切换 release 构建与集成测试时保留默认 pub 步骤，以重新生成包含开发测试插件的注册代码；不要在这种切换后直接使用 `drive --no-pub`。
 
@@ -88,7 +96,7 @@ python3 ../android/tools/build-fixture.py
 python3 tools/flutter_task.py drive --driver=test_driver/driver.dart --target=integration_test/launcher_test.dart -d emulator-5580
 ```
 
-驱动脚本在 Flutter 安装完成后准备模拟器媒体授权与前台测试音源，校验设备为模拟器；测试源可用 `adb -s emulator-5580 uninstall ecarx.xsf.mediacenter` 移除。
+驱动脚本在 Flutter 安装完成后准备模拟器媒体授权与前台测试音源，校验设备为模拟器；测试源可分别卸载 `ecarx.xsf.mediacenter` 和 `xyz.i4o.uni.fixture.player`。
 
 [验证报告](verification/emulator-report.json)和同目录的 `flutter-*.png` 是实际模拟器输出。只验证功能，不把模拟器帧率视为 MSM8996 实车性能。后续按[实车验收记录](../docs/CAR_ACCEPTANCE.md)继续核对。
 

@@ -1,3 +1,5 @@
+import 'vehicle_data.dart';
+
 /// Seat actuators require a per-control capability, separate from general HVAC.
 class SeatControlState {
   final bool writable;
@@ -11,7 +13,11 @@ class SeatControlState {
         : {};
     final capability = capabilities[key] is Map ? capabilities[key] as Map : {};
     final climate = native['climate'] is Map ? native['climate'] as Map : {};
-    final raw = climate[key];
+    final raw = demo
+        ? climate[key]
+        : vehicle['fields'] is Map
+            ? VehicleField.fromNative(native, key).value
+            : climate[key];
     final readable = demo ||
         (capability['supported'] == true && capability['readable'] == true);
     return SeatControlState(

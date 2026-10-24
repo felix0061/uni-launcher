@@ -9,7 +9,8 @@ Future<void> main() async {
   if (!RegExp(r'^emulator-\d+$').hasMatch(serial))
     throw StateError('Emulator required');
   Future<String> adb(List<String> args) async {
-    final result = await Process.run('adb', ['-s', serial, ...args]);
+    final result = await Process.run('adb', ['-s', serial, ...args])
+        .timeout(const Duration(seconds: 30));
     if (result.exitCode != 0)
       throw StateError('Emulator setup failed: ${result.stderr}');
     return '${result.stdout}'.trim();
@@ -27,9 +28,24 @@ Future<void> main() async {
     'allow_listener',
     'xyz.i4o.uni.launcher/xyz.i4o.uni.launcher.integration.MediaAccessService'
   ]);
+  await adb(['shell', 'am', 'force-stop', 'xyz.i4o.uni.fixture.player']);
+  await adb([
+    'shell',
+    'am',
+    'start',
+    '-W',
+    '-n',
+    'xyz.i4o.uni.fixture.player/ecarx.xsf.mediacenter.FixtureActivity'
+  ]);
   await adb(['shell', 'am', 'force-stop', 'ecarx.xsf.mediacenter']);
-  await adb(
-      ['shell', 'am', 'start', '-n', 'ecarx.xsf.mediacenter/.FixtureActivity']);
+  await adb([
+    'shell',
+    'am',
+    'start',
+    '-W',
+    '-n',
+    'ecarx.xsf.mediacenter/.FixtureActivity'
+  ]);
   await adb(
       ['shell', 'am', 'start', '-n', 'xyz.i4o.uni.launcher/.MainActivity']);
   final out = Directory('verification')..createSync(recursive: true);

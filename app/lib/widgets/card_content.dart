@@ -12,6 +12,11 @@ import 'launcher_dialog.dart';
 import 'uni_icon.dart';
 import 'lyrics_view.dart';
 import 'media_progress.dart';
+import 'embedded_navigation.dart';
+import 'media_artwork.dart';
+import 'weather_icon.dart';
+import '../model/weather_condition.dart';
+import '../model/vehicle_data.dart';
 
 part 'card_content_music.dart';
 part 'card_content_navigation.dart';
@@ -61,14 +66,19 @@ class CardContent extends StatelessWidget {
       ValueListenableBuilder<Map<String, dynamic>>(
         valueListenable: controller.native,
         builder: (context, native, _) => switch (card.type) {
-          'nav' => native['demo'] == true
-              ? const _NavigationDemo()
-              : _NavigationWaiting(card: card, controller: controller),
+          'nav' => native['navigation'] is Map
+              ? EmbeddedNavigationCard(
+                  controller: controller,
+                  navigation: mapOf(native['navigation']))
+              : native['demo'] == true
+                  ? const _NavigationDemo()
+                  : _NavigationWaiting(card: card, controller: controller),
           'music' =>
             _MusicCard(card: card, controller: controller, state: native),
           'weather' => _WeatherCard(
               card: card,
               demo: native['demo'] == true,
+              native: native,
               editing: controller.editing),
           'clock' => ClockCard(title: card.title),
           'shortcuts' => _ShortcutCard(card: card, controller: controller),

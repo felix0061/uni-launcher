@@ -11,6 +11,8 @@ import '../widgets/bottom_dock.dart';
 import '../widgets/scene_background.dart';
 import '../widgets/uni_icon.dart';
 import '../widgets/launcher_dialog.dart';
+import '../widgets/embedded_navigation.dart';
+import '../widgets/integration_settings.dart';
 
 class SettingsScreen extends StatelessWidget {
   final LauncherController controller;
@@ -440,20 +442,22 @@ class DesktopPreview extends StatelessWidget {
         child: ClipRRect(
             borderRadius: BorderRadius.circular(s.radius * .64),
             child: IgnorePointer(
-                child: FittedBox(
-                    fit: BoxFit.contain,
-                    child: SizedBox(
-                        width: Design.canvasWidth,
-                        height: 900,
-                        child: SceneBackground(
-                            child: Column(children: [
-                          Header(controller: c),
-                          Expanded(child: Desktop(controller: c)),
-                          Padding(
-                              padding: EdgeInsets.fromLTRB(Design.px(32), 0,
-                                  Design.px(32), Design.px(16)),
-                              child: BottomDock(controller: c))
-                        ])))))));
+                child: EmbeddedContentPolicy(
+                    enabled: false,
+                    child: FittedBox(
+                        fit: BoxFit.contain,
+                        child: SizedBox(
+                            width: Design.canvasWidth,
+                            height: 900,
+                            child: SceneBackground(
+                                child: Column(children: [
+                              Header(controller: c),
+                              Expanded(child: Desktop(controller: c)),
+                              Padding(
+                                  padding: EdgeInsets.fromLTRB(Design.px(32), 0,
+                                      Design.px(32), Design.px(16)),
+                                  child: BottomDock(controller: c))
+                            ]))))))));
   }
 }
 
@@ -674,6 +678,8 @@ class SourceSettings extends StatelessWidget {
           ('air', 'air', '空气质量', '按车型支持')
         ];
         return ListView(children: [
+          IntegrationSettings(controller: c, native: n),
+          SizedBox(height: Design.px(16)),
           GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -760,7 +766,7 @@ class SourceSettings extends StatelessWidget {
                         ? (v) => c.command('global-navigation', enabled: v)
                         : null),
                 Row(children: [
-                  Text('UNI 0.3.0 · xyz.i4o.uni.launcher',
+                  Text('UNI 0.4.0 · xyz.i4o.uni.launcher',
                       style:
                           TextStyle(fontSize: Design.px(18), color: s.muted)),
                   const Spacer(),

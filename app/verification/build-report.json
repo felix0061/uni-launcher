@@ -1,7 +1,7 @@
 {
-  "checkedAt": "2026-10-24T10:48:13.006447+00:00",
+  "checkedAt": "2026-10-24T11:35:37.932085+00:00",
   "package": "xyz.i4o.uni.launcher",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "toolchain": {
     "flutter": "3.47.8",
     "dart": "3.13.7",
@@ -12,8 +12,8 @@
   },
   "validation": {
     "flutterAnalyze": "No issues found",
-    "flutterTests": 27,
-    "android9IntegrationChecks": 40,
+    "flutterTests": 36,
+    "android9IntegrationChecks": 52,
     "releaseLint": "lintVital release passed; only Play ExpiredTargetSdkVersion excluded for local Android 9 distribution",
     "releaseEmulatorSmoke": {
       "abi": "x86_64",
@@ -21,37 +21,48 @@
       "install": "Success",
       "launch": "Status: ok",
       "homeIntentResolves": true,
-      "homeLongPress": "Settings visibly opened; screenshot inspected",
       "processResumed": true,
       "fatalOrUnhandledErrors": false,
       "screenshots": [
         "flutter-release-home.png",
         "flutter-release-settings.png"
-      ]
+      ],
+      "homeLongPress": "Settings visibly opened; screenshot inspected"
     },
-    "realCar": "Pending; arm64 archive verified but not run on the car",
+    "realCar": "Pending; arm64 package built and signature checked, not run on the car",
     "performance": "No real-car performance claim",
-    "javaCoreChecks": 348,
+    "javaCoreChecks": 364,
     "designChecks": 94,
     "designImages": 23,
-    "media": "Synthetic foreground MediaSession metadata, duration, position, lyric scroll, seek and playback callbacks passed; OEM media source remains unverified"
+    "media": "Two independent synthetic MediaSessions: package selection isolation, auto source updates, artwork, lyrics, playback clock, pause/resume, skip and no-session behavior passed; actual OEM/NetEase/QQ versions pending",
+    "weather": {
+      "conditions": 38,
+      "dayNightPaintChecks": 76,
+      "atlasScreenshots": [
+        "weather-icons-day.png",
+        "weather-icons-night.png"
+      ],
+      "realProvider": "pending"
+    },
+    "navigation": "Android 9 ActivityView implementation compiled; permission fallback, app selection persistence and preview isolation passed. Real AMap embedding, display, touch and car system privileges pending",
+    "vehicle": "Read-only ECARX candidate getter mapping, validity/freshness, independent seat read capability and tri-state sync handling. Real readings/units and all vehicle write operations pending"
   },
   "artifacts": [
     {
       "path": "build/app/outputs/flutter-apk/app-arm64-v8a-release.apk",
       "abi": "arm64-v8a",
-      "bytes": 17911355,
-      "sha256": "97d8a891980186d15a608787dd0be8e8d287a8a98f9322ae900aa345db3f8a4f",
-      "versionCode": 2003,
+      "bytes": 18124511,
+      "sha256": "5a68687f798b4c36543173286a57b7c0fa3fee73e3bf768e74ce1038f007f4d2",
+      "versionCode": 2004,
       "signatureVerified": true,
       "certificateSha256": "bba7d5b864934b8ff144b08d1f58a866c883261500f9e9f201b96c2a3dc1ea1f"
     },
     {
       "path": "build/app/outputs/flutter-apk/app-x86_64-release.apk",
       "abi": "x86_64",
-      "bytes": 19419205,
-      "sha256": "39f5151c1ac8ae47f9de8be2e306bf60ad93163001b4d29f1a83d83db696a589",
-      "versionCode": 4003,
+      "bytes": 19632361,
+      "sha256": "27591bbc83331fadc95500d50c766ce7a67682776bacca1e461d8dff0c8fc073",
+      "versionCode": 4004,
       "signatureVerified": true,
       "certificateSha256": "bba7d5b864934b8ff144b08d1f58a866c883261500f9e9f201b96c2a3dc1ea1f"
     }

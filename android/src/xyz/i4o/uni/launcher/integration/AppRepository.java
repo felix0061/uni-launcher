@@ -37,7 +37,7 @@ public final class AppRepository {
             Bitmap bitmap=Bitmap.createBitmap(72,72,Bitmap.Config.ARGB_8888);Canvas canvas=new Canvas(bitmap);
             drawable.setBounds(0,0,72,72);drawable.draw(canvas);
             ByteArrayOutputStream out=new ByteArrayOutputStream();bitmap.compress(Bitmap.CompressFormat.PNG,100,out);bitmap.recycle();
-            result.put(new JSONObject().put("id",key).put("label",app.loadLabel(context.getPackageManager()).toString())
+            result.put(new JSONObject().put("id",key).put("package",app.activityInfo.packageName).put("label",app.loadLabel(context.getPackageManager()).toString())
                 .put("icon","data:image/png;base64,"+Base64.encodeToString(out.toByteArray(),Base64.NO_WRAP)));
         } catch(Exception e){android.util.Log.w("UniApps","Unable to read app icon",e);}
         return result;

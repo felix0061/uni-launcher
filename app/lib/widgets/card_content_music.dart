@@ -10,10 +10,25 @@ String _mediaValue(
           : waiting;
 }
 
+String mediaSourceLabel(Map<String, dynamic> state) {
+  if (state['demo'] == true) return '原车媒体中心 · 样式示例';
+  final media = mapOf(state['media']);
+  final preferred = mapOf(state['integrationPreferences'])['mediaPackage'];
+  final source = media['source'] ?? (preferred == 'auto' ? null : preferred);
+  for (final raw in state['apps'] is List ? state['apps'] as List : const []) {
+    final app = mapOf(raw);
+    if (app['package'] == source && source != null)
+      return '${app['label'] ?? source}';
+  }
+  return source?.toString() ?? '音乐播放器';
+}
+
 class _MediaCover extends StatelessWidget {
   final bool demo;
   final double size;
-  const _MediaCover({required this.demo, required this.size});
+  final Map<String, dynamic> media;
+  const _MediaCover(
+      {required this.demo, required this.size, required this.media});
   @override
   Widget build(BuildContext context) {
     final s = SurfaceStyle.of(context);
@@ -30,13 +45,7 @@ class _MediaCover extends StatelessWidget {
             ]),
         child: ClipRRect(
             borderRadius: BorderRadius.circular(s.radius * .93),
-            child: demo
-                ? SvgPicture.asset('assets/art/cover.svg', fit: BoxFit.cover)
-                : ColoredBox(
-                    color: s.soft,
-                    child: Center(
-                        child: UniIcon('music',
-                            size: size * .38, color: s.accent)))));
+            child: MediaArtwork(media: media, demo: demo)));
   }
 }
 
@@ -124,7 +133,9 @@ class _MusicCard extends StatelessWidget {
                                 child: compact
                                     ? Row(children: [
                                         _MediaCover(
-                                            demo: demo, size: coverSize),
+                                            demo: demo,
+                                            size: coverSize,
+                                            media: mapOf(state['media'])),
                                         SizedBox(width: Design.px(20)),
                                         Expanded(child: copy),
                                         IconAction(
@@ -140,7 +151,9 @@ class _MusicCard extends StatelessWidget {
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                             _MediaCover(
-                                                demo: demo, size: coverSize),
+                                                demo: demo,
+                                                size: coverSize,
+                                                media: mapOf(state['media'])),
                                             SizedBox(
                                                 height: Design.px(
                                                     editing ? 14 : 20)),
@@ -161,9 +174,8 @@ class _MusicCard extends StatelessWidget {
                                                   child: Row(children: [
                                                     Expanded(
                                                         child: Text(
-                                                            demo
-                                                                ? '原车媒体中心 · 样式示例'
-                                                                : '原车媒体中心',
+                                                            mediaSourceLabel(
+                                                                state),
                                                             style: TextStyle(
                                                                 fontSize:
                                                                     Design.px(
@@ -211,12 +223,17 @@ class MediaPanel extends StatelessWidget {
                 child: Padding(
                     padding: EdgeInsets.symmetric(vertical: Design.px(25)),
                     child: Row(children: [
-                      _MediaCover(demo: demo, size: Design.px(260)),
+                      _MediaCover(demo: demo, size: Design.px(260), media: m),
                       SizedBox(width: Design.px(44)),
                       Expanded(
                           child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                            TextButton.icon(
+                                onPressed: () =>
+                                    controller.command('launch-player'),
+                                icon: const UniIcon('music', size: 20),
+                                label: const Text('打开关联播放器')),
                             Text(_mediaValue(state, 'title', '向海而行', '暂无播放'),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
@@ -263,7 +280,14 @@ class MediaPanel extends StatelessWidget {
                                     solid: action == 'toggle-play',
                                     size: Design.px(58),
                                     iconSize: Design.px(28),
-                                    onTap: available
+                                    onTap: available &&
+                                            (demo ||
+                                                m[action == 'next'
+                                                        ? 'canNext'
+                                                        : action == 'previous'
+                                                            ? 'canPrevious'
+                                                            : 'canToggle'] ==
+                                                    true)
                                         ? () => controller.command(action)
                                         : null),
                               ],

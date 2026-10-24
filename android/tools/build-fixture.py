@@ -19,3 +19,16 @@ with zipfile.ZipFile(out/'unsigned.apk','a',zipfile.ZIP_DEFLATED) as z:z.write(o
 run(j/'java','-cp',str(t/'root/usr/share/java/apksigner.jar')+':'+str(t/'root/usr/share/java/apksig.jar'),'com.android.apksigner.ApkSignerTool','sign','--ks',sdk.parent/'uni-debug.keystore','--ks-pass','pass:android','--ks-key-alias','uni-debug','--v4-signing-enabled','false','--out',out/'fixture.apk',out/'unsigned.apk')
 run('adb','-s',serial,'install','-r',out/'fixture.apk')
 print('Synthetic source installed on',serial,'ONLY; package ecarx.xsf.mediacenter is a test fixture, not an OEM APK.')
+
+# A second independently owned session tests that explicit player selection
+# neither reads nor controls the first source. Still emulator-only above.
+alt=out/'alternate';alt.mkdir(exist_ok=True)
+manifest=(src/'AndroidManifest.xml').read_text().replace('package="ecarx.xsf.mediacenter"','package="xyz.i4o.uni.fixture.player"').replace('UNI 模拟器测试源','UNI 备用测试播放器')
+for name in ['FixtureActivity','FixtureMediaService','widget.MediaWidgetProvider1x2']:
+    manifest=manifest.replace('android:name=".'+name+'"','android:name="ecarx.xsf.mediacenter.'+name+'"')
+(alt/'AndroidManifest.xml').write_text(manifest)
+run(t/'aapt2','link','-I',android,'--manifest',alt/'AndroidManifest.xml','-R',out/'res.zip','-o',alt/'unsigned.apk')
+with zipfile.ZipFile(alt/'unsigned.apk','a',zipfile.ZIP_DEFLATED) as z:z.write(out/'classes.dex','classes.dex')
+run(j/'java','-cp',str(t/'root/usr/share/java/apksigner.jar')+':'+str(t/'root/usr/share/java/apksig.jar'),'com.android.apksigner.ApkSignerTool','sign','--ks',sdk.parent/'uni-debug.keystore','--ks-pass','pass:android','--ks-key-alias','uni-debug','--v4-signing-enabled','false','--out',out/'fixture-alternate.apk',alt/'unsigned.apk')
+run('adb','-s',serial,'install','-r',out/'fixture-alternate.apk')
+print('Secondary synthetic player installed on',serial,'ONLY.')

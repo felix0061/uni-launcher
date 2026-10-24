@@ -9,6 +9,7 @@ import 'package:uni_launcher/widgets/glass_surface.dart';
 import 'package:uni_launcher/widgets/seat_controls.dart';
 import 'package:uni_launcher/screens/settings_screen.dart';
 import 'package:uni_launcher/widgets/lyrics_view.dart';
+import 'weather_gallery.dart';
 
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -31,6 +32,8 @@ void main() {
     c.resetLayout();
     c.setAppearance(const Appearance(mode: 'dark'));
     await c.command('demo-mode', enabled: true);
+    await c.command('select-player', value: 'ecarx.xsf.mediacenter');
+    await c.command('select-navigation', value: 'auto');
     await c.command('hide-navigation', enabled: false);
     await settle();
     await binding.convertFlutterSurfaceToImage();
@@ -45,6 +48,10 @@ void main() {
         dock.right > window.width * .95 && dock.bottom > window.height * .9);
     verify('Android app list arrives through platform channel',
         (c.native.value['apps'] as List).isNotEmpty);
+    final nav = c.native.value['navigation'] as Map;
+    verify(
+        'Native map permission fallback is explicit and no demo route is painted',
+        nav['canEmbed'] == false && find.text('600 米后右转').evaluate().isEmpty);
     await binding.takeScreenshot('flutter-home-dark');
     c.setAppearance(c.appearance.copyWith(mode: 'light'));
     await settle();
@@ -310,6 +317,56 @@ void main() {
             nativeMedia['durationMs'] == 180000 &&
             (nativeMedia['positionMs'] as num) >= 1000 &&
             (nativeMedia['sampledAtMs'] as num) > 0);
+    verify('Selected source supplies real artwork through platform channel',
+        (nativeMedia['artwork'] as String).isNotEmpty);
+    await c.command('select-player', value: 'xyz.i4o.uni.fixture.player');
+    await settle();
+    verify(
+        'Explicit alternate player reads only its own session',
+        (c.native.value['media'] as Map)['source'] ==
+            'xyz.i4o.uni.fixture.player');
+    await c.command('toggle-play');
+    await settle();
+    verify('Transport pause reaches alternate player',
+        (c.native.value['media'] as Map)['playing'] == false);
+    await c.command('select-player', value: 'auto');
+    await settle();
+    verify('Automatic source chooses the remaining playing session',
+        (c.native.value['media'] as Map)['source'] == 'ecarx.xsf.mediacenter');
+    await c.command('toggle-play');
+    await settle();
+    verify(
+        'Automatic source observes pause without a session list change',
+        ((c.native.value['media'] as Map)['sessions'] as List)
+            .every((raw) => (raw as Map)['playing'] == false));
+    await c.command('toggle-play');
+    await settle();
+    await c.command('select-player', value: 'ecarx.xsf.mediacenter');
+    await settle();
+    verify('First player stays playing while alternate player was paused',
+        (c.native.value['media'] as Map)['playing'] == true);
+    final chosen = await c.gateway.bootstrap();
+    verify(
+        'Player preference is committed to native preferences',
+        (chosen['integrationPreferences'] as Map)['mediaPackage'] ==
+            'ecarx.xsf.mediacenter');
+    await c.command('select-player', value: 'com.android.settings');
+    await settle();
+    verify(
+        'App with no session stays unavailable without controlling another player',
+        (c.native.value['media'] as Map)['available'] == false);
+    await c.command('select-player', value: 'ecarx.xsf.mediacenter');
+    await settle();
+    await c.command('select-navigation', value: 'xyz.i4o.uni.fixture.player');
+    await settle();
+    final chosenNav = c.native.value['navigation'] as Map;
+    verify(
+        'Navigation choice persists and embedding stays disabled without system permission',
+        chosenNav['preferredPackage'] == 'xyz.i4o.uni.fixture.player' &&
+            chosenNav['installed'] == true &&
+            chosenNav['canEmbed'] == false);
+    await c.command('select-navigation', value: 'auto');
+    await settle();
     await c.command('previous');
     await settle();
     verify(
@@ -320,12 +377,22 @@ void main() {
             .isNotEmpty);
     await Future<void>.delayed(const Duration(seconds: 3));
     await settle();
-    verify(
-        'Playing native timeline scrolls to next lyric line',
-        find
-            .byKey(const ValueKey('lyric-line-1-active'))
-            .evaluate()
-            .isNotEmpty);
+    final advancing = c.native.value['media'] as Map;
+    verify('Native playback clock advances after playing',
+        (advancing['positionMs'] as num) >= 3000);
+    final advancingLyric = find.byWidgetPredicate((w) =>
+        w.key is ValueKey<String> &&
+        RegExp(r'^lyric-line-[12]-active$')
+            .hasMatch((w.key as ValueKey<String>).value));
+    for (int i = 0; i < 30 && advancingLyric.evaluate().isEmpty; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+    if (advancingLyric.evaluate().isEmpty)
+      debugPrint(
+          'Lyric clock=${(c.native.value['media'] as Map)['positionMs']} keys=${find.byWidgetPredicate((w) => w.key.toString().contains('lyric-line-')).evaluate().map((e) => e.widget.key).toList()}');
+    verify('Playing native timeline scrolls beyond first lyric line',
+        advancingLyric.evaluate().isNotEmpty);
     await c.command('toggle-play');
     await settle();
     verify('Media pause is confirmed by native source callback',
@@ -340,7 +407,10 @@ void main() {
     c.openSettings();
     c.tab('sources');
     await settle();
-    await tester.ensureVisible(find.byKey(const ValueKey('hide-navigation')));
+    await binding.takeScreenshot('flutter-integration-settings');
+    await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('hide-navigation')), 300,
+        scrollable: find.byType(Scrollable).first);
     await settle();
     await tester.tap(find.byKey(const ValueKey('hide-navigation')));
     await settle();
@@ -355,6 +425,21 @@ void main() {
     await c.persist();
     c.home();
     await settle();
+    for (final night in [false, true]) {
+      // Use MaterialApp's navigator context, not the parent LauncherApp element.
+      final navigator =
+          tester.state<NavigatorState>(find.byType(Navigator).first);
+      navigator.push(MaterialPageRoute<void>(
+          builder: (_) => WeatherGallery(night: night)));
+      await settle();
+      await binding
+          .takeScreenshot(night ? 'weather-icons-night' : 'weather-icons-day');
+      navigator.pop();
+      await settle();
+    }
+    verify(
+        'Weather day and night atlases render all icon conditions without exceptions',
+        tester.takeException() == null);
     verify('No Flutter rendering exception', tester.takeException() == null);
     binding.reportData = {
       ...?binding.reportData,

@@ -22,7 +22,9 @@ public final class OfficialVehicleAdapter implements VehicleAdapter {
             state.put("frameworkPresent", true);
             Object functions = car.getClass().getMethod("getICarFunction").invoke(car);
             Object camera = functions.getClass().getMethod("getFunctionValue", int.class).invoke(functions, 587400448);
-            state.put("cameraConfiguration", camera).put("reason", "框架可访问；空调与车辆字段待实车核对");
+            state.put("cameraConfiguration", camera).put("probeAvailable",true);
+            try{Object sensors=car.getClass().getMethod("getSensorManager").invoke(car);Object supported=sensors.getClass().getMethod("isSensorSupported",int.class).invoke(sensors,1049344);state.put("pm25SupportRaw",String.valueOf(supported));}catch(Exception ignored){}
+            state.put("reason", "框架可访问；空调与车辆字段待实车核对");
         } catch (ClassNotFoundException e) {
             putReason("当前设备没有原车框架");
         } catch (LinkageError e) {
