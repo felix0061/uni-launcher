@@ -1,0 +1,8 @@
+/analysis/raw/
+/prototype/node_modules/
+/design/reference-images/
+__pycache__/
+*.pyc
+*.apk
+*.pk8
+*.keystore

@@ -1,0 +1,43 @@
+[
+  {
+    "id": "piqo",
+    "title": "Car Dashboard UI Design",
+    "author": "uixamjad / Piqo Studio",
+    "url": "https://dribbble.com/shots/18302473-Car-Dashboard-UI-Design",
+    "image_url": "https://cdn.dribbble.com/userupload/2764122/file/original-735143cfa14ef794452aa46cf83807b0.jpg?resize=1600x0",
+    "local_image": "reference-images/piqo.img",
+    "bytes": 392623
+  },
+  {
+    "id": "marcato",
+    "title": "Car Infotainment Systems",
+    "author": "Dannniel / Marcato Studio",
+    "url": "https://dribbble.com/shots/24695936-Car-Infotainment-Systems",
+    "fallback": "https://cdn.dribbble.com/userupload/16104096/file/original-3d4c4daba5d40ede410ac2d02c5acec3.png?resize=1200x900&vertical=center",
+    "image_url": "https://cdn.dribbble.com/userupload/16104096/file/original-3d4c4daba5d40ede410ac2d02c5acec3.png?resize=1200x900&vertical=center",
+    "local_image": "reference-images/marcato.img",
+    "bytes": 306757
+  },
+  {
+    "id": "ran",
+    "title": "Car UI Concept",
+    "author": "Ran Mingwei",
+    "url": "https://www.behance.net/gallery/93023813/Car-UI-Concept",
+    "discovery": "https://in.pinterest.com/pin/car-ui-design-inspiration--3870349672825376/",
+    "fallback": "https://i.pinimg.com/originals/16/f5/c0/16f5c0bbb1900ac7edce662dd2b7c7f8.png",
+    "page_fetch": "HTTPError",
+    "image_url": "https://i.pinimg.com/originals/16/f5/c0/16f5c0bbb1900ac7edce662dd2b7c7f8.png",
+    "local_image": "reference-images/ran.img",
+    "bytes": 299871
+  },
+  {
+    "id": "polestar",
+    "title": "Automotive HMI Redesign",
+    "author": "Andrey Shchapov",
+    "url": "https://www.andrey-design.com/work2/work2.html",
+    "fallback": "https://www.andrey-design.com/work2/w2hero.jpg",
+    "image_url": "https://www.andrey-design.com/work2/w2hero.jpg",
+    "local_image": "reference-images/polestar.img",
+    "bytes": 706603
+  }
+]

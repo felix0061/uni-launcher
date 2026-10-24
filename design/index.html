@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LYNK 05 · 卡片桌面视觉提案</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <svg class="symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+    <symbol id="home" viewBox="0 0 32 32"><path d="m5 14 11-9 11 9v13H20v-9h-8v9H5Z"/></symbol>
+    <symbol id="nav" viewBox="0 0 32 32"><path d="m26 5-8 22-4-10L4 13Z"/></symbol>
+    <symbol id="music" viewBox="0 0 32 32"><path d="M12 24V8l15-3v16M12 12l15-3"/><ellipse cx="8" cy="25" rx="4" ry="3"/><ellipse cx="23" cy="22" rx="4" ry="3"/></symbol>
+    <symbol id="apps" viewBox="0 0 32 32"><rect x="5" y="5" width="8" height="8" rx="2"/><rect x="19" y="5" width="8" height="8" rx="2"/><rect x="5" y="19" width="8" height="8" rx="2"/><rect x="19" y="19" width="8" height="8" rx="2"/></symbol>
+    <symbol id="car" viewBox="0 0 32 32"><path d="m6 13 3-7h14l3 7 2 4v9h-4v-4H8v4H4v-9ZM6 13h20M8 18h3m10 0h3"/></symbol>
+    <symbol id="phone" viewBox="0 0 32 32"><path d="M8 5H5C2 15 17 30 27 27v-3l-7-4-3 3a21 21 0 0 1-8-8l3-3Z"/></symbol>
+    <symbol id="settings" viewBox="0 0 32 32"><path d="m12 4-1 4-4 2-4 1 2 5-2 5 4 1 4 2 1 4h8l1-4 4-2 4-1-2-5 2-5-4-1-4-2-1-4Z"/><circle cx="16" cy="16" r="5"/></symbol>
+    <symbol id="fan" viewBox="0 0 32 32"><path d="M16 14C4 16 5 4 12 5c5 0 7 4 4 9Zm2 2c-2-12 10-11 9-4 0 5-4 7-9 4Zm-2 2c12-2 11 10 4 9-5 0-7-4-4-9Zm-2-2C16 28 4 27 5 20c0-5 4-7 9-4Z"/><circle cx="16" cy="16" r="2"/></symbol>
+    <symbol id="turn" viewBox="0 0 32 32"><path d="M9 27V14a5 5 0 0 1 5-5h12M19 2l7 7-7 7"/></symbol>
+    <symbol id="back" viewBox="0 0 32 32"><path d="M7 7v18m19-18L10 16l16 9Z"/></symbol>
+    <symbol id="next" viewBox="0 0 32 32"><path d="M25 7v18M6 7l16 9-16 9Z"/></symbol>
+    <symbol id="pause" viewBox="0 0 32 32"><path d="M11 8v16m10-16v16"/></symbol>
+    <symbol id="heart" viewBox="0 0 32 32"><path d="M16 27 5 16C-2 8 8 0 16 9 24 0 34 8 27 16Z"/></symbol>
+    <symbol id="cloud" viewBox="0 0 32 32"><path d="M8 24a6 6 0 0 1-1-12 9 9 0 0 1 17-2 7 7 0 0 1 0 14Z"/></symbol>
+    <symbol id="seat" viewBox="0 0 32 32"><path d="M10 4v13a4 4 0 0 0 4 4h12v5H12a7 7 0 0 1-7-7V4Zm4 5 3 8h9"/></symbol>
+    <symbol id="camera" viewBox="0 0 32 32"><path d="m5 12 4-6h14l4 6v11H5Z"/><circle cx="16" cy="16" r="5"/><path d="M2 26h28"/></symbol>
+    <symbol id="recirc" viewBox="0 0 32 32"><path d="M8 11h13l-4-4m4 4-4 4M24 21H11l4 4m-4-4 4-4M5 19v-3a7 7 0 0 1 3-5m19 2v3a7 7 0 0 1-3 5"/></symbol>
+    <symbol id="defrost" viewBox="0 0 32 32"><path d="M4 22 7 8q9-4 18 0l3 14ZM11 19V11m5 8V9m5 10v-8m-12 3 2-3 2 3m1-2 2-3 2 3m1 2 2-3 2 3"/></symbol>
+    <symbol id="bluetooth" viewBox="0 0 32 32"><path d="m9 9 15 14-8 6V3l8 6L9 23"/></symbol>
+  </defs></svg>
+  <main class="board">
+    <header class="editorial">
+      <div class="eyebrow">LYNK 05 / VISUAL STUDY 01</div>
+      <div class="intro-row"><div><h1>一张更安静的车机桌面。</h1><p>现代简约 · 模块卡片 · 深浅双主题</p></div><span class="stage">视觉提案 / 示例数据</span></div>
+    </header>
+    <section class="directions" aria-label="三个视觉方向">
+      <button type="button" class="direction chosen" data-style="calm" aria-pressed="true"><span class="direction-id">A / 推荐</span><strong>冷灰 · 青绿</strong><span>清晰的留白，柔和的科技感</span><i class="swatches"><b style="background:#10161d"></b><b style="background:#26323a"></b><b style="background:#71e4ce"></b><b style="background:#f3f5f4"></b></i></button>
+      <button type="button" class="direction" data-style="warm" aria-pressed="false"><span class="direction-id">B</span><strong>暖白 · 石墨</strong><span>温润的卡片，更偏家居与舒适</span><i class="swatches"><b style="background:#1d1b19"></b><b style="background:#38332d"></b><b style="background:#d8a776"></b><b style="background:#f3efe8"></b></i></button>
+      <button type="button" class="direction" data-style="ice" aria-pressed="false"><span class="direction-id">C</span><strong>石墨 · 冰蓝</strong><span>利落的边界，更鲜明的运动科技</span><i class="swatches"><b style="background:#0d131e"></b><b style="background:#202e43"></b><b style="background:#88bfff"></b><b style="background:#eff3f8"></b></i></button>
+    </section>
+    <section class="proposal">
+      <div class="section-title"><div><span class="eyebrow">01 / HOME</span><h2>卡片有主次，常用始终在手边。</h2></div><p>大导航卡 + 音乐卡 + 常用卡<br>底部为原车常驻区域示意</p></div>
+      <div class="screens" id="screens"></div>
+    </section>
+    <section class="component-section">
+      <div class="section-title"><div><span class="eyebrow">02 / COMPONENTS</span><h2>统一的圆角、间距与操作语言。</h2></div><p>空调展开层的视觉方向<br>仅作界面设计，未连接车机</p></div>
+      <div id="climate-studies" class="climate-studies"></div>
+      <div class="spec-grid"><div><strong>28 px</strong><span>主要卡片圆角</span></div><div><strong>24 px</strong><span>卡片间距</span></div><div><strong>3 级</strong><span>主要信息层次</span></div><div><strong>1 种</strong><span>核心强调色</span></div></div>
+      <p class="design-note">以上为 1920 × 1080 视觉画板标注，触控尺寸和窗口边界后续按车机实际密度校准。</p>
+    </section>
+    <section class="reference-section">
+      <div class="section-title"><div><span class="eyebrow">03 / REFERENCES</span><h2>参考的是秩序与层级。</h2></div><p>作者作品仅作风格研究<br>本提案的卡片、图标与地图示意为原创</p></div>
+      <div class="references">
+        <figure><img src="reference-images/piqo.img" alt="Piqo Studio 的深浅色车机概念参考"><figcaption><a href="https://dribbble.com/shots/18302473-Car-Dashboard-UI-Design" target="_blank" rel="noreferrer">Car Dashboard UI Design ↗</a><span>uixamjad / Piqo Studio · 深浅主题与内容分组</span></figcaption></figure>
+        <figure><img src="reference-images/marcato.img" alt="Marcato Studio 的深色模块卡片参考"><figcaption><a href="https://dribbble.com/shots/24695936-Car-Infotainment-Systems" target="_blank" rel="noreferrer">Car Infotainment Systems ↗</a><span>Dannniel / Marcato Studio · 模块化卡片与少量强调</span></figcaption></figure>
+        <figure><img src="reference-images/ran.img" alt="Ran Mingwei 的双主题车机概念参考"><figcaption><a href="https://in.pinterest.com/pin/car-ui-design-inspiration--3870349672825376/" target="_blank" rel="noreferrer">Car UI Concept · Pinterest 来源 ↗</a><span>Ran Mingwei / Behance · 成套配色与底部常用操作</span></figcaption></figure>
+        <figure><img src="reference-images/polestar.img" alt="Andrey Shchapov 的 Polestar HMI 概念参考"><figcaption><a href="https://www.andrey-design.com/work2/work2.html" target="_blank" rel="noreferrer">Automotive HMI Redesign ↗</a><span>Andrey Shchapov · 简约图标与边缘常用入口</span></figcaption></figure>
+      </div>
+    </section>
+    <footer class="board-footer">LYNK 05 · 原创视觉方向提案 · 2026.10.24 <span>样式评审阶段</span></footer>
+  </main>
+  <div id="single-screen"></div>
+  <script src="study.js"></script>
+</body>
+</html>

@@ -1,0 +1,792 @@
+[
+  {
+    "id": "O01",
+    "source": "official",
+    "claim": "标准 Widget 承载和媒体 Widget 定向刷新",
+    "confidence": "static-code",
+    "evidence": [
+      {
+        "method": "Lecarx/launcher3/LauncherImpl$WidgetUpdateTask;->sendUpdateIntentLocked(Landroid/content/ComponentName; [I)V",
+        "raw_line": 47989,
+        "instructions": [
+          "00000e const-string v1, \"android.appwidget.action.APPWIDGET_UPDATE\"",
+          "000012 invoke-direct v0, v1, Landroid/content/Intent;-><init>(Ljava/lang/String;)V",
+          "000018 const-string v1, \"appWidgetIds\"",
+          "00001c invoke-virtual v0, v1, v4, Landroid/content/Intent;->putExtra(Ljava/lang/String; [I)Landroid/content/Intent;",
+          "000026 invoke-virtual v0, v4, Landroid/content/Intent;->setFlags(I)Landroid/content/Intent;",
+          "00002c invoke-virtual v0, v3, Landroid/content/Intent;->setComponent(Landroid/content/ComponentName;)Landroid/content/Intent;",
+          "00003e invoke-virtual v4, Lecarx/launcher3/LauncherAppWidgetProviderInfo;->getProfile()Landroid/os/UserHandle;",
+          "000046 invoke-virtual v3, v0, v4, Landroid/content/Context;->sendBroadcastAsUser(Landroid/content/Intent; Landroid/os/UserHandle;)V"
+        ]
+      },
+      {
+        "method": "Lecarx/launcher3/ScalesLauncherAppWidgetHostView;->onClickEvent(Landroid/graphics/RectF;)V",
+        "raw_line": 144939,
+        "instructions": [
+          "000012 invoke-virtual v3, Lecarx/launcher3/ScalesLauncherAppWidgetHostView;->isCanScaled()Z",
+          "00001e invoke-direct v3, Lecarx/launcher3/ScalesLauncherAppWidgetHostView;->scaleWidget()V",
+          "00002e invoke-direct v3, Lecarx/launcher3/ScalesLauncherAppWidgetHostView;->deleteWidget()V",
+          "000042 const-string v0, \"ecarx.launcher3.widget.MediaUpdate\"",
+          "000046 invoke-direct v4, v0, Landroid/content/Intent;-><init>(Ljava/lang/String;)V",
+          "000050 const-string v1, \"ecarx.xsf.mediacenter\"",
+          "000054 const-string v2, \"ecarx.xsf.mediacenter.widget.MediaWidgetProvider1x2\"",
+          "00005e invoke-virtual v4, v0, Landroid/content/Intent;->setComponent(Landroid/content/ComponentName;)Landroid/content/Intent;",
+          "000068 invoke-virtual v0, v4, Landroid/content/Context;->sendBroadcast(Landroid/content/Intent;)V"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "O02",
+    "source": "official",
+    "claim": "车型能力探测：摄像头配置、PM2.5 支持、DVR",
+    "confidence": "static-code",
+    "evidence": [
+      {
+        "method": "Lecarx/launcher3/util/CarUtils;->updateCarConnected()V",
+        "raw_line": 87194,
+        "instructions": [
+          "000004 invoke-interface v0, Lcom/ecarx/xui/adaptapi/car/ICar;->getICarFunction()Lcom/ecarx/xui/adaptapi/car/base/ICarFunction;",
+          "00000c const v1, 587400448",
+          "000012 invoke-interface v0, v1, Lcom/ecarx/xui/adaptapi/car/base/ICarFunction;->getFunctionValue(I)I",
+          "00005e invoke-interface v0, Lcom/ecarx/xui/adaptapi/car/ICar;->getSensorManager()Lcom/ecarx/xui/adaptapi/car/sensor/ISensor;",
+          "00006e const v1, 1049344",
+          "000074 invoke-interface v0, v1, Lcom/ecarx/xui/adaptapi/car/sensor/ISensor;->isSensorSupported(I)Lcom/ecarx/xui/adaptapi/FunctionStatus;",
+          "0000a8 sget-object v1, Lcom/ecarx/xui/adaptapi/FunctionStatus;->notavailable Lcom/ecarx/xui/adaptapi/FunctionStatus;",
+          "0000b0 sget-object v1, Lcom/ecarx/xui/adaptapi/FunctionStatus;->error Lcom/ecarx/xui/adaptapi/FunctionStatus;",
+          "0000d4 invoke-virtual v0, v1, Lecarx/launcher3/app/App;->setHvacPM25(Z)V",
+          "0000e6 invoke-virtual v0, v1, Lecarx/launcher3/app/App;->setHvacPM25(Z)V",
+          "0000ec invoke-direct v4, Lecarx/launcher3/util/CarUtils;->updateHvac()V",
+          "0000f2 invoke-direct v4, Lecarx/launcher3/util/CarUtils;->updateApps()V"
+        ]
+      },
+      {
+        "method": "Lecarx/launcher3/util/CarUtils;->updateDeviceConnected()V",
+        "raw_line": 87254,
+        "instructions": [
+          "000004 invoke-virtual v0, Lcom/ecarx/xui/adaptapi/device/Device;->isDVRCameraConfigured()Z"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "O03",
+    "source": "official",
+    "claim": "随系统 Configuration 昼夜切换、主题广播和图标变化",
+    "confidence": "static-code",
+    "evidence": [
+      {
+        "method": "Lecarx/launcher3/LauncherAppState;-><init>()V",
+        "raw_line": 45368,
+        "instructions": [
+          "00009a const v2, 2131623991",
+          "0000b8 const v1, 2131623994",
+          "000160 const-string v1, \"com.android.server.ThemeManager.action.THEME_APPLIED\"",
+          "00016a const-string v1, \"android.intent.action.WALLPAPER_CHANGED\""
+        ]
+      },
+      {
+        "method": "Lecarx/launcher3/app/App;->getNightMode()I",
+        "raw_line": 75857,
+        "instructions": []
+      },
+      {
+        "method": "Lecarx/launcher3/app/App;->onConfigurationChanged(Landroid/content/res/Configuration;)V",
+        "raw_line": 76314,
+        "instructions": [
+          "00004a invoke-static Lecarx/launcher3/app/App;->getNightMode()I",
+          "00008e invoke-static Lecarx/launcher3/app/App;->getNightMode()I",
+          "00011a invoke-virtual v4, v0, Lecarx/launcher3/BaseActivity;->setNeedReload(Z)V",
+          "000120 invoke-static Lecarx/launcher3/app/App;->getNightMode()I"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "O04",
+    "source": "official",
+    "claim": "Launcher 与系统生命周期通知、应用面板 IPC",
+    "confidence": "static-code",
+    "evidence": [
+      {
+        "method": "Lecarx/launcher3/LauncherImpl;->sendLoadingCompleteBroadcastIfNecessary()V",
+        "raw_line": 111863,
+        "instructions": [
+          "000004 const-string v1, \"launcher.first_load_complete\"",
+          "000034 const-string v2, \"ecarx.launcher3.action.FIRST_LOAD_COMPLETE\"",
+          "000038 invoke-direct v1, v2, Landroid/content/Intent;-><init>(Ljava/lang/String;)V",
+          "000056 invoke-virtual v1, v2, Landroid/content/Intent;->addFlags(I)Landroid/content/Intent;",
+          "000060 invoke-virtual v2, v1, v0, Landroid/content/Context;->sendBroadcast(Landroid/content/Intent; Ljava/lang/String;)V",
+          "000072 const-string v1, \"launcher.first_load_complete\""
+        ]
+      },
+      {
+        "method": "Lecarx/launcher3/apppane/AppPaneService;->onBind(Landroid/content/Intent;)Landroid/os/IBinder;",
+        "raw_line": 131498,
+        "instructions": [
+          "000000 const-string v2, \"AppPaneService\"",
+          "000004 const-string v0, \"[JERRY][onBind], AppPaneService\"",
+          "000010 return-object v2"
+        ]
+      },
+      {
+        "method": "Lecarx/launcher3/BaseActivity;->launcherFirstBroadcast()V",
+        "raw_line": 150681,
+        "instructions": [
+          "000000 const-string v0, \"BaseActivity\"",
+          "000004 const-string v1, \"MyHandler launcherBroadcast EAS_LAUNCH_BAT_0ST\"",
+          "000012 invoke-direct v0, Landroid/content/Intent;-><init>()V",
+          "00001c invoke-virtual v0, v1, Landroid/content/Intent;->addFlags(I)Landroid/content/Intent;",
+          "000022 const-string v1, \"com.ecarx.intent.action.EAS_LAUNCH_BAT_0ST\"",
+          "000026 invoke-virtual v0, v1, Landroid/content/Intent;->setAction(Ljava/lang/String;)Landroid/content/Intent;",
+          "00002c invoke-virtual v2, v0, Lecarx/launcher3/BaseActivity;->sendBroadcast(Landroid/content/Intent;)V"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "D01",
+    "source": "dudu",
+    "claim": "获取 ECARX 车身 Binder 并连接车辆管理器",
+    "confidence": "static-code",
+    "evidence": [
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/d;->a()V",
+        "raw_line": 191935,
+        "instructions": [
+          "000008 const-string v0, \"ecarxcar_service\"",
+          "00000c invoke-direct v2, v0, Lcom/dudu/autoui/manage/i/h/i/f/d;->a(Ljava/lang/String;)Landroid/os/IBinder;",
+          "00001a invoke-static v0, Lecarx/car/IECarXCar$Stub;->asInterface(Landroid/os/IBinder;)Lecarx/car/IECarXCar;",
+          "000030 invoke-static v1, v0, Lecarx/car/ECarXCar;->createCar(Landroid/content/Context; Lecarx/car/IECarXCar;)Lecarx/car/ECarXCar;",
+          "000044 invoke-virtual v0, Lcom/dudu/autoui/manage/i/h/i/f/c;->a()V",
+          "00004e invoke-virtual v0, Lcom/dudu/autoui/manage/i/h/i/f/b;->a()V",
+          "000058 invoke-virtual v0, Lcom/dudu/autoui/manage/i/h/i/f/e;->a()V"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "D02",
+    "source": "dudu",
+    "claim": "空调状态初始化与回调订阅",
+    "confidence": "static-code",
+    "evidence": [
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->a()V",
+        "raw_line": 191140,
+        "instructions": [
+          "00000c const-string v1, \"car_publicattribute\"",
+          "000010 invoke-virtual v0, v1, Lecarx/car/ECarXCar;->getCarManager(Ljava/lang/String;)Ljava/lang/Object;",
+          "000020 invoke-virtual v0, Lecarx/car/hardware/vehicle/ECarXCarSetManager;->getECarXCarClimateManager()Lecarx/car/hardware/vehicle/ECarXCarClimateManager;",
+          "00002c invoke-virtual v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->getPA_CL_AC()Lecarx/car/hardware/vehicle/PATypes$PA_CL_AC;",
+          "00005e invoke-virtual v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->getPA_CL_Auto()Lecarx/car/hardware/vehicle/PATypes$PA_CL_Auto;",
+          "00008e invoke-virtual v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->getPA_CL_FanLevel()Lecarx/car/hardware/vehicle/PATypes$PA_CL_FanLevel;",
+          "0000a6 invoke-virtual v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->getPA_CL_MaxDefrost()Lecarx/car/hardware/vehicle/PATypes$PA_CL_MaxDefrost;",
+          "0000d6 invoke-virtual v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->getPA_CL_MaxAC()Lecarx/car/hardware/vehicle/PATypes$PA_CL_MaxAC;",
+          "000106 invoke-virtual v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->getPA_CL_RearDefrost()Lecarx/car/hardware/vehicle/PATypes$PA_CL_RearDefrost;",
+          "000136 invoke-virtual v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->getPA_CL_Sync()Lecarx/car/hardware/vehicle/PATypes$PA_CL_Sync;",
+          "00016c invoke-virtual v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->getPA_CL_ECOClimate()Lecarx/car/hardware/vehicle/PATypes$PA_CL_ECOClimate;",
+          "00019c invoke-virtual v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->getPA_CL_ClimateOn()Lecarx/car/hardware/vehicle/PATypes$PA_CL_ClimateOn;",
+          "0001cc invoke-virtual v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->getPA_CL_Recirc()Lecarx/car/hardware/vehicle/PATypes$PA_CL_Recirc;",
+          "0001fc invoke-virtual v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->getPA_CL_Mode()Lecarx/car/hardware/vehicle/PATypes$PA_CL_Mode;",
+          "000234 invoke-virtual v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->getPA_SHC_LeSts()Lecarx/car/hardware/vehicle/PATypes$PA_SHC_LeSts;",
+          "00024c invoke-virtual v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->getPA_SVC_Sts()Lecarx/car/hardware/vehicle/PATypes$PA_SVC_Sts;",
+          "000264 invoke-virtual v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->getPA_SHC_RiSts()Lecarx/car/hardware/vehicle/PATypes$PA_SHC_RiSts;",
+          "00027c invoke-virtual v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->getPA_CL_LeftTemp()Lecarx/car/hardware/vehicle/PATypes$PA_CL_LeftTemp;",
+          "00029c invoke-virtual v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->getPA_CL_RightTemp()Lecarx/car/hardware/vehicle/PATypes$PA_CL_RightTemp;",
+          "00040c invoke-virtual v1, v2, v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->registerCallback(Lecarx/car/hardware/vehicle/CarPAEventCallback; Lecarx/car/hardware/signal/SignalFilter;)V"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "D03",
+    "source": "dudu",
+    "claim": "空调与座椅指令，左右温度以 2 倍整数编码",
+    "confidence": "static-code",
+    "evidence": [
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b$a;->onPA_CL_LeftTemp(Lecarx/car/hardware/vehicle/PATypes$PA_CL_LeftTemp;)V",
+        "raw_line": 190688,
+        "instructions": [
+          "00000c invoke-virtual v8, Lecarx/car/hardware/vehicle/PATypes$PA_CL_LeftTemp;->getData()I",
+          "000014 int-to-double v2, v2",
+          "000016 const-wide/high16 v4, 4611686018427387904",
+          "00001a div-double/2addr v2, v4",
+          "000028 invoke-virtual v8, Lecarx/car/hardware/vehicle/PATypes$PA_CL_LeftTemp;->getData()I",
+          "000030 int-to-double v1, v8",
+          "000032 div-double/2addr v1, v4"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b$a;->onPA_CL_RightTemp(Lecarx/car/hardware/vehicle/PATypes$PA_CL_RightTemp;)V",
+        "raw_line": 190840,
+        "instructions": [
+          "00000c invoke-virtual v8, Lecarx/car/hardware/vehicle/PATypes$PA_CL_RightTemp;->getData()I",
+          "000014 int-to-double v2, v2",
+          "000016 const-wide/high16 v4, 4611686018427387904",
+          "00001a div-double/2addr v2, v4",
+          "000028 invoke-virtual v8, Lecarx/car/hardware/vehicle/PATypes$PA_CL_RightTemp;->getData()I",
+          "000030 int-to-double v1, v8",
+          "000032 div-double/2addr v1, v4"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->r()V",
+        "raw_line": 191089,
+        "instructions": []
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->s()V",
+        "raw_line": 191125,
+        "instructions": []
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->a()V",
+        "raw_line": 191140,
+        "instructions": [
+          "000034 invoke-virtual v0, Lecarx/car/hardware/vehicle/PATypes$PA_CL_AC;->getData()I",
+          "000066 invoke-virtual v0, Lecarx/car/hardware/vehicle/PATypes$PA_CL_Auto;->getData()I",
+          "000096 invoke-virtual v0, Lecarx/car/hardware/vehicle/PATypes$PA_CL_FanLevel;->getData()I",
+          "0000ae invoke-virtual v0, Lecarx/car/hardware/vehicle/PATypes$PA_CL_MaxDefrost;->getData()I",
+          "0000de invoke-virtual v0, Lecarx/car/hardware/vehicle/PATypes$PA_CL_MaxAC;->getData()I",
+          "00010e invoke-virtual v0, Lecarx/car/hardware/vehicle/PATypes$PA_CL_RearDefrost;->getData()I",
+          "00013e invoke-virtual v0, Lecarx/car/hardware/vehicle/PATypes$PA_CL_Sync;->getData()I",
+          "000174 invoke-virtual v0, Lecarx/car/hardware/vehicle/PATypes$PA_CL_ECOClimate;->getData()I"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->a(F)V",
+        "raw_line": 191402,
+        "instructions": [
+          "000008 const/high16 v1, 1073741824",
+          "00000c mul-float v3, v3, v1",
+          "000010 float-to-int v3, v3",
+          "000012 invoke-virtual v0, v3, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_LeftTemp(I)Lecarx/car/hardware/annotation/ApiResult;"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->a(I)V",
+        "raw_line": 191414,
+        "instructions": [
+          "00000c invoke-virtual v0, v2, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_FanLevel(I)Lecarx/car/hardware/annotation/ApiResult;"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->b()V",
+        "raw_line": 191424,
+        "instructions": [
+          "000012 invoke-virtual v1, v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_SVC_Lvl(I)Lecarx/car/hardware/annotation/ApiResult;",
+          "000020 invoke-virtual v0, v1, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_SHC_LeLvl(I)Lecarx/car/hardware/annotation/ApiResult;"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->b(F)V",
+        "raw_line": 191440,
+        "instructions": [
+          "000008 const/high16 v1, 1073741824",
+          "00000c mul-float v3, v3, v1",
+          "000010 float-to-int v3, v3",
+          "000012 invoke-virtual v0, v3, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_RightTemp(I)Lecarx/car/hardware/annotation/ApiResult;"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->b(I)V",
+        "raw_line": 191452,
+        "instructions": [
+          "00000a invoke-virtual v0, v1, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_Mode_Defrst(I)Lecarx/car/hardware/annotation/ApiResult;",
+          "00001e invoke-virtual v3, v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_Mode(I)Lecarx/car/hardware/annotation/ApiResult;",
+          "00002c invoke-virtual v3, v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_Mode(I)Lecarx/car/hardware/annotation/ApiResult;",
+          "00003a invoke-virtual v3, v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_Mode(I)Lecarx/car/hardware/annotation/ApiResult;",
+          "000048 invoke-virtual v3, v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_Mode(I)Lecarx/car/hardware/annotation/ApiResult;",
+          "000054 invoke-virtual v3, v1, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_Mode(I)Lecarx/car/hardware/annotation/ApiResult;",
+          "000062 invoke-virtual v3, v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_Mode(I)Lecarx/car/hardware/annotation/ApiResult;",
+          "000070 invoke-virtual v3, v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_Mode(I)Lecarx/car/hardware/annotation/ApiResult;"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->c()V",
+        "raw_line": 191492,
+        "instructions": [
+          "000018 invoke-virtual v1, v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_FanLevel(I)Lecarx/car/hardware/annotation/ApiResult;"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->d()V",
+        "raw_line": 191505,
+        "instructions": [
+          "000016 invoke-virtual v1, v0, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_FanLevel(I)Lecarx/car/hardware/annotation/ApiResult;"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->e()V",
+        "raw_line": 191518,
+        "instructions": [
+          "000016 invoke-virtual v0, v1, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_AC(I)Lecarx/car/hardware/annotation/ApiResult;"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->f()V",
+        "raw_line": 191532,
+        "instructions": [
+          "000016 invoke-virtual v0, v1, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_MaxAC(I)Lecarx/car/hardware/annotation/ApiResult;"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->g()V",
+        "raw_line": 191546,
+        "instructions": [
+          "000016 invoke-virtual v0, v1, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_Auto(I)Lecarx/car/hardware/annotation/ApiResult;"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->h()V",
+        "raw_line": 191560,
+        "instructions": [
+          "000016 invoke-virtual v0, v1, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_ECOClimate(I)Lecarx/car/hardware/annotation/ApiResult;"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->i()V",
+        "raw_line": 191574,
+        "instructions": [
+          "000016 invoke-virtual v0, v1, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_RearDefrost(I)Lecarx/car/hardware/annotation/ApiResult;"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->j()V",
+        "raw_line": 191588,
+        "instructions": [
+          "000016 invoke-virtual v0, v1, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_Recirc(I)Lecarx/car/hardware/annotation/ApiResult;"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->k()V",
+        "raw_line": 191602,
+        "instructions": [
+          "000012 invoke-virtual v0, v1, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_ClimateOn(I)Lecarx/car/hardware/annotation/ApiResult;"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->l()V",
+        "raw_line": 191619,
+        "instructions": [
+          "000016 invoke-virtual v0, v1, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_MaxDefrost(I)Lecarx/car/hardware/annotation/ApiResult;"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->m()V",
+        "raw_line": 191633,
+        "instructions": [
+          "000026 invoke-virtual v0, v1, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_SHC_LeLvl(I)Lecarx/car/hardware/annotation/ApiResult;"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->n()V",
+        "raw_line": 191652,
+        "instructions": [
+          "000026 invoke-virtual v0, v1, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_SVC_Lvl(I)Lecarx/car/hardware/annotation/ApiResult;"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->o()V",
+        "raw_line": 191671,
+        "instructions": [
+          "000026 invoke-virtual v0, v1, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_SHC_RiLvl(I)Lecarx/car/hardware/annotation/ApiResult;"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->p()V",
+        "raw_line": 191690,
+        "instructions": [
+          "000012 invoke-virtual v0, v2, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_Sync(I)Lecarx/car/hardware/annotation/ApiResult;",
+          "000024 invoke-virtual v0, v1, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_Sync(I)Lecarx/car/hardware/annotation/ApiResult;",
+          "00002e invoke-virtual v0, v1, Lecarx/car/hardware/vehicle/ECarXCarClimateManager;->CB_CL_Sync(I)Lecarx/car/hardware/annotation/ApiResult;"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/b;->q()V",
+        "raw_line": 191710,
+        "instructions": []
+      }
+    ]
+  },
+  {
+    "id": "D04",
+    "source": "dudu",
+    "claim": "四轮胎压读取和回调",
+    "confidence": "static-code",
+    "evidence": [
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/e;->a()V",
+        "raw_line": 192160,
+        "instructions": [
+          "00002c invoke-virtual v0, Lecarx/car/hardware/vehicle/ECarXCarVfmiscManager;->getPA_dTPMS_TirePressureFrntLe()Lecarx/car/hardware/vehicle/PATypes$PA_dTPMS_TirePressureFrntLe;",
+          "00004c invoke-virtual v0, Lecarx/car/hardware/vehicle/ECarXCarVfmiscManager;->getPA_dTPMS_TirePressureFrntRi()Lecarx/car/hardware/vehicle/PATypes$PA_dTPMS_TirePressureFrntRi;",
+          "00006c invoke-virtual v0, Lecarx/car/hardware/vehicle/ECarXCarVfmiscManager;->getPA_dTPMS_TirePressureReLe()Lecarx/car/hardware/vehicle/PATypes$PA_dTPMS_TirePressureReLe;",
+          "00008c invoke-virtual v0, Lecarx/car/hardware/vehicle/ECarXCarVfmiscManager;->getPA_dTPMS_TirePressureReRi()Lecarx/car/hardware/vehicle/PATypes$PA_dTPMS_TirePressureReRi;",
+          "0000b2 const v1, 33756",
+          "0000c6 const v1, 33757",
+          "0000da const v1, 33758",
+          "0000ee const v1, 33759",
+          "000110 invoke-virtual v2, v1, v0, Lecarx/car/hardware/vehicle/ECarXCarVfmiscManager;->registerCallback(Lecarx/car/hardware/vehicle/CarPAEventCallback; Lecarx/car/hardware/signal/SignalFilter;)V"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "D05",
+    "source": "dudu",
+    "claim": "车辆信号订阅与亮暗相关状态候选",
+    "confidence": "static-code",
+    "evidence": [
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/c$a;->onChangeEvent(Lecarx/car/hardware/ECarXCarPropertyValue;)V",
+        "raw_line": 191721,
+        "instructions": [
+          "000000 invoke-virtual v4, Lecarx/car/hardware/ECarXCarPropertyValue;->getPropertyId()I",
+          "000008 const/16 v1, 29272",
+          "000010 const/16 v1, 29386",
+          "00001a invoke-virtual v4, Lecarx/car/hardware/ECarXCarPropertyValue;->getValue()Ljava/lang/Object;",
+          "000042 invoke-virtual v4, Lecarx/car/hardware/ECarXCarPropertyValue;->getValue()Ljava/lang/Object;",
+          "000068 invoke-virtual v4, Lecarx/car/hardware/ECarXCarPropertyValue;->getValue()Ljava/lang/Object;",
+          "000094 invoke-virtual v4, Lecarx/car/hardware/ECarXCarPropertyValue;->getValue()Ljava/lang/Object;"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/manage/i/h/i/f/c;->a()V",
+        "raw_line": 191799,
+        "instructions": [
+          "00000c const-string v1, \"car_signal\"",
+          "000038 invoke-virtual v1, Lecarx/car/hardware/signal/CarSignalManager;->getTwliBriSts()I",
+          "00006a const/16 v1, 29386",
+          "00007c const/16 v2, 29272",
+          "00009c invoke-virtual v2, v3, v0, Lecarx/car/hardware/signal/CarSignalManager;->registerCallback(Lecarx/car/hardware/signal/CarSignalManager$CarSignalEventCallback; Lecarx/car/hardware/signal/SignalFilter;)V",
+          "0000e0 const v5, 33461",
+          "0000f2 const v5, 33466",
+          "000104 const/16 v5, 29388",
+          "000114 const/16 v5, 29395",
+          "000124 const/16 v5, 29195",
+          "000140 const/16 v5, 29348",
+          "000160 invoke-virtual v1, v2, v0, Lecarx/car/hardware/signal/CarSignalManager;->registerCallback(Lecarx/car/hardware/signal/CarSignalManager$CarSignalEventCallback; Lecarx/car/hardware/signal/SignalFilter;)V"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "D06",
+    "source": "dudu",
+    "claim": "高德状态广播解析：转向、路名、距离、时间、车道与路况",
+    "confidence": "static-code",
+    "evidence": [
+      {
+        "method": "Lcom/dudu/autoui/manage/s/i/g$a;->onReceive(Landroid/content/Context; Landroid/content/Intent;)V",
+        "raw_line": 210003,
+        "instructions": [
+          "000010 const-string v3, \"AUTONAVI_STANDARD_BROADCAST_SEND\"",
+          "000034 const-string v3, \"KEY_TYPE\"",
+          "000040 const/16 v4, 10001",
+          "000050 const/16 v4, 10019",
+          "000054 const-string v9, \"EXTRA_STATE\"",
+          "00005c const/16 v4, 10072",
+          "000064 const/16 v4, 12110",
+          "00006c const/16 v4, 13011",
+          "000074 const/16 v4, 13012",
+          "000080 const-string v3, \"EXTRA_DRIVE_WAY\"",
+          "000096 const-string v4, \"RECEIVER_CHEDAO_INFO:\"",
+          "0002ea const-string v2, \"EXTRA_TMC_SEGMENT\"",
+          "000300 const-string v3, \"RECEIVER_LUKUANG_INFO:\"",
+          "0003ee const-string v2, \"LIMITED_SPEED\"",
+          "0003fa const-string v2, \"AVERAGE_SPEED\"",
+          "00040a const-string v3, \"END_DISTANCE\"",
+          "000420 const-string v2, \"EXTRA_MUTE\"",
+          "00042c const-string v3, \"EXTRA_CASUAL_MUTE\"",
+          "0004f4 const-string v3, \"RECEIVE_ACTION!!!RECEIVER_STATE_INFO:isNight:\"",
+          "000554 const-string v3, \"\"",
+          "000558 const-string v4, \"ICON\"",
+          "00062e const-string v3, \"CAMERA_SPEED\"",
+          "000640 const-string v4, \"SEG_REMAIN_DIS\"",
+          "00064c const-string v4, \"NEXT_ROAD_NAME\"",
+          "000658 const-string v4, \"CUR_ROAD_NAME\"",
+          "0006ae const-string v5, \"CAMERA_DIST\"",
+          "0006ba const-string v6, \"CAMERA_TYPE\"",
+          "0006de const-string v3, \"ROUTE_REMAIN_DIS\"",
+          "0006ea const-string v3, \"ROUTE_REMAIN_TIME\"",
+          "0006f6 const-string v3, \"ROUTE_ALL_DIS\"",
+          "000702 const-string v3, \"ROUTE_ALL_TIME\"",
+          "00070e const-string v3, \"ROUNG_ABOUT_NUM\"",
+          "000732 const-string v5, \"CUR_SPEED\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "D07",
+    "source": "dudu",
+    "claim": "Android 9 ActivityView 嵌入与生命周期",
+    "confidence": "static-code",
+    "evidence": [
+      {
+        "method": "Lcom/dudu/pipsdk/PipView$b;->onActivityViewReady(Landroid/app/ActivityView;)V",
+        "raw_line": 825023,
+        "instructions": [
+          "000004 const-string v1, \"mVirtualDisplay\"",
+          "000038 invoke-static v1, v5, Lcom/dudu/pipsdk/PipView;->access$102(Lcom/dudu/pipsdk/PipView; Landroid/hardware/display/VirtualDisplay;)Landroid/hardware/display/VirtualDisplay;",
+          "000044 const-string v1, \"getVirtualDisplay\"",
+          "00006a invoke-static v1, v5, Lcom/dudu/pipsdk/PipView;->access$102(Lcom/dudu/pipsdk/PipView; Landroid/hardware/display/VirtualDisplay;)Landroid/hardware/display/VirtualDisplay;",
+          "00009a invoke-virtual v5, v0, Lcom/dudu/pipsdk/PipView$c;->onActivityViewReady(Lcom/dudu/pipsdk/PipView;)V"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/pipsdk/Pip28View;-><init>(Landroid/content/Context;)V",
+        "raw_line": 1006460,
+        "instructions": [
+          "00000a invoke-direct v0, v3, Landroid/app/ActivityView;-><init>(Landroid/content/Context;)V",
+          "00001e invoke-virtual v0, v3, Landroid/app/ActivityView;->setCallback(Landroid/app/ActivityView$StateCallback;)V"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/pipsdk/Pip28View;->release()V",
+        "raw_line": 1006484,
+        "instructions": [
+          "000004 invoke-virtual v0, Landroid/app/ActivityView;->release()V"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/pipsdk/Pip28View;->startActivity(Landroid/app/PendingIntent;)V",
+        "raw_line": 1006493,
+        "instructions": [
+          "000004 invoke-virtual v0, v2, Landroid/app/ActivityView;->startActivity(Landroid/app/PendingIntent;)V"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/pipsdk/Pip28View;->startActivity(Landroid/content/Intent;)V",
+        "raw_line": 1006498,
+        "instructions": [
+          "000004 invoke-virtual v0, v2, Landroid/app/ActivityView;->startActivity(Landroid/content/Intent;)V"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/pipsdk/Pip28View;->startActivity(Landroid/content/Intent; Landroid/os/UserHandle;)V",
+        "raw_line": 1006503,
+        "instructions": [
+          "000004 invoke-virtual v0, v2, v3, Landroid/app/ActivityView;->startActivity(Landroid/content/Intent; Landroid/os/UserHandle;)V"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "D08",
+    "source": "dudu",
+    "claim": "高德 plus 地图透出拓展广播，与标准引导广播是不同机制",
+    "confidence": "static-code",
+    "evidence": [
+      {
+        "method": "Lcom/dudu/autoui/dev/plugin/DevPluginPopupAMapService;->a(I I I I)V",
+        "raw_line": 391069,
+        "instructions": [
+          "00009a const-string v7, \"com.autonavi.plus.showmap\"",
+          "0000a8 const-string v8, \"h\"",
+          "0000ac const-string v9, \"w\"",
+          "0000b0 const-string v10, \"y\"",
+          "0000b4 const-string v11, \"x\"",
+          "000432 const-string v2, \"com.autonavi.plus.closemap\"",
+          "000440 const-string v3, \"com.autonavi.amapauto\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "D09",
+    "source": "dudu",
+    "claim": "媒体会话获取与播放状态",
+    "confidence": "static-code",
+    "evidence": [
+      {
+        "method": "Lcom/dudu/autoui/service/musicInfo/GetMusicInfoService;->a()V",
+        "raw_line": 250185,
+        "instructions": [
+          "000042 invoke-virtual v1, v2, Landroid/media/session/MediaSessionManager;->getActiveSessions(Landroid/content/ComponentName;)Ljava/util/List;",
+          "000072 const-string v4, \"ZDATA_NORMAL_MUSIC_USE_CLAZZ\"",
+          "000086 invoke-virtual v3, Landroid/media/session/MediaController;->getPlaybackState()Landroid/media/session/PlaybackState;",
+          "000092 invoke-virtual v3, Landroid/media/session/MediaController;->getPlaybackState()Landroid/media/session/PlaybackState;",
+          "0000a8 invoke-virtual v3, Landroid/media/session/MediaController;->getPackageName()Ljava/lang/String;",
+          "000110 invoke-virtual v3, Landroid/media/session/MediaController;->getPackageName()Ljava/lang/String;",
+          "000124 invoke-virtual v3, Landroid/media/session/MediaController;->getPackageName()Ljava/lang/String;",
+          "000172 invoke-virtual v2, Landroid/media/session/MediaController;->getPackageName()Ljava/lang/String;",
+          "0001a4 invoke-direct v2, v8, v0, Lcom/dudu/autoui/service/musicInfo/c;-><init>(Lcom/dudu/autoui/service/musicInfo/GetMusicInfoService; Landroid/media/session/MediaController;)V"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/service/musicInfo/c;-><init>(Lcom/dudu/autoui/service/musicInfo/GetMusicInfoService; Landroid/media/session/MediaController;)V",
+        "raw_line": 250522,
+        "instructions": []
+      },
+      {
+        "method": "Lcom/dudu/autoui/service/musicInfo/c;->run()V",
+        "raw_line": 250528,
+        "instructions": [
+          "000008 invoke-virtual v0, v1, Lcom/dudu/autoui/service/musicInfo/GetMusicInfoService;->a(Landroid/media/session/MediaController;)V"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "D10",
+    "source": "dudu",
+    "claim": "领克状态栏浮层服务",
+    "confidence": "static-code",
+    "evidence": [
+      {
+        "method": "Lcom/dudu/autoui/service/LingkeStateBarPopupService;->b()V",
+        "raw_line": 537311,
+        "instructions": []
+      },
+      {
+        "method": "Lcom/dudu/autoui/service/LingkeStateBarPopupService;->onCreate()V",
+        "raw_line": 537352,
+        "instructions": [
+          "000012 const-string v0, \"notification\"",
+          "000036 const-string v5, \"LingkeStateBarPopupService\"",
+          "0000f2 invoke-virtual v6, v1, v0, Landroid/app/Service;->startForeground(I Landroid/app/Notification;)V"
+        ]
+      },
+      {
+        "method": "Lcom/dudu/autoui/service/LingkeStateBarPopupService;->onStartCommand(Landroid/content/Intent; I I)I",
+        "raw_line": 537453,
+        "instructions": []
+      }
+    ]
+  },
+  {
+    "id": "O05",
+    "source": "official",
+    "claim": "DCY11 默认 Widget 与空间配置",
+    "confidence": "static-resource",
+    "path": "res/xml/dcy11_widgetpage_default.xml",
+    "widgets": [
+      {
+        "className": "ecarx.xsf.mediacenter.widget.MediaWidgetProvider1x2",
+        "packageName": "ecarx.xsf.mediacenter",
+        "screen": "0",
+        "spanX": "1",
+        "spanY": "2",
+        "x": "0",
+        "y": "0"
+      },
+      {
+        "className": "ecarx.naviservice.widget.BaseWidgetProvider",
+        "packageName": "ecarx.naviservice",
+        "screen": "0",
+        "spanX": "1",
+        "spanY": "2",
+        "x": "1",
+        "y": "0"
+      },
+      {
+        "className": "ecarx.home.module.widget.WeatherWidgetProvider1X1",
+        "packageName": "com.ecarx.smartcloud",
+        "screen": "0",
+        "spanX": "1",
+        "spanY": "1",
+        "x": "2",
+        "y": "0"
+      },
+      {
+        "className": "ecarx.calendar.widget.WidgetDynamicProvider",
+        "packageName": "ecarx.calendar",
+        "screen": "0",
+        "spanX": "1",
+        "spanY": "1",
+        "x": "2",
+        "y": "1"
+      },
+      {
+        "className": "ecarx.membercenter.app.appwidget.GidWidget",
+        "packageName": "ecarx.membercenter",
+        "screen": "1",
+        "spanX": "1",
+        "spanY": "2",
+        "x": "0",
+        "y": "0"
+      },
+      {
+        "className": "ecarx.autosecure.widget.CleanWidgetProviderBesom1x3",
+        "packageName": "ecarx.autosecure",
+        "screen": "1",
+        "spanX": "1",
+        "spanY": "2",
+        "x": "1",
+        "y": "0"
+      },
+      {
+        "className": "com.ecarx.xcvehicle.widget.TirePressureWidget1x2",
+        "packageName": "com.ecarx.xcvehicle",
+        "screen": "1",
+        "spanX": "1",
+        "spanY": "2",
+        "x": "2",
+        "y": "0"
+      }
+    ]
+  },
+  {
+    "id": "O06",
+    "source": "official",
+    "claim": "明文域名仅表示包内配置或 SDK 字符串，未观察实际网络流量",
+    "confidence": "string-only",
+    "origins": [
+      "schemas.android.com",
+      "www.apache.org",
+      "xml.apache.org"
+    ]
+  },
+  {
+    "id": "D11",
+    "source": "dudu",
+    "claim": "明文域名仅表示包内配置或 SDK 字符串，未观察实际网络流量",
+    "confidence": "string-only",
+    "origins": [
+      "abroad-app-ea1.dudu-auto.com",
+      "abroad-app-eu1.dudu-auto.com",
+      "abroad-app-na1.dudu-auto.com",
+      "abroad-app.dudu-lucky.com",
+      "abroad-duduos-ea1.dudu-auto.com",
+      "abroad-duduos-eu1.dudu-auto.com",
+      "abroad-duduos-na1.dudu-auto.com",
+      "analytics.map.qq.com",
+      "apis.map.qq.com",
+      "app.dudu-lucky.com",
+      "artistpicserver.kuwo.cn",
+      "corssdk.map.qq.com",
+      "cs.map.qq.com",
+      "dudu-auto-global-cn-test.dudu-lucky.com",
+      "dudu-lucky.com",
+      "duduos.dudu-lucky.com",
+      "file-n3.dudu-lucky.com",
+      "file-qiniu.dudu-lucky.com",
+      "file-qiniu2.dudu-lucky.com",
+      "gis.dudu-lucky.com",
+      "github.com",
+      "greenrobot.org",
+      "lbs-trpc.map.qq.com",
+      "lbs6.map.qq.com",
+      "long.open.weixin.qq.com",
+      "lstest.map.qq.com",
+      "lyrics.kugou.com",
+      "m.kugou.com",
+      "mobi.kuwo.cn",
+      "mobilecdn.kugou.com",
+      "mt.map.qq.com",
+      "music-support.dudu-lucky.com",
+      "nlp.map.qq.com",
+      "ns.adobe.com",
+      "open.weixin.qq.com",
+      "rttgpsreport.map.qq.com",
+      "schemas.android.com",
+      "so.lrcgc.com",
+      "testdatalbs.sparta.html5.qq.com",
+      "zh.followlyrics.com"
+    ]
+  }
+]
