@@ -111,16 +111,61 @@ class _TaskStrip extends StatelessWidget {
             physics: const BouncingScrollPhysics(),
             itemCount: tasks.length,
             separatorBuilder: (_, __) => SizedBox(width: Design.px(24)),
-            itemBuilder: (context, index) => SizedBox(
-                width: width,
-                child: _TaskCard(
-                    controller: controller, task: mapOf(tasks[index]))));
+            itemBuilder: (context, index) {
+              final task = mapOf(tasks[index]);
+              final id = (task['taskId'] as num?)?.toInt();
+              return Center(
+                  child: SizedBox(
+                      width: width,
+                      height: height,
+                      child: Dismissible(
+                          key: ValueKey('recent-task-dismiss-$id'),
+                          direction: DismissDirection.vertical,
+                          dismissThresholds: const {
+                            DismissDirection.up: .28,
+                            DismissDirection.down: .28,
+                          },
+                          confirmDismiss: id == null
+                              ? null
+                              : (_) async {
+                                  await controller.command('remove-recent-task',
+                                      value: '$id');
+                                  // Native recent-task state owns removal. Keep
+                                  // this frame until its refreshed snapshot
+                                  // arrives so Dismissible is never orphaned.
+                                  return false;
+                                },
+                          background: const _DismissBackground(up: false),
+                          secondaryBackground:
+                              const _DismissBackground(up: true),
+                          child:
+                              _TaskCard(controller: controller, task: task))));
+            });
         return Center(
             child: SizedBox(
                 width: total <= box.maxWidth ? total.toDouble() : box.maxWidth,
                 height: height,
                 child: list));
       });
+}
+
+class _DismissBackground extends StatelessWidget {
+  final bool up;
+  const _DismissBackground({required this.up});
+  @override
+  Widget build(BuildContext context) {
+    final s = SurfaceStyle.of(context);
+    return Align(
+        alignment: up ? Alignment.bottomCenter : Alignment.topCenter,
+        child: Padding(
+            padding: EdgeInsets.symmetric(vertical: Design.px(24)),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(up ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                  size: Design.px(34), color: s.accent),
+              Text('松开清除',
+                  style: TextStyle(fontSize: Design.px(18), color: s.muted)),
+            ])));
+  }
 }
 
 class _TaskCard extends StatelessWidget {
@@ -172,16 +217,8 @@ class _TaskCard extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(fontSize: Design.px(23)))),
-                        IconAction(
-                            key: ValueKey('recent-task-remove-$id'),
-                            icon: Icons.close,
-                            label: '关闭$label',
-                            size: Design.px(46),
-                            iconSize: Design.px(23),
-                            onTap: id == null
-                                ? null
-                                : () => controller.command('remove-recent-task',
-                                    value: '$id')),
+                        Icon(Icons.swipe_vertical_rounded,
+                            size: Design.px(25), color: s.muted),
                       ])))
             ])));
   }

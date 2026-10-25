@@ -88,21 +88,17 @@ class MediaSourceBadge extends StatelessWidget {
                                   fontWeight: titleBar
                                       ? FontWeight.w500
                                       : FontWeight.normal))),
-                      SizedBox(width: Design.px(titleBar ? 16 : 10)),
+                      if (!titleBar) SizedBox(width: Design.px(10)),
                       if (titleBar) ...[
+                        SizedBox(width: Design.px(16)),
                         Text('正在播放',
                             style: TextStyle(
                                 fontSize: Design.px(compact ? 18 : 26),
                                 color: s.muted)),
-                        SizedBox(width: Design.px(10)),
                       ],
-                      Icon(Icons.open_in_new,
-                          size: Design.px(compact
-                              ? 15
-                              : titleBar
-                                  ? 19
-                                  : 17),
-                          color: s.muted)
+                      if (!titleBar)
+                        Icon(Icons.open_in_new,
+                            size: Design.px(compact ? 15 : 17), color: s.muted)
                     ])));
           });
 }

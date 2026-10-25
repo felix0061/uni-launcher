@@ -97,9 +97,11 @@ void main() {
     await t.tap(find.byKey(const ValueKey('recent-task-41')));
     expect(g.commands.last['action'], 'open-recent-task');
     expect(g.commands.last['value'], '41');
-    await t.tap(find.byKey(const ValueKey('recent-task-remove-42')));
+    await t.drag(find.byKey(const ValueKey('recent-task-dismiss-41')),
+        const Offset(0, -500));
+    await t.pumpAndSettle();
     expect(g.commands.last['action'], 'remove-recent-task');
-    expect(g.commands.last['value'], '42');
+    expect(g.commands.last['value'], '41');
     await t.tap(find.byKey(const ValueKey('system-recents-clear')));
     expect(g.commands.last['action'], 'clear-system-recents');
     expect(t.takeException(), isNull);
@@ -290,15 +292,14 @@ void main() {
         true);
   });
 
-  testWidgets('card arrow and bottom dock select the same global music panel',
+  testWidgets('music title opens player and bottom dock selects global panel',
       (t) async {
     final (c, g) = await setup(t, global: true);
     await t.pumpWidget(LauncherApp(controller: c));
     await t.pumpAndSettle();
-    await t.tap(find.byTooltip('打开音乐详情').first);
+    await t.tap(find.byKey(const ValueKey('media-source-entry')).first);
     await t.pumpAndSettle();
-    expect(g.commands.last['action'], 'show-dock-panel');
-    expect(g.commands.last['value'], 'media');
+    expect(g.commands.last['action'], 'launch-player');
     expect(find.byType(LauncherSheet), findsNothing);
     await t.pumpWidget(GlobalDockApp(controller: c));
     await t.pumpAndSettle();

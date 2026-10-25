@@ -20,6 +20,30 @@ public final class NavigationApps {
         return "";
     }
     public Intent launchIntent(){String pkg=selected();return pkg.isEmpty()?null:context.getPackageManager().getLaunchIntentForPackage(pkg);}
+    /** Return an embedded single-task navigation stack to the physical display
+     * before launching it. Starting the package alone leaves AMap focused on
+     * ActivityView's virtual display and appears to do nothing on the panel. */
+    public boolean launchFullscreen(){
+        String pkg=selected();Intent intent=launchIntent();if(pkg.isEmpty()||intent==null)return false;
+        try{moveOwnSingleTaskToDisplay(pkg);}
+        catch(Exception|LinkageError e){android.util.Log.i("UniNavigation","No embedded navigation stack to restore",e);}
+        try{
+            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP));
+            return true;
+        }catch(Exception|LinkageError e){android.util.Log.w("UniNavigation","Unable to open navigation full screen",e);return false;}
+    }
+    private void moveOwnSingleTaskToDisplay(String pkg)throws Exception{
+        Object manager=Class.forName("android.app.ActivityManager").getMethod("getService").invoke(null);
+        java.lang.reflect.Method all=manager.getClass().getMethod("getAllStackInfos");all.setAccessible(true);
+        java.util.List<?> stacks=(java.util.List<?>)all.invoke(manager);
+        for(Object stack:stacks){
+            Class<?> type=stack.getClass();String[] names=(String[])type.getField("taskNames").get(stack);
+            if(names==null||names.length!=1||names[0]==null||!names[0].startsWith(pkg+"/"))continue;
+            int display=type.getField("displayId").getInt(stack);if(display==0)return;
+            java.lang.reflect.Method move=manager.getClass().getMethod("moveStackToDisplay",int.class,int.class);move.setAccessible(true);
+            move.invoke(manager,type.getField("stackId").getInt(stack),0);return;
+        }
+    }
     public JSONObject snapshot(){
         JSONObject j=new JSONObject();try{
             Intent intent=launchIntent();

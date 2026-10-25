@@ -4,6 +4,7 @@ import '../model/card_layout.dart';
 import '../theme/launcher_theme.dart';
 import '../theme/design_tokens.dart';
 import 'card_content.dart';
+import 'clock_weather_card.dart';
 import 'glass_surface.dart';
 import 'launcher_dialog.dart';
 import 'uni_icon.dart';
@@ -29,6 +30,10 @@ class _EditableCardState extends State<EditableCard> {
   Offset delta = Offset.zero;
   bool rejectionShown = false;
   void start(DragStartDetails details) {
+    startAtOrigin();
+  }
+
+  void startAtOrigin() {
     origin = widget.card;
     delta = Offset.zero;
     rejectionShown = false;
@@ -37,10 +42,32 @@ class _EditableCardState extends State<EditableCard> {
   void move(DragUpdateDetails details, bool resize) {
     if (origin == null) return;
     delta += details.delta;
+    applyMove(delta, resize, globalPosition: details.globalPosition);
+  }
+
+  void applyMove(Offset offset, bool resize, {Offset? globalPosition}) {
+    if (origin == null) return;
     final card = origin!,
         spec = specFor(card.type),
-        dx = (delta.dx / widget.unitX).round(),
-        dy = (delta.dy / widget.unitY).round();
+        dx = (offset.dx / widget.unitX).round(),
+        dy = (offset.dy / widget.unitY).round();
+    if (!resize &&
+        globalPosition != null &&
+        offset.dx.abs() > widget.unitX / 2) {
+      final width = MediaQuery.sizeOf(context).width;
+      final target = globalPosition.dx < Design.px(76)
+          ? widget.controller.page - 1
+          : globalPosition.dx > width - Design.px(76)
+              ? widget.controller.page + 1
+              : widget.controller.page;
+      if (target != widget.controller.page &&
+          widget.controller.moveToPage(card.id, target,
+              preferredX: (card.x + dx).clamp(0, 12 - card.w),
+              preferredY: (card.y + dy).clamp(0, 6 - card.h))) {
+        origin = null;
+        return;
+      }
+    }
     final accepted = widget.controller.transform(resize
         ? card.copyWith(
             w: (card.w + dx).clamp(spec.minW, 12 - card.x),
@@ -62,7 +89,14 @@ class _EditableCardState extends State<EditableCard> {
         s = SurfaceStyle.of(context),
         card = widget.card;
     return GestureDetector(
-        onLongPress: c.editing ? null : c.beginEdit,
+        onLongPressStart: (_) {
+          if (!c.editing) c.beginEdit();
+          startAtOrigin();
+        },
+        onLongPressMoveUpdate: (details) => applyMove(
+            details.offsetFromOrigin, false,
+            globalPosition: details.globalPosition),
+        onLongPressEnd: (_) => origin = null,
         child: GlassSurface(
             padding: EdgeInsets.zero,
             borderColor: c.editing ? s.accent : null,

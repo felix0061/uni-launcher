@@ -124,7 +124,7 @@ class Desktop extends StatelessWidget {
     return GestureDetector(
         key: const ValueKey('card-grid'),
         behavior: HitTestBehavior.translucent,
-        onLongPress: c.editing ? null : c.openSettings,
+        onLongPress: c.editing ? null : c.beginEdit,
         onHorizontalDragEnd: c.editing
             ? null
             : (details) {
@@ -142,7 +142,7 @@ class Desktop extends StatelessWidget {
                     child: Row(children: [
                       const Text('编辑桌面', style: TextStyle(fontSize: 28)),
                       const SizedBox(width: 24),
-                      Text('拖动标题移动 · 拖动角点缩放',
+                      Text('拖动卡片移动 · 拖到屏幕边缘换页 · 拖动角点缩放',
                           style: TextStyle(
                               color: SurfaceStyle.of(context).muted,
                               fontSize: 17)),

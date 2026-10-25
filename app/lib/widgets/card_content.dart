@@ -7,6 +7,7 @@ import '../model/card_layout.dart';
 import '../theme/design_tokens.dart';
 import '../theme/launcher_theme.dart';
 import 'clock_card.dart';
+import 'clock_weather_card.dart';
 import 'glass_surface.dart';
 import 'launcher_dialog.dart';
 import 'uni_icon.dart';
@@ -43,6 +44,7 @@ IconData cardIcon(String type) =>
       'air': Icons.air,
       'ride': Icons.local_taxi_outlined,
       'clock': Icons.schedule,
+      'clockWeather': Icons.wb_cloudy_outlined,
       'shortcuts': Icons.apps,
       'vehicle': Icons.directions_car_outlined,
     }[type] ??
@@ -51,6 +53,7 @@ IconData cardIcon(String type) =>
 String cardSymbol(String type) =>
     const {
       'weather': 'cloud',
+      'clockWeather': 'clock',
       'calendar': 'calendar',
       'member': 'user',
       'cleanup': 'broom',
@@ -98,6 +101,11 @@ class CardContent extends StatelessWidget {
                   controller: controller,
                   demo: native['demo'] == true)),
           'clock' => ClockCard(title: card.title),
+          'clockWeather' => ClockWeatherCard(
+              card: card,
+              native: native,
+              editing: controller.editing,
+            ),
           'battery' => BatteryCard(native: native, title: card.title),
           'air' => AirQualityCard(
               native: native,

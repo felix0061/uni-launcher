@@ -11,10 +11,11 @@ const _libraryDescriptions = {
   'battery': '电量、混动与充电状态',
   'air': '车内 PM2.5 与独立 AQI 读数',
   'clock': '时间、日期与星期',
+  'clockWeather': '时钟与天气组合，可切换四种布局',
   'shortcuts': '你常用的四个应用',
   'vehicle': '车速、总里程、续航与距保养',
 };
-const _desktopTypes = {'clock', 'shortcuts', 'vehicle'};
+const _desktopTypes = {'clock', 'clockWeather', 'shortcuts', 'vehicle'};
 
 Future<void> showCardLibrary(BuildContext context, LauncherController c) =>
     showLauncherSheet<void>(context,
@@ -61,8 +62,7 @@ Future<void> showCardLibrary(BuildContext context, LauncherController c) =>
                                             Navigator.pop(context);
                                           } else {
                                             showLauncherToast(
-                                                context,
-                                                '桌面页已满，请先移除一张卡片');
+                                                context, '桌面页已满，请先移除一张卡片');
                                           }
                                         }),
                                 ]),
@@ -255,6 +255,32 @@ class _CardEditorState extends State<_CardEditor> {
               counterText: '',
               contentPadding: EdgeInsets.symmetric(
                   horizontal: Design.px(20), vertical: Design.px(16)))),
+      if (draft.type == 'clockWeather') ...[
+        SizedBox(height: Design.px(30)),
+        Text('卡片布局', style: TextStyle(fontSize: Design.px(22), color: s.muted)),
+        SizedBox(height: Design.px(18)),
+        Wrap(spacing: Design.px(14), runSpacing: Design.px(14), children: [
+          for (final option in clockWeatherLayouts)
+            SizedBox(
+                width: Design.px(162),
+                height: Design.px(58),
+                child: OutlinedButton(
+                    key: ValueKey('clock-weather-layout-${option.id}'),
+                    onPressed: () => setState(
+                        () => draft = draft.copyWith(layout: option.id)),
+                    style: OutlinedButton.styleFrom(
+                        foregroundColor:
+                            clockWeatherLayoutId(draft.layout) == option.id
+                                ? s.accent
+                                : s.text,
+                        side: BorderSide(
+                            color:
+                                clockWeatherLayoutId(draft.layout) == option.id
+                                    ? s.accent
+                                    : s.edge)),
+                    child: Text(option.label)))
+        ]),
+      ],
       SizedBox(height: Design.px(30)),
       Text('卡片尺寸', style: TextStyle(fontSize: Design.px(22), color: s.muted)),
       SizedBox(height: Design.px(18)),

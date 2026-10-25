@@ -1,5 +1,18 @@
 part of 'card_content.dart';
 
+String _calendarDetail(Map<String, dynamic> calendar) {
+  if (calendar['authorized'] != true) return '轻触授权读取系统日历';
+  if (calendar['eventAvailable'] != true) return '系统日历';
+  final location = '${calendar['location'] ?? ''}'.trim();
+  final begin = (calendar['beginMs'] as num?)?.toInt();
+  if (begin == null) return location.isEmpty ? '系统日历' : location;
+  final time = DateTime.fromMillisecondsSinceEpoch(begin);
+  final clock = calendar['allDay'] == true
+      ? '全天'
+      : '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  return location.isEmpty ? clock : '$clock · $location';
+}
+
 class _OemCard extends StatelessWidget {
   final LauncherCard card;
   final LauncherController controller;
@@ -11,6 +24,7 @@ class _OemCard extends StatelessWidget {
     final s = SurfaceStyle.of(context), editing = controller.editing;
     final account =
         mapOf(mapOf(controller.native.value['systemStatus'])['account']);
+    final calendar = mapOf(controller.native.value['calendar']);
     return LayoutBuilder(builder: (context, box) {
       final compact = box.maxHeight < Design.px(380);
       final title =
@@ -107,7 +121,7 @@ class _OemCard extends StatelessWidget {
             ] else if (card.type == 'calendar') ...[
               SizedBox(height: Design.px(editing ? 12 : 18)),
               Row(children: [
-                Text(demo ? '24' : '—',
+                Text('${demo ? 24 : calendar['day'] ?? '—'}',
                     style: TextStyle(
                         fontSize: Design.px(editing ? 65 : 94),
                         height: 1,
@@ -118,13 +132,16 @@ class _OemCard extends StatelessWidget {
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                      Text(demo ? '星期六' : '日期未同步',
+                      Text(demo ? '星期六' : '${calendar['weekday'] ?? '日期未同步'}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style:
                               TextStyle(fontSize: Design.px(25), height: 1.2)),
                       SizedBox(height: Design.px(12)),
-                      Text(demo ? '2026 年 10 月' : '等待日期',
+                      Text(
+                          demo
+                              ? '2026 年 10 月'
+                              : '${calendar['monthLabel'] ?? '等待日期'}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -134,36 +151,50 @@ class _OemCard extends StatelessWidget {
                     ])),
               ]),
               const Spacer(),
-              Container(
-                  padding: EdgeInsets.only(top: Design.px(editing ? 12 : 20)),
-                  decoration: BoxDecoration(
-                      border: Border(top: BorderSide(color: s.edge))),
-                  child: Row(children: [
-                    Container(
-                        width: Design.px(4),
-                        height: Design.px(39),
-                        decoration: BoxDecoration(
-                            color: s.accent,
-                            borderRadius: BorderRadius.circular(Design.px(3)))),
-                    SizedBox(width: Design.px(16)),
-                    Expanded(
-                        child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                          Text('日程未同步',
-                              style: TextStyle(
-                                  fontSize: Design.px(editing ? 19 : 22),
-                                  height: 1.2)),
-                          SizedBox(height: Design.px(editing ? 6 : 10)),
-                          Text('连接后显示日程',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                  fontSize: Design.px(editing ? 16 : 18),
-                                  height: 1.2,
-                                  color: s.muted)),
-                        ])),
-                  ])),
+              InkWell(
+                  key: const ValueKey('calendar-agenda'),
+                  onTap: !demo && calendar['authorized'] != true
+                      ? () => controller.command('calendar-access')
+                      : null,
+                  child: Container(
+                      padding:
+                          EdgeInsets.only(top: Design.px(editing ? 12 : 20)),
+                      decoration: BoxDecoration(
+                          border: Border(top: BorderSide(color: s.edge))),
+                      child: Row(children: [
+                        Container(
+                            width: Design.px(4),
+                            height: Design.px(39),
+                            decoration: BoxDecoration(
+                                color: s.accent,
+                                borderRadius:
+                                    BorderRadius.circular(Design.px(3)))),
+                        SizedBox(width: Design.px(16)),
+                        Expanded(
+                            child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                              Text(
+                                  demo
+                                      ? '10:30  车辆保养预约'
+                                      : calendar['eventAvailable'] == true
+                                          ? '${calendar['title'] ?? '未命名日程'}'
+                                          : '${calendar['reason'] ?? '日程未同步'}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      fontSize: Design.px(editing ? 19 : 22),
+                                      height: 1.2)),
+                              SizedBox(height: Design.px(editing ? 6 : 10)),
+                              Text(demo ? '领克中心' : _calendarDetail(calendar),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      fontSize: Design.px(editing ? 16 : 18),
+                                      height: 1.2,
+                                      color: s.muted)),
+                            ])),
+                      ]))),
             ] else if (card.type == 'tpms') ...[
               Expanded(child: TireDiagram(native: controller.native.value)),
               _StateLine(

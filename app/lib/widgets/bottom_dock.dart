@@ -202,7 +202,9 @@ class BottomDock extends StatelessWidget {
                                     width: Design.px(60),
                                     height: Design.px(60),
                                     child: MediaArtwork(
-                                        media: media, demo: demo))),
+                                        media: media,
+                                        demo: demo,
+                                        fallbackSize: Design.px(30)))),
                             SizedBox(width: Design.px(16)),
                             Expanded(
                                 flex: 5,

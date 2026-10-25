@@ -313,6 +313,42 @@ class LauncherController extends ChangeNotifier {
     return true;
   }
 
+  /// Move a card to another desktop and select the nearest free cell to the
+  /// pointer's original grid position. This is used by edge dragging while the
+  /// editor is open, so a card never lands on top of another card.
+  bool moveToPage(String id, int targetPage,
+      {int? preferredX, int? preferredY}) {
+    if (targetPage < 0 || targetPage >= pageCount) return false;
+    final index = cards.indexWhere((card) => card.id == id);
+    if (index < 0) return false;
+    final card = cards[index],
+        px = preferredX ?? card.x,
+        py = preferredY ?? card.y;
+    final cells = <(int, int)>[
+      for (int y = 0; y <= 6 - card.h; y++)
+        for (int x = 0; x <= 12 - card.w; x++) (x, y)
+    ]..sort((a, b) {
+        final ad = (a.$1 - px).abs() + (a.$2 - py).abs();
+        final bd = (b.$1 - px).abs() + (b.$2 - py).abs();
+        return ad == bd
+            ? (a.$2 * 12 + a.$1).compareTo(b.$2 * 12 + b.$1)
+            : ad.compareTo(bd);
+      });
+    for (final cell in cells) {
+      final next = card.copyWith(page: targetPage, x: cell.$1, y: cell.$2);
+      if (!cards.any((other) => other.id != id && other.overlaps(next))) {
+        cards = [
+          for (final item in cards)
+            if (item.id == id) next else item
+        ];
+        page = targetPage;
+        notifyListeners();
+        return true;
+      }
+    }
+    return false;
+  }
+
   bool add(String type) {
     final spec = specFor(type);
     LauncherCard? next;

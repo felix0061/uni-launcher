@@ -36,6 +36,7 @@ public final class LauncherRuntime {
     private final NavigationApps navigation;
     private final OfficialWeatherAdapter weather;
     private final SystemStatusAdapter systemStatus;
+    private final SystemCalendarAdapter calendar;
     private final ClimateState simulator=new ClimateState();
     private final Map<Object,Runnable> listeners=new IdentityHashMap<>();
     private JSONArray installed;
@@ -65,7 +66,7 @@ public final class LauncherRuntime {
         if(!prefs.contains("demo"))prefs.edit().putBoolean("demo",Build.FINGERPRINT.contains("generic")||Build.MODEL.contains("sdk_gphone")||Build.MODEL.contains("Android SDK")).apply();
         apps=new AppRepository(context);catalog=new OfficialCatalog(context);
         vehicle=new VehicleTelemetry(context,this::publish);navigation=new NavigationApps(context,prefs);
-        media=new MediaAdapter(context,this::publish);weather=new OfficialWeatherAdapter(context,this::publish);systemStatus=new SystemStatusAdapter(context,this::publish);
+        media=new MediaAdapter(context,this::publish);weather=new OfficialWeatherAdapter(context,this::publish);systemStatus=new SystemStatusAdapter(context,this::publish);calendar=new SystemCalendarAdapter(context,this::publish);
         // setPreferredPackage() starts MediaAdapter; defer it until the first owner.
         installed=apps.refresh();
         IntentFilter filter=new IntentFilter();
@@ -94,7 +95,7 @@ public final class LauncherRuntime {
                 .put("driverHeat",simulator.driverHeat).put("driverVent",simulator.driverVent).put("passengerHeat",simulator.passengerHeat);
             JSONObject telemetry=vehicle.snapshot();
             if(!prefs.getBoolean("demo",false))climate=telemetry.optJSONObject("climate")==null?new JSONObject():telemetry.getJSONObject("climate");
-            state.put("systemStatus",systemStatus.snapshot()).put("weather",weather.snapshot()).put("navigation",navigation.snapshot()).put("integrationPreferences",new JSONObject().put("mediaPackage",prefs.getString("mediaPackage","auto"))) ;
+            state.put("systemStatus",systemStatus.snapshot()).put("weather",weather.snapshot()).put("calendar",calendar.snapshot()).put("navigation",navigation.snapshot()).put("integrationPreferences",new JSONObject().put("mediaPackage",prefs.getString("mediaPackage","auto"))) ;
             state.put("demo",prefs.getBoolean("demo",false)).put("hideNavigation",prefs.getBoolean("hideNavigation",false))
                 .put("globalNavigation",prefs.getBoolean("globalNavigation",false))
                 .put("globalNavigationGranted",context.checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS")==android.content.pm.PackageManager.PERMISSION_GRANTED)
@@ -153,7 +154,8 @@ public final class LauncherRuntime {
             publish();return true;
         }
         if("embed-navigation".equals(action)){prefs.edit().putBoolean("embedNavigation",request.optBoolean("enabled",true)).commit();publish();return true;}
-        if("launch-navigation".equals(action)){if(!apps.launchPackage(navigation.selected()))toast("请选择已安装的导航应用");return true;}
+        if("calendar-refresh".equals(action)){calendar.refresh();publish();return true;}
+        if("launch-navigation".equals(action)){if(!navigation.launchFullscreen())toast("请选择已安装的导航应用");return true;}
         if("launch-player".equals(action)){
             String selected=prefs.getString("mediaPackage","auto");
             if("auto".equals(selected))selected=media.snapshot().optString("source","ecarx.xsf.mediacenter");
@@ -203,14 +205,14 @@ public final class LauncherRuntime {
         onMain(()->{
             boolean first=listeners.isEmpty();
             listeners.put(owner,listener);
-            if(first){media.setPreferredPackage(prefs.getString("mediaPackage","auto"));vehicle.start();weather.start();systemStatus.start();}
+            if(first){media.setPreferredPackage(prefs.getString("mediaPackage","auto"));vehicle.start();weather.start();systemStatus.start();calendar.start();}
             publish();return null;
         });
     }
 
     public void removeListener(Object owner){
         onMain(()->{
-            if(listeners.remove(owner)!=null&&listeners.isEmpty()){media.stop();vehicle.stop();systemStatus.stop();}
+            if(listeners.remove(owner)!=null&&listeners.isEmpty()){media.stop();vehicle.stop();systemStatus.stop();calendar.stop();}
             return null;
         });
     }

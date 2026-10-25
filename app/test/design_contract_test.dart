@@ -78,6 +78,28 @@ void main() {
     expect((border! as OutlineInputBorder).borderRadius, BorderRadius.zero);
     expect(t.takeException(), null);
   });
+  testWidgets(
+      'standard theme color picker exposes swatches and full color field',
+      (t) async {
+    final (c, _) = await launch(t);
+    c.openSettings();
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('custom-color')));
+    await t.pumpAndSettle();
+    expect(
+        find.byKey(const ValueKey('saturation-value-field')), findsOneWidget);
+    expect(find.byKey(const ValueKey('hue-field')), findsOneWidget);
+    expect(find.byKey(const ValueKey('color-picker-hex')), findsOneWidget);
+    expect(
+        find.byKey(const ValueKey('standard-color-#F44336')), findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('standard-color-#F44336')));
+    await t.pump();
+    await t.tap(find.text('应用颜色'));
+    await t.pumpAndSettle();
+    expect(c.appearance.palette, 'custom');
+    expect(c.appearance.custom, '#F44336');
+    expect(t.takeException(), null);
+  });
   test('general HVAC permission never grants seat read or write access', () {
     final n = <String, dynamic>{
       'demo': false,

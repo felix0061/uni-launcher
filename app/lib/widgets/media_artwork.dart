@@ -8,7 +8,12 @@ import 'uni_icon.dart';
 class MediaArtwork extends StatefulWidget {
   final Map<String, dynamic> media;
   final bool demo;
-  const MediaArtwork({super.key, required this.media, required this.demo});
+  final double fallbackSize;
+  const MediaArtwork(
+      {super.key,
+      required this.media,
+      required this.demo,
+      this.fallbackSize = 48});
   @override
   State<MediaArtwork> createState() => _MediaArtworkState();
 }
@@ -32,8 +37,8 @@ class _MediaArtworkState extends State<MediaArtwork> {
     if (widget.demo)
       return SvgPicture.asset('assets/art/cover.svg', fit: BoxFit.cover);
     Widget fallback() => Center(
-        child:
-            UniIcon('music', color: SurfaceStyle.of(context).accent, size: 48));
+        child: UniIcon('music',
+            color: SurfaceStyle.of(context).accent, size: widget.fallbackSize));
     if (bytes == null || bytes!.isEmpty) return fallback();
     return Image.memory(bytes!,
         fit: BoxFit.cover,

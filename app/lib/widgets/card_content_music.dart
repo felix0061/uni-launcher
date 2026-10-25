@@ -111,18 +111,8 @@ class _MusicCard extends StatelessWidget {
         minHeight: compact ? 190 : 320,
         child:
             Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Row(children: [
-            Expanded(
-                child: MediaSourceBadge(
-                    controller: controller, titleBar: true, compact: true)),
-            IconAction(
-                icon: Icons.arrow_forward,
-                label: '打开音乐详情',
-                size: Design.px(32),
-                iconSize: Design.px(25),
-                active: true,
-                onTap: () => showMediaPanel(context, controller)),
-          ]),
+          MediaSourceBadge(
+              controller: controller, titleBar: true, compact: true),
           SizedBox(height: Design.px(compact ? 12 : 18)),
           Expanded(child: LayoutBuilder(builder: (context, box) {
             final cover = Design.px(compact

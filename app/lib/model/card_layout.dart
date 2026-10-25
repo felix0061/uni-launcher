@@ -17,6 +17,7 @@ const cardSpecs = [
   CardSpec('air', '车内空气', '原车空气质量', 4, 3, 3, 2),
   CardSpec('ride', '出行服务', '其他车型的原厂出行服务', 4, 3, 3, 2),
   CardSpec('clock', '时钟', '系统时间', 4, 2, 3, 2),
+  CardSpec('clockWeather', '时钟与天气', '系统时间与天气服务', 4, 3, 3, 2),
   CardSpec('shortcuts', '快捷应用', '系统应用', 4, 2, 3, 2),
   CardSpec('vehicle', '行车信息', '原车车辆信息', 4, 3, 3, 2),
 ];
@@ -26,13 +27,22 @@ CardSpec specFor(String type) => cardSpecs.firstWhere((s) => s.type == type);
 
 class LauncherCard {
   final String id, type, title;
+  final String layout;
   final int x, y, w, h, page;
-  const LauncherCard(this.id, this.type, this.title, this.x, this.y, this.w,
-      this.h, this.page);
+  const LauncherCard(
+      this.id, this.type, this.title, this.x, this.y, this.w, this.h, this.page,
+      {this.layout = ''});
   LauncherCard copyWith(
-          {String? title, int? x, int? y, int? w, int? h, int? page}) =>
+          {String? title,
+          String? layout,
+          int? x,
+          int? y,
+          int? w,
+          int? h,
+          int? page}) =>
       LauncherCard(id, type, title ?? this.title, x ?? this.x, y ?? this.y,
-          w ?? this.w, h ?? this.h, page ?? this.page);
+          w ?? this.w, h ?? this.h, page ?? this.page,
+          layout: layout ?? this.layout);
   Map<String, dynamic> toJson() => {
         'id': id,
         'type': type,
@@ -41,7 +51,8 @@ class LauncherCard {
         'y': y,
         'w': w,
         'h': h,
-        'page': page
+        'page': page,
+        if (layout.isNotEmpty) 'layout': layout,
       };
   factory LauncherCard.fromJson(Map<String, dynamic> j) => LauncherCard(
       j['id'] as String,
@@ -51,7 +62,8 @@ class LauncherCard {
       j['y'] as int,
       j['w'] as int,
       j['h'] as int,
-      j['page'] as int);
+      j['page'] as int,
+      layout: j['layout'] as String? ?? '');
   bool get inBounds {
     if (!cardSpecs.any((s) => s.type == type)) return false;
     final s = specFor(type);

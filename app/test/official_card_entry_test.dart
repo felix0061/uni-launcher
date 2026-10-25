@@ -49,4 +49,41 @@ void main() {
       await g.dispose();
     });
   }
+  testWidgets('calendar renders system date and upcoming agenda', (t) async {
+    final g = FakeGateway()
+      ..state['demo'] = false
+      ..state['calendar'] = {
+        'available': true,
+        'authorized': true,
+        'day': 26,
+        'weekday': '星期一',
+        'monthLabel': '2026 年 10 月',
+        'eventAvailable': true,
+        'title': '车辆保养',
+        'location': '领克中心',
+        'beginMs': DateTime(2026, 10, 26, 10, 30).millisecondsSinceEpoch,
+      };
+    final c = LauncherController(g);
+    await c.initialize();
+    final style = SurfaceStyle.from(const Appearance(mode: 'dark'), true);
+    const card = LauncherCard('calendar-live', 'calendar', '日历', 0, 0, 4, 3, 0);
+    await t.pumpWidget(MaterialApp(
+        theme: launcherTheme(style),
+        home: Scaffold(
+            body: SizedBox(
+                width: 480,
+                height: 360,
+                child: GlassSurface(
+                    padding: EdgeInsets.zero,
+                    child: CardContent(card: card, controller: c))))));
+    await t.pumpAndSettle();
+    expect(find.text('26'), findsOneWidget);
+    expect(find.text('星期一'), findsOneWidget);
+    expect(find.text('车辆保养'), findsOneWidget);
+    expect(find.text('10:30 · 领克中心'), findsOneWidget);
+    expect(t.takeException(), isNull);
+    await t.pumpWidget(const SizedBox.shrink());
+    c.dispose();
+    await g.dispose();
+  });
 }

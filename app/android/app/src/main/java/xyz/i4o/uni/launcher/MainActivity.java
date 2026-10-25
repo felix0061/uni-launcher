@@ -115,6 +115,13 @@ public final class MainActivity extends FlutterActivity {
             publish();return;
         }
         String action=request.optString("action");
+        if("calendar-access".equals(action)){
+            if(android.os.Build.VERSION.SDK_INT>=23&&checkSelfPermission(android.Manifest.permission.READ_CALENDAR)!=PackageManager.PERMISSION_GRANTED)
+                requestPermissions(new String[]{android.Manifest.permission.READ_CALENDAR},4105);
+            else rt.publish();
+            return;
+        }
+        if("launch-navigation".equals(action)&&mapFactory!=null)mapFactory.setVisible(false);
         if("hide-navigation".equals(action)||"global-navigation".equals(action)){
             if("global-navigation".equals(action)&&request.optBoolean("enabled",false)
                 &&checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS")!=PackageManager.PERMISSION_GRANTED){
@@ -135,9 +142,9 @@ public final class MainActivity extends FlutterActivity {
             // artwork, song text and app icons from this read-only diagnostic.
             try{
                 updateSnapshot();JSONObject full=new JSONObject(cached),report=new JSONObject();
-                for(String key:new String[]{"version","demo","hideNavigation","systemNavigationHidden","systemNavigationGranted","contentReservesSystemBars","contentHeightPx","viewportHeightPx","reservedBottomPx","desktopSelected","systemStatus","weather","navigation","vehicle"})report.put(key,full.opt(key));
+                for(String key:new String[]{"version","demo","hideNavigation","systemNavigationHidden","systemNavigationGranted","contentReservesSystemBars","contentHeightPx","viewportHeightPx","reservedBottomPx","desktopSelected","systemStatus","weather","calendar","navigation","vehicle"})report.put(key,full.opt(key));
                 JSONObject m=full.optJSONObject("media"),safe=new JSONObject();
-                if(m!=null)for(String key:new String[]{"available","authorized","playing","source","preferredPackage","sessions","reason","canToggle","canNext","canPrevious","canSeek","controlSource","lyricsSource","durationMs","positionMs"})safe.put(key,m.opt(key));
+                if(m!=null)for(String key:new String[]{"available","authorized","playing","source","preferredPackage","sessions","reason","canToggle","canNext","canPrevious","canSeek","controlSource","lyricsSource","durationMs","positionMs","steeringControlReady","instrumentMetadataReady"})safe.put(key,m.opt(key));
                 if(m!=null)safe.put("lyricsAvailable",!m.optString("lyrics").isEmpty()).put("artworkAvailable",!m.optString("artwork").isEmpty());
                 report.put("media",safe).put("flutterViewport",flutterViewport).put("globalDock",GlobalDockService.snapshot(this));
                 if(mapFactory!=null)report.put("mapViews",mapFactory.snapshot());
@@ -172,6 +179,9 @@ public final class MainActivity extends FlutterActivity {
 
     @Override public void onWindowFocusChanged(boolean focus){super.onWindowFocusChanged(focus);if(focus&&chrome!=null)chrome.apply();}
     @Override public void onConfigurationChanged(Configuration c){super.onConfigurationChanged(c);publish();}
+    @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] results){
+        super.onRequestPermissionsResult(requestCode,permissions,results);if(requestCode==4105){try{rt.handle(new JSONObject().put("action","calendar-refresh"));}catch(Exception ignored){}publish();}
+    }
 
     private void dispatchIntent(Intent intent){
         if(channel!=null)channel.invokeMethod(intent!=null&&intent.getBooleanExtra("uniSettings",false)?"open-settings":"home",null);

@@ -26,6 +26,15 @@ void main() {
     expect(validLayout(defaultCards()), true);
     expect(defaultCards().length, 8);
   });
+  test('clock and weather layout choice survives design serialization', () {
+    const card = LauncherCard(
+        'clock-weather', 'clockWeather', '通勤', 0, 0, 4, 3, 0,
+        layout: 'stacked');
+    final restored = LauncherCard.fromJson(card.toJson());
+    expect(restored.layout, 'stacked');
+    expect(restored.toJson()['layout'], 'stacked');
+    expect(validLayout([restored]), true);
+  });
   test('rejects collision, bounds, duplicate identifiers and unknown type', () {
     final cards = defaultCards();
     expect(validLayout([...cards, cards.first]), false);
@@ -54,6 +63,23 @@ void main() {
     expect(c.page, 2);
     c.cancelEdit();
     expect(c.pageCount, 2);
+    c.dispose();
+    await g.dispose();
+  });
+  test('edge drag placement moves a card to nearest free cell on any page',
+      () async {
+    final g = FakeGateway(), c = LauncherController(g);
+    await c.initialize();
+    c.beginEdit();
+    expect(c.moveToPage('weather-1', 1, preferredX: 8, preferredY: 4), true);
+    final moved = c.cards.singleWhere((card) => card.id == 'weather-1');
+    expect(moved.page, 1);
+    expect(moved.x, 8);
+    expect(moved.y, 4);
+    expect(c.page, 1);
+    expect(validLayout(c.cards), true);
+    c.cancelEdit();
+    expect(c.cards.singleWhere((card) => card.id == 'weather-1').page, 0);
     c.dispose();
     await g.dispose();
   });

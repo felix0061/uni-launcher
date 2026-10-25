@@ -2,8 +2,10 @@ package xyz.i4o.uni.launcher.integration;
 
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.media.MediaMetadata;
 import android.media.session.MediaController;
+import android.media.session.MediaSession;
 import android.media.session.MediaSessionManager;
 import android.media.session.PlaybackState;
 import android.os.Handler;
@@ -20,7 +22,9 @@ import java.util.ArrayList;
 
 /** Standard MediaSession is explicitly labeled; OEM source parity still needs car verification. */
 public final class MediaAdapter {
+    private final Context context;
     private final MediaSessionManager manager;
+    private final MediaSession steeringSession;
     private final ComponentName listener;
     private final Runnable changed;
     private final NeteaseMediaAdapter netease;
@@ -35,9 +39,9 @@ public final class MediaAdapter {
     private final List<MediaController> observed=new ArrayList<>();
     public void setPreferredPackage(String value){preferred=value==null||value.isEmpty()?"auto":value;start();}
     private final MediaController.Callback callback=new MediaController.Callback(){
-        public void onMetadataChanged(MediaMetadata m){artworkDirty=true;changed.run();}
-        public void onPlaybackStateChanged(PlaybackState s){choose();changed.run();}
-        public void onExtrasChanged(Bundle extras){changed.run();}
+        public void onMetadataChanged(MediaMetadata m){artworkDirty=true;syncSteeringSession();changed.run();}
+        public void onPlaybackStateChanged(PlaybackState s){choose();syncSteeringSession();changed.run();}
+        public void onExtrasChanged(Bundle extras){syncSteeringSession();changed.run();}
         public void onSessionDestroyed(){
             try{select(manager.getActiveSessions(listener));}catch(SecurityException e){authorized=false;select(null);}
             changed.run();
@@ -47,8 +51,17 @@ public final class MediaAdapter {
         public void onActiveSessionsChanged(List<MediaController> list){select(list);changed.run();}
     };
     public MediaAdapter(Context context,Runnable changed){
-        this.changed=changed;netease=new NeteaseMediaAdapter(changed);manager=(MediaSessionManager)context.getSystemService(Context.MEDIA_SESSION_SERVICE);
+        this.context=context;this.changed=changed;netease=new NeteaseMediaAdapter(changed);manager=(MediaSessionManager)context.getSystemService(Context.MEDIA_SESSION_SERVICE);
         listener=new ComponentName(context,MediaAccessService.class);
+        steeringSession=new MediaSession(context,"UNI steering media bridge");
+        steeringSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS|MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
+        steeringSession.setCallback(new MediaSession.Callback(){
+            @Override public void onPlay(){setPlaying(true);}
+            @Override public void onPause(){setPlaying(false);}
+            @Override public void onSkipToNext(){command("next");}
+            @Override public void onSkipToPrevious(){command("previous");}
+            @Override public void onSeekTo(long position){command("seek",position);}
+        },handler);
     }
     public void start(){
         stop();
@@ -60,7 +73,7 @@ public final class MediaAdapter {
         observed.clear();
         controller=null;
         lastCover=null;coverData="";artworkDirty=true;activeSources=new JSONArray();
-        if(list!=null)observed.addAll(list);
+        if(list!=null)for(MediaController c:list)if(!context.getPackageName().equals(c.getPackageName()))observed.add(c);
         choose();
         // Observe every session: a player's state can change without the
         // active-session list changing, including paused -> playing.
@@ -78,10 +91,50 @@ public final class MediaAdapter {
             MediaController next=selected>=0?observed.get(selected):null;
             if(next!=controller){controller=next;lastCover=null;coverData="";artworkDirty=true;}
             netease.setController(controller);
+            syncSteeringSession();
+    }
+    private void setPlaying(boolean play){
+        PlaybackState state=controller==null?null:controller.getPlaybackState();
+        boolean playing=state!=null&&state.getState()==PlaybackState.STATE_PLAYING;
+        if(play!=playing)command("toggle-play");
+    }
+    /** Mirror the selected source into a standard active MediaSession. The
+     * steering-wheel dispatcher can now target transport callbacks and the
+     * instrument cluster can consume the same title/artist/playback state. */
+    private void syncSteeringSession(){
+        if(controller==null){steeringSession.setActive(false);return;}
+        try{
+            MediaMetadata source=controller.getMetadata();
+            MediaMetadata.Builder metadata=new MediaMetadata.Builder();
+            if(source!=null){
+                copyText(source,metadata,MediaMetadata.METADATA_KEY_TITLE);
+                copyText(source,metadata,MediaMetadata.METADATA_KEY_ARTIST);
+                copyText(source,metadata,MediaMetadata.METADATA_KEY_ALBUM);
+                copyText(source,metadata,MediaMetadata.METADATA_KEY_DISPLAY_TITLE);
+                copyText(source,metadata,MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE);
+                copyText(source,metadata,MediaMetadata.METADATA_KEY_MEDIA_ID);
+                long duration=source.getLong(MediaMetadata.METADATA_KEY_DURATION);if(duration>0)metadata.putLong(MediaMetadata.METADATA_KEY_DURATION,duration);
+                Bitmap art=source.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART);if(art==null)art=source.getBitmap(MediaMetadata.METADATA_KEY_ART);
+                if(art!=null&&!art.isRecycled())metadata.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART,art);
+            }
+            steeringSession.setMetadata(metadata.build());
+            PlaybackState p=controller.getPlaybackState();
+            long actions=PlaybackState.ACTION_PLAY|PlaybackState.ACTION_PAUSE|PlaybackState.ACTION_PLAY_PAUSE;
+            if(p!=null)actions|=p.getActions()&(PlaybackState.ACTION_SKIP_TO_NEXT|PlaybackState.ACTION_SKIP_TO_PREVIOUS|PlaybackState.ACTION_SEEK_TO);
+            steeringSession.setPlaybackState(new PlaybackState.Builder().setActions(actions)
+                .setState(p==null?PlaybackState.STATE_NONE:p.getState(),p==null?0:Math.max(0,p.getPosition()),p==null?0:p.getPlaybackSpeed(),SystemClock.elapsedRealtime()).build());
+            Intent launch=context.getPackageManager().getLaunchIntentForPackage(controller.getPackageName());
+            if(launch!=null)steeringSession.setSessionActivity(android.app.PendingIntent.getActivity(context,0,launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),android.app.PendingIntent.FLAG_UPDATE_CURRENT));
+            steeringSession.setActive(true);
+        }catch(Exception|LinkageError e){android.util.Log.w("UniMedia","Unable to synchronize steering media session",e);steeringSession.setActive(false);}
+    }
+    private static void copyText(MediaMetadata source,MediaMetadata.Builder target,String key){
+        CharSequence value=source.getText(key);if(value!=null&&value.length()>0)target.putText(key,value);
     }
     public JSONObject snapshot(){
         JSONObject j=new JSONObject();try{
             j.put("authorized",authorized).put("available",controller!=null).put("playing",false).put("preferredPackage",preferred).put("sessions",activeSources)
+                .put("steeringControlReady",controller!=null).put("instrumentMetadataReady",controller!=null)
                 .put("reason",!authorized?"请授权媒体访问":controller==null?"所选播放器尚未建立媒体会话":"");
             if(controller!=null){
                 MediaMetadata m=controller.getMetadata();PlaybackState p=controller.getPlaybackState();
@@ -163,5 +216,5 @@ public final class MediaAdapter {
         }else return false;
         return true;
     }
-    public void stop(){try{manager.removeOnActiveSessionsChangedListener(sessions);}catch(Exception ignored){}select(null);}
+    public void stop(){try{manager.removeOnActiveSessionsChangedListener(sessions);}catch(Exception ignored){}select(null);steeringSession.setActive(false);}
 }

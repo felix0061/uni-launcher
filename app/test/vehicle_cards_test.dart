@@ -78,6 +78,7 @@ void main() {
       'air',
       'ride',
       'clock',
+      'clockWeather',
       'shortcuts',
       'vehicle',
       'battery'

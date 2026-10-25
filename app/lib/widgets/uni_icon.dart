@@ -37,7 +37,7 @@ final _originalIcons = <IconData, String>{
   Icons.arrow_forward: 'arrow-right',
   Icons.edit_outlined: 'edit',
   Icons.drag_indicator: 'move',
-  Icons.open_in_full: 'resize',
+  Icons.open_in_full: 'fullscreen-diagonal',
   Icons.navigation_outlined: 'nav',
   Icons.music_note_outlined: 'music',
   Icons.cloud_outlined: 'cloud',
