@@ -29,7 +29,7 @@ final _originalIcons = <IconData, String>{
   Icons.pause: 'pause',
   Icons.play_arrow: 'play',
   Icons.directions_car_outlined: 'car',
-  Icons.surround_sound_outlined: 'camera',
+  Icons.surround_sound_outlined: 'camera-360',
   Icons.remove: 'minus',
   Icons.add: 'plus',
   Icons.close: 'close',

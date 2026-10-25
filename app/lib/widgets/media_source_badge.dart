@@ -8,8 +8,12 @@ import '../theme/launcher_theme.dart';
 class MediaSourceBadge extends StatelessWidget {
   final LauncherController controller;
   final bool titleBar;
+  final bool compact;
   const MediaSourceBadge(
-      {super.key, required this.controller, this.titleBar = false});
+      {super.key,
+      required this.controller,
+      this.titleBar = false,
+      this.compact = false});
   @override
   Widget build(BuildContext context) =>
       ValueListenableBuilder<Map<String, dynamic>>(
@@ -41,9 +45,13 @@ class MediaSourceBadge extends StatelessWidget {
                     onPressed: () => controller.command('launch-player'),
                     style: TextButton.styleFrom(
                         foregroundColor: titleBar ? s.text : s.muted,
+                        minimumSize: compact ? Size.zero : null,
+                        tapTargetSize: compact
+                            ? MaterialTapTargetSize.shrinkWrap
+                            : MaterialTapTargetSize.padded,
                         padding: EdgeInsets.symmetric(
                             horizontal: Design.px(titleBar ? 4 : 12),
-                            vertical: Design.px(8)),
+                            vertical: Design.px(compact ? 4 : 8)),
                         backgroundColor:
                             titleBar ? Colors.transparent : s.soft),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -51,8 +59,16 @@ class MediaSourceBadge extends StatelessWidget {
                           borderRadius:
                               BorderRadius.circular(s.controlRadius * .5),
                           child: SizedBox(
-                              width: Design.px(titleBar ? 38 : 28),
-                              height: Design.px(titleBar ? 38 : 28),
+                              width: Design.px(compact
+                                  ? 28
+                                  : titleBar
+                                      ? 38
+                                      : 28),
+                              height: Design.px(compact
+                                  ? 28
+                                  : titleBar
+                                      ? 38
+                                      : 28),
                               child: icon != null
                                   ? Image.memory(icon,
                                       errorBuilder: (_, __, ___) =>
@@ -64,7 +80,11 @@ class MediaSourceBadge extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                  fontSize: Design.px(titleBar ? 28 : 19),
+                                  fontSize: Design.px(compact
+                                      ? 20
+                                      : titleBar
+                                          ? 28
+                                          : 19),
                                   fontWeight: titleBar
                                       ? FontWeight.w500
                                       : FontWeight.normal))),
@@ -72,11 +92,17 @@ class MediaSourceBadge extends StatelessWidget {
                       if (titleBar) ...[
                         Text('正在播放',
                             style: TextStyle(
-                                fontSize: Design.px(26), color: s.muted)),
+                                fontSize: Design.px(compact ? 18 : 26),
+                                color: s.muted)),
                         SizedBox(width: Design.px(10)),
                       ],
                       Icon(Icons.open_in_new,
-                          size: Design.px(titleBar ? 19 : 17), color: s.muted)
+                          size: Design.px(compact
+                              ? 15
+                              : titleBar
+                                  ? 19
+                                  : 17),
+                          color: s.muted)
                     ])));
           });
 }

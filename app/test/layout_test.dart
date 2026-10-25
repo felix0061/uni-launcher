@@ -57,6 +57,27 @@ void main() {
     c.dispose();
     await g.dispose();
   });
+  test('empty trailing editor pages are not persisted or restored', () async {
+    final g = FakeGateway(), c = LauncherController(g);
+    await c.initialize();
+    c.beginEdit();
+    c.newPage();
+    expect(c.pageCount, 3);
+    c.finishEdit();
+    expect(c.pageCount, 2);
+    expect(c.page, 1);
+    await c.persist();
+    final saved = jsonDecode(g.saved!);
+    saved['pageCount'] = 7;
+    final next = FakeGateway()..state['savedDesign'] = jsonEncode(saved);
+    final restored = LauncherController(next);
+    await restored.initialize();
+    expect(restored.pageCount, 2);
+    c.dispose();
+    restored.dispose();
+    await g.dispose();
+    await next.dispose();
+  });
   test('glass and theme persist through native repository and reload',
       () async {
     final g = FakeGateway(), c = LauncherController(g);

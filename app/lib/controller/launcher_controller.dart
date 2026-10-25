@@ -39,6 +39,7 @@ class LauncherController extends ChangeNotifier {
   StreamSubscription<Map<String, dynamic>>? _subscription;
   Future<void> _saveTail = Future.value();
   final Map<String, Uint8List> _icons = {};
+  final Map<String, Uint8List> _recentImages = {};
   LauncherController(this.gateway);
   Future<void> initialize() async {
     gateway.onHome(home);
@@ -58,11 +59,11 @@ class LauncherController extends ChangeNotifier {
               .toList();
           if (validLayout(parsed)) {
             cards = parsed;
-            pageCount = max(
-                    1,
-                    max((data['pageCount'] as num?)?.toInt() ?? 1,
-                        cards.fold<int>(1, (n, c) => max(n, c.page + 1))))
-                .clamp(1, 20);
+            // Empty trailing pages are editor scratch space, not persistent
+            // desktops. Keeping them made an empty-page prompt animate over
+            // the last real page after restart.
+            pageCount =
+                cards.fold<int>(1, (n, c) => max(n, c.page + 1)).clamp(1, 20);
           }
         } catch (_) {
           message = '旧布局无法读取，已恢复默认卡片';
@@ -89,6 +90,20 @@ class LauncherController extends ChangeNotifier {
           final raw = app['icon'] as String;
           try {
             app['iconBytes'] = _icons.putIfAbsent(
+                raw, () => base64Decode(raw.split(',').last));
+          } catch (_) {}
+        }
+      }
+    }
+    final recentTasks = state['recentTasks'];
+    if (recentTasks is List) {
+      for (final task in recentTasks) {
+        if (task is! Map) continue;
+        for (final field in const ['icon', 'snapshot']) {
+          final raw = task[field];
+          if (raw is! String || raw.isEmpty) continue;
+          try {
+            task['${field}Bytes'] = _recentImages.putIfAbsent(
                 raw, () => base64Decode(raw.split(',').last));
           } catch (_) {}
         }
@@ -259,6 +274,8 @@ class LauncherController extends ChangeNotifier {
   }
 
   void finishEdit() {
+    pageCount = cards.fold<int>(1, (n, c) => max(n, c.page + 1));
+    page = page.clamp(0, pageCount - 1);
     editing = false;
     _backup = null;
     persist();

@@ -19,7 +19,10 @@ class DesktopPageStack extends StatelessWidget {
         MediaQuery.disableAnimationsOf(context) ||
         children.length < 2;
     if (disabled) return IndexedStack(index: page, children: children);
-    const duration = Duration(milliseconds: 360);
+    // Keep the Android map surface mounted, but animate only one inexpensive
+    // property. The previous slide+scale+opacity stack forced three composited
+    // layers for every page and was visibly slow on the IP753 GPU.
+    const duration = Duration(milliseconds: 220);
     final order = <int>[
       for (var i = 0; i < children.length; i++)
         if (i != page) i,
@@ -36,22 +39,19 @@ class DesktopPageStack extends StatelessWidget {
                     excluding: i != page,
                     child: TickerMode(
                         enabled: i == page,
-                        child: AnimatedSlide(
-                            duration: duration,
-                            curve: Curves.easeOutCubic,
-                            offset: effect == 'slide'
-                                ? Offset(
-                                    i == page ? 0 : (i < page ? -.16 : .16), 0)
-                                : Offset.zero,
-                            child: AnimatedScale(
-                                duration: duration,
-                                curve: Curves.easeOutCubic,
-                                scale: effect == 'fade' && i != page ? .96 : 1,
-                                child: AnimatedOpacity(
+                        child: RepaintBoundary(
+                            child: effect == 'slide'
+                                ? AnimatedSlide(
                                     duration: duration,
                                     curve: Curves.easeOutCubic,
+                                    offset: Offset(
+                                        i == page ? 0 : (i < page ? -1 : 1), 0),
+                                    child: children[i])
+                                : AnimatedOpacity(
+                                    duration: const Duration(milliseconds: 180),
+                                    curve: Curves.easeOutCubic,
                                     opacity: i == page ? 1 : 0,
-                                    child: children[i]))))))),
+                                    child: children[i])))))),
     ]));
   }
 }

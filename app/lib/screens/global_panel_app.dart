@@ -7,7 +7,7 @@ import '../widgets/bottom_dock.dart';
 import '../widgets/card_content.dart';
 import '../widgets/dock_window_scope.dart';
 import '../widgets/navigation_app_picker.dart';
-import '../widgets/recents_footer.dart';
+import '../widgets/recent_tasks_panel.dart';
 
 /// Separate, reusable window above the dock; never resizes its surface.
 class GlobalPanelApp extends StatefulWidget {
@@ -118,17 +118,12 @@ class _GlobalPanelAppState extends State<GlobalPanelApp> {
                   widget.controller.native.value['dark'] == true)),
               color: Colors.transparent,
               home: Scaffold(
-                  backgroundColor:
-                      mapOf(widget.controller.native.value['globalDock'])[
-                                  'panel'] ==
-                              'recents'
-                          ? Colors.black
-                          : Colors.transparent,
+                  backgroundColor: Colors.transparent,
                   resizeToAvoidBottomInset: false,
                   body: mapOf(widget.controller.native.value['globalDock'])[
                               'panel'] ==
                           'recents'
-                      ? RecentsFooter(controller: widget.controller)
+                      ? RecentTasksPanel(controller: widget.controller)
                       : backdrop != null && widget.controller.appearance.glass
                           ? SizedBox.expand(
                               child: Image.memory(backdrop!,

@@ -252,20 +252,30 @@ class _DesktopPageIndicator extends StatelessWidget {
                           decoration: BoxDecoration(
                               color: s.muted.withValues(alpha: .3),
                               borderRadius: BorderRadius.circular(dot / 2)))),
-                AnimatedPositioned(
-                    key: const ValueKey('page-indicator-active'),
-                    duration: reduced
-                        ? Duration.zero
-                        : const Duration(milliseconds: 320),
-                    curve: Curves.easeOutCubic,
-                    left: slot * c.page + (slot - pill) / 2,
+                Positioned(
+                    left: (slot - pill) / 2,
                     top: Design.px(4),
                     width: pill,
                     height: dot,
-                    child: DecoratedBox(
-                        decoration: BoxDecoration(
-                            color: s.accent,
-                            borderRadius: BorderRadius.circular(dot / 2)))),
+                    child: RepaintBoundary(
+                        child: TweenAnimationBuilder<double>(
+                            tween: Tween(end: c.page.toDouble()),
+                            duration: reduced
+                                ? Duration.zero
+                                : const Duration(milliseconds: 220),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, value, child) =>
+                                Transform.translate(
+                                    offset: Offset(slot * value, 0),
+                                    child: KeyedSubtree(
+                                        key: const ValueKey(
+                                            'page-indicator-active'),
+                                        child: child!)),
+                            child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                    color: s.accent,
+                                    borderRadius:
+                                        BorderRadius.circular(dot / 2)))))),
                 for (int i = 0; i < c.pageCount; i++)
                   Positioned(
                       left: slot * i,

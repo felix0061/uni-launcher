@@ -13,7 +13,8 @@ import 'package:uni_launcher/widgets/card_content.dart';
 import 'package:uni_launcher/model/card_layout.dart';
 import 'package:uni_launcher/widgets/lyrics_view.dart';
 import 'fake_gateway.dart';
-import 'package:uni_launcher/widgets/recents_footer.dart';
+import 'package:uni_launcher/widgets/recent_tasks_panel.dart';
+import 'package:uni_launcher/widgets/uni_icon.dart';
 
 void main() {
   Future<(LauncherController, FakeGateway)> setup(WidgetTester t,
@@ -62,31 +63,43 @@ void main() {
     return (c, g);
   }
 
-  testWidgets(
-      'recents footer shares desktop controls and disables unknown OEM cleanup',
+  testWidgets('custom recents renders task cards and native task actions',
       (t) async {
     final (c, g) = await setup(t, host: 'global-panel', global: true);
     g.state['systemStatus'] = {
       'memory': {'usedBytes': 2147483648, 'totalBytes': 4294967296}
     };
+    g.state['globalDock'] = {
+      'enabled': true,
+      'running': true,
+      'allowed': true,
+      'panel': 'recents',
+      'recentsReady': true,
+      'recentsClearSupported': true
+    };
+    g.state['recentTasks'] = [
+      {'taskId': 41, 'package': 'test.player', 'label': '测试播放器'},
+      {'taskId': 42, 'package': 'custom.map', 'label': '自选导航'}
+    ];
     g.stream.add(Map.of(g.state));
     await t.pump();
     await t.pumpWidget(MaterialApp(
         theme: launcherTheme(SurfaceStyle.from(const Appearance(), true)),
         home: Scaffold(
-            body: SizedBox(height: 120, child: RecentsFooter(controller: c)))));
+            body: SizedBox(
+                width: 1920,
+                height: 984,
+                child: RecentTasksPanel(controller: c)))));
     await t.pumpAndSettle();
     expect(find.text('已用 2.00 GB / 4.00 GB'), findsOneWidget);
-    expect(
-        t
-            .widget<OutlinedButton>(
-                find.byKey(const ValueKey('system-recents-clear')))
-            .onPressed,
-        isNull);
-    (g.state['globalDock'] as Map).addAll(
-        <String, Object>{'recentsClearSupported': true, 'recentsReady': true});
-    g.stream.add(Map.of(g.state));
-    await t.pumpAndSettle();
+    expect(find.text('测试播放器'), findsOneWidget);
+    expect(find.text('自选导航'), findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('recent-task-41')));
+    expect(g.commands.last['action'], 'open-recent-task');
+    expect(g.commands.last['value'], '41');
+    await t.tap(find.byKey(const ValueKey('recent-task-remove-42')));
+    expect(g.commands.last['action'], 'remove-recent-task');
+    expect(g.commands.last['value'], '42');
     await t.tap(find.byKey(const ValueKey('system-recents-clear')));
     expect(g.commands.last['action'], 'clear-system-recents');
     expect(t.takeException(), isNull);
@@ -166,6 +179,10 @@ void main() {
     }
     await t.tap(find.byKey(const ValueKey('recents')));
     expect(g.commands.last['action'], 'show-recents');
+    final cameraIcon = t.widget<UniIcon>(find.descendant(
+        of: find.byKey(const ValueKey('camera')),
+        matching: find.byType(UniIcon)));
+    expect(cameraIcon.name, 'camera-360');
     final title = t.getCenter(find.byKey(const ValueKey('dock-track-title')));
     final lyric = t.getCenter(find.byKey(const ValueKey('dock-lyrics')));
     expect(lyric.dx, greaterThan(title.dx));
@@ -220,8 +237,14 @@ void main() {
                   height: size.$4,
                   child: CardContent(card: card, controller: c)))));
       await t.pumpAndSettle();
+      expect(find.text('测试播放器'), findsOneWidget);
+      expect(find.text('正在播放'), findsOneWidget);
       if (size.$1 == 3) {
         expect(find.byType(LyricsView), findsNothing);
+        await t.tap(find.byKey(const ValueKey('media-source-entry')));
+        expect(c.gateway, isA<FakeGateway>());
+        expect((c.gateway as FakeGateway).commands.last['action'],
+            'launch-player');
       } else {
         expect(find.byKey(const ValueKey('music-card-lyrics')), findsOneWidget);
         expect(
@@ -381,7 +404,10 @@ void main() {
     await t.pumpAndSettle();
     expect(find.byType(LauncherSheet), findsOneWidget);
     expect(find.byType(BackdropFilter), findsNothing);
-    expect(find.text('测试播放器'), findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byType(LauncherSheet), matching: find.text('测试播放器')),
+        findsOneWidget);
     await t.tap(find.byTooltip('关闭音乐详情'));
     await t.pumpAndSettle();
     c.setAppearance(c.appearance.copyWith(glass: true), save: false);

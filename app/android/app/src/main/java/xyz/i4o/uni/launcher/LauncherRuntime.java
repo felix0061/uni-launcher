@@ -113,7 +113,8 @@ public final class LauncherRuntime {
             if(raw==null||raw.length()>65536)return false;
             try{
                 JSONObject data=new JSONObject(raw);JSONObject p=data.getJSONObject("preferences");
-                if(data.optInt("version")!=4||!p.optString("custom").matches("#[0-9a-fA-F]{6}"))return false;
+                int version=data.optInt("version");
+                if((version<4||version>5)||!p.optString("custom").matches("#[0-9a-fA-F]{6}"))return false;
                 String mode=p.optString("mode"),palette=p.optString("palette");
                 String effect=p.optString("pageTransition","none");
                 if(!"none".equals(effect)&&!"fade".equals(effect)&&!"slide".equals(effect))return false;
@@ -125,6 +126,15 @@ public final class LauncherRuntime {
                 for(int i=0;i<cards.length();i++){
                     JSONObject c=cards.getJSONObject(i);int x=c.getInt("x"),y=c.getInt("y"),w=c.getInt("w"),h=c.getInt("h"),page=c.getInt("page");
                     if(x<0||y<0||w<1||h<1||x+w>12||y+h>6||page<0||page>=pages)return false;
+                }
+                if(version>=5&&data.has("appNames")){
+                    JSONObject names=data.getJSONObject("appNames");
+                    if(names.length()>300)return false;
+                    java.util.Iterator<String> keys=names.keys();
+                    while(keys.hasNext()){
+                        String key=keys.next(),name=names.optString(key,"");
+                        if(key.length()==0||key.length()>255||name.length()>96||name.indexOf('\n')>=0||name.indexOf('\r')>=0)return false;
+                    }
                 }
                 if(!prefs.edit().putString("savedDesign",raw).commit())return false;
             }catch(Exception e){return false;}

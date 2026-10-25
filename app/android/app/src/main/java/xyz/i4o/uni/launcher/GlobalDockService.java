@@ -8,6 +8,7 @@ import android.os.*;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.view.*;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import io.flutter.FlutterInjector;
 import io.flutter.embedding.android.FlutterTextureView;
@@ -19,7 +20,7 @@ import xyz.i4o.uni.launcher.overlay.SystemNavigationPolicy;
 import xyz.i4o.uni.launcher.overlay.OverscanPolicy;
 import xyz.i4o.uni.launcher.overlay.WorkspacePolicy;
 import xyz.i4o.uni.launcher.overlay.NavigationInsets;
-import xyz.i4o.uni.launcher.overlay.EmbeddedTaskWindow;
+import xyz.i4o.uni.launcher.overlay.RecentTasksRepository;
 
 /** A small, touch-bounded global window; expanded only while a dock panel is open.
  * One persistent dock engine, one lazy reusable panel engine, one native runtime.
@@ -32,7 +33,10 @@ public final class GlobalDockService extends Service {
     private WindowManager windows;
     private WorkspacePolicy workspace;
     private OverlayWindow dockWindow, panelWindow;
-    private EmbeddedTaskWindow recentsWindow;
+    private RecentTasksRepository recentTasks;
+    private JSONArray recentTaskItems=new JSONArray();
+    private boolean recentTasksReady;
+    private int recentTasksRevision;
     private boolean visible, cameraSuspended, nativeInsets;
     private String panel="";
     private int panelRevision;
@@ -56,9 +60,9 @@ public final class GlobalDockService extends Service {
              .put("workspaceReserved",s!=null&&(s.nativeInsets||s.workspace!=null&&s.workspace.available()))
              .put("workspaceResizes",s==null||s.workspace==null?0:s.workspace.resized())
              .put("panelReady",s!=null&&s.panelReady)
-             .put("recentsReady",s!=null&&s.recentsWindow!=null&&s.recentsWindow.ready())
-             .put("recentsDisplayId",s==null||s.recentsWindow==null?-1:s.recentsWindow.displayId())
-             .put("recentsClearSupported",s!=null&&s.recentsWindow!=null&&s.recentsWindow.clearSupported())
+             .put("recentsReady",s!=null&&s.recentTasksReady)
+             .put("recentsDisplayId",-1)
+             .put("recentsClearSupported",s!=null&&s.recentTasks!=null&&s.recentTasks.canRemove())
              .put("backdropAvailable",s!=null&&s.panelBackdrop!=null)
              .put("panel",s==null?"":s.panel).put("panelRevision",s==null?0:s.panelRevision)
              .put("rendering",s!=null&&s.dockWindow!=null&&s.dockWindow.engine.getRenderer().isDisplayingFlutterUi());
@@ -117,12 +121,14 @@ public final class GlobalDockService extends Service {
             },"uni-system-back").start();return true;
         }
         if("show-recents".equals(a)){
-            if(active!=null&&active.nativeInsets){active.toggleRecents();return true;}
-            if(active!=null)active.dismissPanel();
+            if(active!=null){active.toggleRecents();return true;}
             xyz.i4o.uni.launcher.overlay.SystemRecents.toggle(c);return true;
         }
         if("clear-system-recents".equals(a)){
-            if(active!=null&&"recents".equals(active.panel)&&active.recentsWindow!=null)active.recentsWindow.clear();return true;
+            if(active!=null&&"recents".equals(active.panel))active.clearRecentTasks();return true;
+        }
+        if("open-recent-task".equals(a)||"remove-recent-task".equals(a)){
+            if(active!=null&&"recents".equals(active.panel))active.handleRecentTask(a,r.optString("value"));return true;
         }
         if("show-home".equals(a)||"show-desktop-settings".equals(a)){
             if(active!=null){active.dismissPanel();active.cameraSuspended=false;}
@@ -159,7 +165,7 @@ public final class GlobalDockService extends Service {
     }
     private static void toast(Context c,String text){android.widget.Toast.makeText(c,text,android.widget.Toast.LENGTH_SHORT).show();}
     @Override public void onCreate(){
-        super.onCreate();active=this;runtime=LauncherRuntime.get(this);
+        super.onCreate();active=this;runtime=LauncherRuntime.get(this);recentTasks=new RecentTasksRepository(this);
         if(!Settings.canDrawOverlays(this)||!runtime.prefs().getBoolean("globalDockEnabled",false)){stopSelf();return;}
         startForeground(753,notification());
         windows=(WindowManager)getSystemService(WINDOW_SERVICE);
@@ -241,9 +247,8 @@ public final class GlobalDockService extends Service {
         private boolean setBounds(){
             DisplayMetrics real=new DisplayMetrics();windows.getDefaultDisplay().getRealMetrics(real);
             int bar=Math.round(real.widthPixels*96f/1920f);
-            boolean footer=isPanel&&"recents".equals(panel)&&recentsWindow!=null&&recentsWindow.clearSupported();
-            int h=isPanel?(footer?Math.round(real.widthPixels*120f/1920f):real.heightPixels-bar):bar;
-            int y=isPanel?(footer?real.heightPixels-bar-h:0):real.heightPixels-bar;
+            int h=isPanel?real.heightPixels-bar:bar;
+            int y=isPanel?0:real.heightPixels-bar;
             boolean changed=bounds.width!=real.widthPixels||bounds.height!=h||bounds.x!=0||bounds.y!=y;
             bounds.width=real.widthPixels;bounds.height=h;bounds.x=0;bounds.y=y;return changed;
         }
@@ -266,13 +271,13 @@ public final class GlobalDockService extends Service {
             j.put("hostMode",isPanel?"global-panel":"global-dock").put("globalDock",snapshot(this))
              .put("systemNavigationHidden",runtime.prefs().getBoolean("systemNavigationHidden",false))
              .put("systemNavigationGranted",SystemNavigationPolicy.granted(this));
+            if(isPanel&&"recents".equals(panel))j.put("recentTasks",recentTaskItems);
         }catch(Exception ignored){}return j;
     }
     private void showPanel(String kind){
         if(!java.util.Arrays.asList("apps","climate","media","vehicle","navigation").contains(kind))return;
         // Tapping the same button again closes it; different buttons replace it.
         if(kind.equals(panel)){dismissPanel();return;}
-        if(recentsWindow!=null)recentsWindow.hide();
         if(panel.isEmpty()||"recents".equals(panel))panelBackdrop=captureBackdrop();
         panel=kind;panelReady=false;panelRevision++;
         try{if(panelWindow==null)panelWindow=new OverlayWindow(true);}
@@ -303,21 +308,38 @@ public final class GlobalDockService extends Service {
     }
     private void dismissPanel(){
         if(panel.isEmpty())return;
-        if(recentsWindow!=null)recentsWindow.hide();
         panel="";panelReady=false;panelBackdrop=null;panelRevision++;main.removeCallbacks(foregroundCheck);update();
     }
     private void toggleRecents(){
         if("recents".equals(panel)){dismissPanel();return;}
         dismissPanel();
         try{
-            Intent intent=new Intent("ecarx.action.OPEN_RECENT_PANEL").setPackage("com.ecarx.recents");
-            if(getPackageManager().resolveActivity(intent,0)==null){xyz.i4o.uni.launcher.overlay.SystemRecents.toggle(this);return;}
-            if(recentsWindow==null)recentsWindow=new EmbeddedTaskWindow(this,
-                intent,this::dismissPanel);
-            panel="recents";panelRevision++;
-            if(recentsWindow.clearSupported()&&panelWindow==null)panelWindow=new OverlayWindow(true);
-            recentsWindow.show();startForegroundCheck();update();
-        }catch(Exception e){android.util.Log.w("UniDock","Bounded system task list unavailable",e);toast(this,"系统任务列表暂不可用");}
+            panel="recents";panelRevision++;recentTaskItems=new JSONArray();recentTasksReady=false;
+            if(panelWindow==null)panelWindow=new OverlayWindow(true);
+            startForegroundCheck();update();refreshRecentTasks();
+        }catch(Exception e){android.util.Log.w("UniDock","Recent task panel unavailable",e);toast(this,"系统任务列表暂不可用");}
+    }
+    private void refreshRecentTasks(){
+        final int revision=++recentTasksRevision;
+        new Thread(()->{
+            JSONArray items=recentTasks.snapshot();
+            main.post(()->{
+                if(revision!=recentTasksRevision||!"recents".equals(panel))return;
+                recentTaskItems=items;recentTasksReady=true;publish();
+            });
+        },"uni-recent-tasks").start();
+    }
+    private void handleRecentTask(String action,String raw){
+        int id;try{id=Integer.parseInt(raw);}catch(NumberFormatException e){return;}
+        if("open-recent-task".equals(action)){
+            if(!recentTasks.open(id)){toast(this,"该任务已经结束");refreshRecentTasks();return;}
+            dismissPanel();return;
+        }
+        if(!recentTasks.remove(id))toast(this,"无法关闭该任务");
+        recentTasksReady=false;refreshRecentTasks();publish();
+    }
+    private void clearRecentTasks(){
+        recentTasks.clear();recentTasksReady=false;refreshRecentTasks();publish();
     }
     /** Panel must follow the front task: record the top task at expansion and
      * collapse when a different external task replaces it (REAL_GET_TASKS is a
@@ -347,8 +369,7 @@ public final class GlobalDockService extends Service {
         if(runtime.homeVisible())cameraSuspended=false;
         visible=!cameraSuspended&&(!nativeInsets||runtime.prefs().getBoolean("systemNavigationHidden",false));
         dockWindow.updateBounds();dockWindow.show(visible);
-        if(panelWindow!=null){panelWindow.updateBounds();panelWindow.show(visible&&!panel.isEmpty()
-            &&(!"recents".equals(panel)||recentsWindow!=null&&recentsWindow.clearSupported()));}
+        if(panelWindow!=null){panelWindow.updateBounds();panelWindow.show(visible&&!panel.isEmpty());}
         publish();
     }
     private void publish(){if(dockWindow!=null)dockWindow.publish();if(panelWindow!=null)panelWindow.publish();}
@@ -384,7 +405,6 @@ public final class GlobalDockService extends Service {
         if(runtime!=null)runtime.removeListener(this);
         main.removeCallbacksAndMessages(null);
         if(workspace!=null)workspace.stopAndRestore();
-        if(recentsWindow!=null){recentsWindow.close();recentsWindow=null;}
         if(panelWindow!=null){panelWindow.close();panelWindow=null;}
         if(dockWindow!=null){dockWindow.close();dockWindow=null;}
         active=null;

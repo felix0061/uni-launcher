@@ -98,9 +98,7 @@ class _MusicCard extends StatelessWidget {
       {required this.card, required this.controller, required this.state});
   @override
   Widget build(BuildContext context) {
-    final s = SurfaceStyle.of(context),
-        demo = state['demo'] == true,
-        media = mapOf(state['media']);
+    final demo = state['demo'] == true, media = mapOf(state['media']);
     final compact = card.h <= 2;
     final lyrics = (card.w == 4 && card.h == 4) || (card.w == 8 && card.h == 6);
     final large = card.w == 8 && card.h == 6;
@@ -115,10 +113,8 @@ class _MusicCard extends StatelessWidget {
             Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Row(children: [
             Expanded(
-                child: Text(card.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: Design.px(23), color: s.muted))),
+                child: MediaSourceBadge(
+                    controller: controller, titleBar: true, compact: true)),
             IconAction(
                 icon: Icons.arrow_forward,
                 label: '打开音乐详情',
