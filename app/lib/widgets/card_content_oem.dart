@@ -170,7 +170,7 @@ class _OemCard extends StatelessWidget {
                   VehicleField.fromNative(
                               controller.native.value, 'pressureFrontLeft')
                           .valid
-                      ? '胎压原始值 · 单位待核对'
+                      ? '实时胎压 · bar'
                       : '等待车辆数据',
                   dot: true),
             ] else ...[
@@ -285,11 +285,16 @@ class TireDiagram extends StatelessWidget {
                         SizedBox(height: Design.px(compact ? 5 : 12)),
                         Text(
                             VehicleField.fromNative(native, corner.$4)
-                                .display(),
+                                .display(decimals: 2),
                             style: TextStyle(
                                 fontSize: Design.px(compact ? 32 : 46),
                                 height: 1.2,
                                 fontWeight: FontWeight.w300)),
+                        Text('bar',
+                            style: TextStyle(
+                                fontSize: Design.px(compact ? 14 : 17),
+                                height: 1.1,
+                                color: s.muted)),
                       ])),
               ])));
     });

@@ -187,89 +187,93 @@ class MediaPanel extends StatelessWidget {
   final LauncherController controller;
   const MediaPanel({super.key, required this.controller});
   @override
-  Widget build(BuildContext context) =>
-      ValueListenableBuilder<Map<String, dynamic>>(
-          valueListenable: controller.native,
-          builder: (context, state, _) {
-            final s = SurfaceStyle.of(context), m = mapOf(state['media']);
-            final demo = state['demo'] == true,
-                available = demo || m['available'] == true;
-            final artist = _mediaValue(state, 'artist', 'Coastline', '等待媒体会话');
-            final collection = _mediaValue(state, 'collection', '晨间驾驶歌单', '');
-            return SingleChildScrollView(
-                child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: Design.px(25)),
-                    child: Row(children: [
-                      _MediaCover(demo: demo, size: Design.px(260), media: m),
-                      SizedBox(width: Design.px(44)),
-                      Expanded(
-                          child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                            MediaSourceBadge(controller: controller),
-                            SizedBox(height: Design.px(12)),
-                            Text(_mediaValue(state, 'title', '向海而行', '暂无播放'),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    fontSize: Design.px(42), height: 1.2)),
-                            SizedBox(height: Design.px(18)),
-                            Text(
-                                [artist, if (collection.isNotEmpty) collection]
-                                    .join(' · '),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    fontSize: Design.px(22),
-                                    height: 1.4,
-                                    color: s.muted)),
-                            SizedBox(height: Design.px(20)),
-                            LyricsView(media: m),
-                            SizedBox(height: Design.px(20)),
-                            MediaProgress(
-                                media: m,
-                                onSeek: (v) =>
-                                    controller.command('seek', value: '$v')),
-                            SizedBox(height: Design.px(26)),
-                            Row(children: [
-                              for (final action in [
-                                'previous',
-                                'toggle-play',
-                                'next'
-                              ]) ...[
-                                if (action != 'previous')
-                                  SizedBox(width: Design.px(24)),
-                                IconAction(
-                                    icon: action == 'previous'
-                                        ? Icons.skip_previous_outlined
-                                        : action == 'next'
-                                            ? Icons.skip_next_outlined
-                                            : m['playing'] == true
-                                                ? Icons.pause
-                                                : Icons.play_arrow,
-                                    label: action == 'previous'
-                                        ? '上一首'
-                                        : action == 'next'
-                                            ? '下一首'
-                                            : m['playing'] == true
-                                                ? '暂停'
-                                                : '播放',
-                                    solid: action == 'toggle-play',
-                                    size: Design.px(58),
-                                    iconSize: Design.px(28),
-                                    onTap: available &&
-                                            (demo ||
-                                                m[action == 'next'
-                                                        ? 'canNext'
-                                                        : action == 'previous'
-                                                            ? 'canPrevious'
-                                                            : 'canToggle'] ==
-                                                    true)
-                                        ? () => controller.command(action)
-                                        : null),
-                              ],
-                            ]),
-                          ])),
-                    ])));
-          });
+  Widget build(BuildContext context) => ValueListenableBuilder<
+          Map<String, dynamic>>(
+      valueListenable: controller.native,
+      builder: (context, state, _) {
+        final s = SurfaceStyle.of(context), m = mapOf(state['media']);
+        final demo = state['demo'] == true,
+            available = demo || m['available'] == true;
+        final artist = _mediaValue(state, 'artist', 'Coastline', '等待媒体会话');
+        final collection = _mediaValue(state, 'collection', '晨间驾驶歌单', '');
+        return SingleChildScrollView(
+            key: const ValueKey('media-panel-content'),
+            child: Padding(
+                padding: EdgeInsets.symmetric(vertical: Design.px(25)),
+                child: Column(children: [
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    _MediaCover(demo: demo, size: Design.px(260), media: m),
+                    SizedBox(width: Design.px(44)),
+                    Expanded(
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                          Text(_mediaValue(state, 'title', '向海而行', '暂无播放'),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontSize: Design.px(42), height: 1.2)),
+                          SizedBox(height: Design.px(18)),
+                          Text(
+                              [artist, if (collection.isNotEmpty) collection]
+                                  .join(' · '),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontSize: Design.px(22),
+                                  height: 1.4,
+                                  color: s.muted)),
+                          SizedBox(height: Design.px(20)),
+                          LyricsView(media: m),
+                          SizedBox(height: Design.px(20)),
+                          MediaProgress(
+                              media: m,
+                              onSeek: (v) =>
+                                  controller.command('seek', value: '$v')),
+                        ])),
+                  ]),
+                  SizedBox(height: Design.px(26)),
+                  Row(
+                      key: const ValueKey('media-transport-controls'),
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        for (final action in [
+                          'previous',
+                          'toggle-play',
+                          'next'
+                        ]) ...[
+                          if (action != 'previous')
+                            SizedBox(width: Design.px(24)),
+                          IconAction(
+                              icon: action == 'previous'
+                                  ? Icons.skip_previous_outlined
+                                  : action == 'next'
+                                      ? Icons.skip_next_outlined
+                                      : m['playing'] == true
+                                          ? Icons.pause
+                                          : Icons.play_arrow,
+                              label: action == 'previous'
+                                  ? '上一首'
+                                  : action == 'next'
+                                      ? '下一首'
+                                      : m['playing'] == true
+                                          ? '暂停'
+                                          : '播放',
+                              solid: action == 'toggle-play',
+                              size: Design.px(58),
+                              iconSize: Design.px(28),
+                              onTap: available &&
+                                      (demo ||
+                                          m[action == 'next'
+                                                  ? 'canNext'
+                                                  : action == 'previous'
+                                                      ? 'canPrevious'
+                                                      : 'canToggle'] ==
+                                              true)
+                                  ? () => controller.command(action)
+                                  : null),
+                        ],
+                      ]),
+                ])));
+      });
 }

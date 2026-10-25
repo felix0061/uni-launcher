@@ -141,7 +141,7 @@ public final class ClimateStateTest {
         check(VehicleValues.decode("driverHeat",4)==null,"reject unknown seat status");
         check(VehicleValues.decode("pressureFrontLeft",Float.NaN)==null,"reject NaN pressure");
         check(VehicleValues.decode("pressureFrontLeft",0)==null,"zero pressure is not an invented reading");
-        check(VehicleValues.decode("pressureFrontLeft",246).intValue()==246,"preserve raw pressure, no guessed unit");
+        check(Math.abs(VehicleValues.decode("pressureFrontLeft",246).doubleValue()-2.46)<0.001,"pressure x0.01 bar conversion");
         check(VehicleValues.bool(2)==null,"unknown boolean enum stays unknown");
         check(VehicleValues.bool(1),"one maps to on");
         check(VehicleValues.flag("ac",1),"AC uses evidenced boolean encoding");

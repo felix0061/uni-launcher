@@ -10,6 +10,7 @@ class LauncherController extends ChangeNotifier {
   final NativeGateway gateway;
   final native = ValueNotifier<Map<String, dynamic>>({});
   Appearance appearance = const Appearance();
+  Map<String, String> appNames = {};
   List<LauncherCard> cards = defaultCards();
   int page = 0, pageCount = 2;
   bool settings = false, editing = false, ready = false;
@@ -51,6 +52,7 @@ class LauncherController extends ChangeNotifier {
           final data = jsonDecode(raw) as Map<String, dynamic>;
           appearance = Appearance.fromJson(
               Map<String, dynamic>.from(data['preferences'] ?? {}));
+          appNames = _decodeAppNames(data['appNames']);
           final parsed = (data['cards'] as List)
               .map((c) => LauncherCard.fromJson(Map<String, dynamic>.from(c)))
               .toList();
@@ -100,6 +102,7 @@ class LauncherController extends ChangeNotifier {
       try {
         appearance = Appearance.fromJson(Map<String, dynamic>.from(
             jsonDecode(_overlayDesign)['preferences']));
+        appNames = _decodeAppNames(jsonDecode(_overlayDesign)['appNames']);
         overlayThemeChanged = true;
       } catch (_) {}
     }
@@ -146,11 +149,49 @@ class LauncherController extends ChangeNotifier {
   }
 
   String serialize() => jsonEncode({
-        'version': 4,
+        'version': 5,
         'preferences': appearance.toJson(),
         'cards': cards.map((c) => c.toJson()).toList(),
-        'pageCount': pageCount
+        'pageCount': pageCount,
+        'appNames': appNames
       });
+
+  static Map<String, String> _decodeAppNames(Object? raw) {
+    if (raw is! Map) return {};
+    final result = <String, String>{};
+    for (final entry in raw.entries) {
+      final package = entry.key.toString().trim();
+      final name = _normalizeAppName(entry.value);
+      if (package.isNotEmpty && name.isNotEmpty) result[package] = name;
+    }
+    return result;
+  }
+
+  static String _normalizeAppName(Object? value) {
+    final text =
+        value is String ? value.replaceAll(RegExp(r'[\r\n]'), ' ').trim() : '';
+    return String.fromCharCodes(text.runes.take(24));
+  }
+
+  String appName(Map<String, dynamic> app) {
+    final package = app['package']?.toString();
+    return (package == null ? null : appNames[package]) ??
+        '${app['label'] ?? package ?? '应用'}';
+  }
+
+  Future<void> renameApp(String package, String name) {
+    final normalized = _normalizeAppName(name);
+    appNames = Map.of(appNames);
+    if (normalized.isEmpty) {
+      appNames.remove(package);
+    } else {
+      appNames[package] = normalized;
+    }
+    native.value = Map.of(native.value);
+    notifyListeners();
+    return persist();
+  }
+
   Future<void> persist() {
     final payload = serialize();
     _saveTail = _saveTail

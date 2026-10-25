@@ -39,8 +39,16 @@ void main() {
       'playing': false
     };
     g.state['apps'] = [
-      <String, dynamic>{'package': 'test.player', 'label': '测试播放器'},
-      {'package': 'custom.map', 'label': '自选导航'}
+      <String, dynamic>{
+        'id': 'test.player/.MainActivity',
+        'package': 'test.player',
+        'label': '测试播放器'
+      },
+      {
+        'id': 'custom.map/.MainActivity',
+        'package': 'custom.map',
+        'label': '自选导航'
+      }
     ];
     final c = LauncherController(g);
     await c.initialize();
@@ -83,6 +91,50 @@ void main() {
     expect(g.commands.last['action'], 'clear-system-recents');
     expect(t.takeException(), isNull);
     c.dispose();
+  });
+  testWidgets('all-app pressed material exactly matches the icon frame',
+      (t) async {
+    final (c, _) = await setup(t);
+    await t.pumpWidget(MaterialApp(
+        theme: launcherTheme(SurfaceStyle.from(const Appearance(), true)),
+        home: Scaffold(
+            body: SizedBox(
+                width: 1560, height: 760, child: AppPanel(controller: c)))));
+    await t.pumpAndSettle();
+    final frame = find.byKey(const ValueKey('app-icon-frame-test.player'));
+    final ink = find.byKey(const ValueKey('app-icon-ink-test.player'));
+    expect(frame, findsOneWidget);
+    expect(ink, findsOneWidget);
+    expect(t.getSize(frame).width, t.getSize(frame).height);
+    expect(t.getSize(frame).width, greaterThan(80));
+    expect(t.getSize(ink), t.getSize(frame));
+    expect(t.getTopLeft(ink), t.getTopLeft(frame));
+    expect(t.getBottomRight(ink), t.getBottomRight(frame));
+    expect(t.getTopLeft(find.text('测试播放器')).dy,
+        greaterThan(t.getBottomRight(ink).dy));
+    expect(t.takeException(), isNull);
+  });
+  testWidgets('app rename updates the launcher label and persisted design',
+      (t) async {
+    final (c, g) = await setup(t);
+    await t.pumpWidget(MaterialApp(
+        theme: launcherTheme(SurfaceStyle.from(const Appearance(), true)),
+        home: Scaffold(body: AppPanel(controller: c))));
+    await t.pumpAndSettle();
+    await t.longPress(find.text('测试播放器'));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('app-menu-rename')));
+    await t.pumpAndSettle();
+    await t.enterText(
+        find.byKey(const ValueKey('app-name-input')), ' 我的音乐播放器 ');
+    await t.tap(find.byKey(const ValueKey('app-name-save')));
+    await t.pumpAndSettle();
+    expect(
+        c.appName(Map<String, dynamic>.from((g.state['apps'] as List).first)),
+        '我的音乐播放器');
+    expect(find.text('我的音乐播放器'), findsOneWidget);
+    expect(g.saved, contains('"test.player":"我的音乐播放器"'));
+    expect(t.takeException(), isNull);
   });
   testWidgets(
       'dock button order, recents command and centered current lyric with two-line limit',
@@ -260,6 +312,13 @@ void main() {
     expect(find.text('正在播放'), findsOneWidget);
     expect(find.text('打开关联播放器'), findsNothing);
     expect(find.text('测试播放器'), findsOneWidget);
+    expect(t.getCenter(find.byKey(const ValueKey('media-source-entry'))).dy,
+        lessThan(t.getCenter(find.text('曲名')).dy));
+    expect(
+        t.getCenter(find.byKey(const ValueKey('media-transport-controls'))).dx,
+        closeTo(
+            t.getCenter(find.byKey(const ValueKey('media-panel-content'))).dx,
+            .1));
     expect(find.byType(BackdropFilter), findsWidgets);
     expect(
         g.commands.where((a) => a['action'] == 'dismiss-dock-panel'), isEmpty,

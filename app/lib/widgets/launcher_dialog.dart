@@ -10,6 +10,7 @@ import 'dock_window_scope.dart';
 Future<T?> showLauncherSheet<T>(
   BuildContext context, {
   required String title,
+  Widget? titleWidget,
   String? subtitle,
   String closeLabel = '关闭面板',
   required double width,
@@ -38,6 +39,7 @@ Future<T?> showLauncherSheet<T>(
                 bottom: MediaQuery.viewInsetsOf(context).bottom),
             child: LauncherSheet(
                 title: title,
+                titleWidget: titleWidget,
                 subtitle: subtitle,
                 closeLabel: closeLabel,
                 width: width,
@@ -90,12 +92,14 @@ void showLauncherToast(BuildContext context, String message) {
 class LauncherSheet extends StatelessWidget {
   final String title, closeLabel;
   final String? subtitle;
+  final Widget? titleWidget;
   final double width;
   final double? height;
   final Widget child;
   const LauncherSheet(
       {super.key,
       required this.title,
+      this.titleWidget,
       required this.closeLabel,
       required this.width,
       this.subtitle,
@@ -156,34 +160,22 @@ class LauncherSheet extends StatelessWidget {
                                                     children: [
                                                       Row(children: [
                                                         Expanded(
-                                                            child: Column(
-                                                                crossAxisAlignment:
-                                                                    CrossAxisAlignment
-                                                                        .start,
-                                                                children: [
-                                                              Text(title,
-                                                                  style: TextStyle(
-                                                                      fontSize:
-                                                                          Design.px(
-                                                                              34),
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .w500)),
-                                                              if (subtitle !=
-                                                                  null) ...[
-                                                                SizedBox(
-                                                                    height:
-                                                                        Design.px(
-                                                                            12)),
-                                                                Text(subtitle!,
-                                                                    style: TextStyle(
-                                                                        fontSize:
-                                                                            Design.px(
-                                                                                20),
-                                                                        color: s
-                                                                            .muted))
-                                                              ],
-                                                            ])),
+                                                            child:
+                                                                titleWidget ??
+                                                                    Column(
+                                                                        crossAxisAlignment:
+                                                                            CrossAxisAlignment.start,
+                                                                        children: [
+                                                                          Text(
+                                                                              title,
+                                                                              style: TextStyle(fontSize: Design.px(34), fontWeight: FontWeight.w500)),
+                                                                          if (subtitle !=
+                                                                              null) ...[
+                                                                            SizedBox(height: Design.px(12)),
+                                                                            Text(subtitle!,
+                                                                                style: TextStyle(fontSize: Design.px(20), color: s.muted))
+                                                                          ],
+                                                                        ])),
                                                         IconAction(
                                                             icon: Icons.close,
                                                             label: closeLabel,

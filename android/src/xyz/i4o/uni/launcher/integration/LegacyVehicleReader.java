@@ -58,7 +58,7 @@ public final class LegacyVehicleReader {
                     Object value;
                     if("auto".equals(key)||"ac".equals(key)||"power".equals(key)||"sync".equals(key)||"recirc".equals(key))value=VehicleValues.flag(key,raw);
                     else value=VehicleValues.decode(key,raw);
-                    field.put("valid",value!=null).put("unit",key.startsWith("pressure")?"raw":("left".equals(key)||"right".equals(key))?"°C":"");
+                    field.put("valid",value!=null).put("unit",key.startsWith("pressure")?"bar":("left".equals(key)||"right".equals(key))?"°C":"");
                     if(value!=null){field.put("value",value).put("updatedAtMs",System.currentTimeMillis());if(!key.startsWith("pressure"))values.put(key,value);}
                 }catch(Exception e){errors.put(method+":"+e.getClass().getSimpleName());}
             }

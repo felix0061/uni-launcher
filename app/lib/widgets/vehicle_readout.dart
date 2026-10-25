@@ -23,8 +23,7 @@ class VehicleReadout extends StatelessWidget {
             Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       SizedBox(height: Design.px(280), child: TireDiagram(native: native)),
       Center(
-          child: Text(
-              vehicle['connected'] == true ? '胎压原始值 · 单位待实车核对' : '等待车辆数据',
+          child: Text(vehicle['connected'] == true ? '实时胎压 · bar' : '等待车辆数据',
               style: TextStyle(color: s.muted, fontSize: Design.px(18)))),
       SizedBox(height: Design.px(20)),
       Wrap(spacing: Design.px(18), runSpacing: Design.px(14), children: [

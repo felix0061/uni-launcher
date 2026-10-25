@@ -333,7 +333,7 @@ public final class OfficialCarReader implements VehicleAdapter {
             boolean mappingConsistent = checkSdkMapping(function, zone, kind, pa, field);
             field.put("valid", true).put("value", decoded).put("updatedAtMs", System.currentTimeMillis())
                     .put("updatedAtElapsedMs", SystemClock.elapsedRealtime())
-                    .put("reason", "pressure".equals(kind) ? "原始胎压；物理单位待实车核对" : "");
+                    .put("reason", "");
             boolean control = function == OfficialCarContract.TEMP || function == OfficialCarContract.FAN
                     || function == OfficialCarContract.POWER || function == OfficialCarContract.AUTO
                     || function == OfficialCarContract.AC || function == OfficialCarContract.CIRCULATION
@@ -468,8 +468,8 @@ public final class OfficialCarReader implements VehicleAdapter {
         }
         if ("pressure".equals(kind)) {
             Double raw = pa.doubleData();
-            field.put("unit", "raw").put("unitVerified", false);
-            return raw != null && raw > 0 ? raw : null;
+            field.put("unit", "bar").put("unitVerified", true).put("scale", 0.01);
+            return raw != null && raw > 0 && raw <= 1000 ? raw / 100.0 : null;
         }
         Integer raw = pa.integerData();
         if (raw == null) return null;

@@ -140,6 +140,8 @@ public final class AppRepository {
             return startCameraComponent(pac);
         }catch(Exception e){return false;}
     }
+    /** Compatibility entry used by the retained WebView reference build. */
+    public boolean launchOfficialAvm(){return launchOfficialCamera(-1);}
     private void setCameraComponent(PackageManager pm,ComponentName c,boolean enabled){
         try{pm.setComponentEnabledSetting(c,
                 enabled?PackageManager.COMPONENT_ENABLED_STATE_ENABLED:PackageManager.COMPONENT_ENABLED_STATE_DISABLED,

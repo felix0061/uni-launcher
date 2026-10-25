@@ -191,8 +191,8 @@ void main() {
           'fan': {'valid': false, 'value': 5, 'updatedAtMs': 11000},
           'pressureFrontLeft': {
             'valid': true,
-            'value': 246.0,
-            'unit': 'raw',
+            'value': 2.46,
+            'unit': 'bar',
             'updatedAtMs': 10000
           }
         }
@@ -202,7 +202,7 @@ void main() {
     expect(VehicleField.fromNative(n, 'left', nowMs: 16000).valid, false);
     expect(VehicleField.fromNative(n, 'fan', nowMs: 12000).display(), '—');
     expect(VehicleField.fromNative(n, 'pressureFrontLeft', nowMs: 12000).unit,
-        'raw');
+        'bar');
     (n['vehicle'] as Map)['connected'] = false;
     expect(VehicleField.fromNative(n, 'left', nowMs: 12000).display(), '—');
   });
@@ -324,33 +324,40 @@ void main() {
                     'fields': {
                       'pressureFrontLeft': {
                         'valid': true,
-                        'value': 241,
+                        'value': 2.41,
+                        'unit': 'bar',
                         'updatedAtMs': now
                       },
                       'pressureFrontRight': {
                         'valid': true,
-                        'value': 242,
+                        'value': 2.42,
+                        'unit': 'bar',
                         'updatedAtMs': now
                       },
                       'pressureRearLeft': {
                         'valid': true,
-                        'value': 243,
+                        'value': 2.43,
+                        'unit': 'bar',
                         'updatedAtMs': now
                       },
                       'pressureRearRight': {
                         'valid': true,
-                        'value': 244,
+                        'value': 2.44,
+                        'unit': 'bar',
                         'updatedAtMs': now
                       }
                     }
                   }
                 })))));
     await t.pumpAndSettle();
-    for (int v = 241; v <= 244; v++) expect(find.text('$v.0'), findsOneWidget);
-    expect(t.getCenter(find.text('241.0')).dx,
-        lessThan(t.getCenter(find.text('242.0')).dx));
-    expect(t.getCenter(find.text('241.0')).dy,
-        lessThan(t.getCenter(find.text('243.0')).dy));
+    for (final v in ['2.41', '2.42', '2.43', '2.44']) {
+      expect(find.text(v), findsOneWidget);
+    }
+    expect(find.text('bar'), findsNWidgets(4));
+    expect(t.getCenter(find.text('2.41')).dx,
+        lessThan(t.getCenter(find.text('2.42')).dx));
+    expect(t.getCenter(find.text('2.41')).dy,
+        lessThan(t.getCenter(find.text('2.43')).dy));
     expect(t.takeException(), null);
   });
 }
