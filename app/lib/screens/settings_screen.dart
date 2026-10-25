@@ -122,12 +122,14 @@ class _SettingsTab extends StatelessWidget {
 class SettingBlock extends StatelessWidget {
   final String title;
   final String? note;
+  final Widget? trailing;
   final Widget child;
   final bool compact;
   const SettingBlock(
       {super.key,
       required this.title,
       this.note,
+      this.trailing,
       required this.child,
       this.compact = false});
   @override
@@ -142,11 +144,11 @@ class SettingBlock extends StatelessWidget {
             Text(title,
                 style: TextStyle(
                     fontSize: Design.px(26), fontWeight: FontWeight.w500)),
-            if (note != null) ...[
-              const Spacer(),
+            if (note != null || trailing != null) const Spacer(),
+            if (note != null)
               Text(note!,
-                  style: TextStyle(color: s.muted, fontSize: Design.px(18)))
-            ]
+                  style: TextStyle(color: s.muted, fontSize: Design.px(18))),
+            if (trailing != null) trailing!
           ]),
           SizedBox(height: Design.px(18)),
           child
@@ -164,16 +166,18 @@ class AppearanceSettings extends StatelessWidget {
       Expanded(
           child: LayoutBuilder(
               builder: (context, box) => SingleChildScrollView(
-                      child: Column(children: [
+                  key: const PageStorageKey('appearance-settings-scroll'),
+                  child: Column(children: [
                     SettingBlock(
                         compact: box.maxHeight < Design.px(650),
-                        title: '显示模式',
-                        note: '选择适合此刻的明暗',
+                        title: '主题风格',
+                        note: '智能调色会匹配壁纸明暗',
                         child: Row(children: [
                           for (final mode in [
-                            ('system', 'auto-theme', '跟随系统'),
-                            ('light', 'sun', '浅色'),
-                            ('dark', 'moon', '深色')
+                            ('smart', Icons.auto_awesome_outlined, '智能调色'),
+                            ('system', Icons.brightness_auto_outlined, '跟随系统'),
+                            ('light', Icons.light_mode_outlined, '浅色'),
+                            ('dark', Icons.dark_mode_outlined, '深色')
                           ])
                             Expanded(
                                 child: Padding(
@@ -206,7 +210,7 @@ class AppearanceSettings extends StatelessWidget {
                                                   mainAxisAlignment:
                                                       MainAxisAlignment.center,
                                                   children: [
-                                                    UniIcon(mode.$2,
+                                                    DesignIcon(mode.$2,
                                                         size: Design.px(26)),
                                                     SizedBox(
                                                         width: Design.px(14)),
@@ -285,6 +289,8 @@ class AppearanceSettings extends StatelessWidget {
                           SizedBox(height: Design.px(22)),
                           CustomColorRow(controller: c),
                         ])),
+                    SizedBox(height: Design.px(16)),
+                    WallpaperSetting(controller: c),
                     SizedBox(height: Design.px(16)),
                     RadiusSetting(controller: c),
                   ])))),
@@ -366,28 +372,38 @@ class DesktopPreview extends StatelessWidget {
   const DesktopPreview({super.key});
   @override
   Widget build(BuildContext context) {
-    final c = SettingsControllerScope.of(context), s = SurfaceStyle.of(context);
-    return AspectRatio(
-        aspectRatio: 16 / 9,
-        child: ClipRRect(
-            borderRadius: BorderRadius.circular(s.radius * .64),
-            child: IgnorePointer(
-                child: EmbeddedContentPolicy(
-                    enabled: false,
-                    child: FittedBox(
-                        fit: BoxFit.contain,
-                        child: SizedBox(
-                            width: Design.canvasWidth,
-                            height: 900,
-                            child: SceneBackground(
-                                child: Column(children: [
-                              Header(controller: c),
-                              Expanded(child: Desktop(controller: c)),
-                              Padding(
-                                  padding: EdgeInsets.fromLTRB(Design.px(32), 0,
-                                      Design.px(32), Design.px(16)),
-                                  child: BottomDock(controller: c))
-                            ]))))))));
+    final c = SettingsControllerScope.of(context),
+        s = SurfaceStyle.of(context),
+        previewStyle = SurfaceStyle.from(
+            c.appearance, c.native.value['dark'] == true,
+            adaptToWallpaper: true);
+    return Theme(
+        data: launcherTheme(previewStyle),
+        child: AspectRatio(
+            aspectRatio: 16 / 9,
+            child: ClipRRect(
+                borderRadius: BorderRadius.circular(s.radius * .64),
+                child: IgnorePointer(
+                    child: EmbeddedContentPolicy(
+                        enabled: false,
+                        child: FittedBox(
+                            fit: BoxFit.contain,
+                            child: SizedBox(
+                                width: Design.canvasWidth,
+                                height: 900,
+                                child: SceneBackground(
+                                    appearance: c.appearance,
+                                    child: Column(children: [
+                                      Header(controller: c),
+                                      Expanded(child: Desktop(controller: c)),
+                                      Padding(
+                                          padding: EdgeInsets.fromLTRB(
+                                              Design.px(32),
+                                              0,
+                                              Design.px(32),
+                                              Design.px(16)),
+                                          child: BottomDock(controller: c))
+                                    ])))))))));
   }
 }
 
@@ -401,6 +417,143 @@ class SettingsControllerScope extends InheritedWidget {
   @override
   bool updateShouldNotify(SettingsControllerScope old) =>
       old.controller != controller;
+}
+
+class WallpaperSetting extends StatelessWidget {
+  final LauncherController controller;
+  const WallpaperSetting({super.key, required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = controller, a = c.appearance, s = SurfaceStyle.of(context);
+    return SettingBlock(
+        title: '桌面壁纸',
+        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+          Text('叠加主题渐变',
+              style: TextStyle(
+                  color: a.wallpaper == 'gradient' ? s.muted : null,
+                  fontSize: Design.px(18))),
+          SizedBox(width: Design.px(10)),
+          Switch(
+              key: const ValueKey('wallpaper-overlay'),
+              value: a.wallpaper == 'gradient' ? true : a.wallpaperOverlay,
+              onChanged: a.wallpaper == 'gradient'
+                  ? null
+                  : (value) =>
+                      c.setAppearance(a.copyWith(wallpaperOverlay: value)))
+        ]),
+        child: LayoutBuilder(builder: (context, box) {
+          final width = (box.maxWidth - Design.px(36)) / 4;
+          return Wrap(
+              spacing: Design.px(12),
+              runSpacing: Design.px(12),
+              children: [
+                for (final preset in wallpaperPresets)
+                  SizedBox(
+                      width: width,
+                      child: _WallpaperTile(
+                          id: preset.id,
+                          name: preset.name,
+                          appearance: a.copyWith(wallpaper: preset.id),
+                          selected: a.wallpaper == preset.id,
+                          onTap: () => c.setAppearance(a.copyWith(
+                              wallpaper: preset.id, mode: 'smart')))),
+                SizedBox(
+                    width: width,
+                    child: _WallpaperTile(
+                        id: 'custom',
+                        name: '本地图片',
+                        appearance: a,
+                        selected: a.wallpaper == 'custom',
+                        placeholder: Icon(Icons.image_outlined,
+                            size: Design.px(31), color: s.muted),
+                        onTap: () async {
+                          try {
+                            final picked = await c.gateway.pickWallpaper();
+                            if (picked != null) {
+                              c.setAppearance(c.appearance.copyWith(
+                                  wallpaper: 'custom',
+                                  wallpaperPath: picked.path,
+                                  wallpaperLuminance: picked.luminance,
+                                  mode: 'smart'));
+                            }
+                          } catch (_) {
+                            if (context.mounted) {
+                              showLauncherToast(
+                                  context, '无法读取这张图片，请选择 JPG 或 PNG');
+                            }
+                          }
+                        }))
+              ]);
+        }));
+  }
+}
+
+class _WallpaperTile extends StatelessWidget {
+  final String id, name;
+  final Appearance appearance;
+  final bool selected;
+  final VoidCallback onTap;
+  final Widget? placeholder;
+  const _WallpaperTile(
+      {required this.id,
+      required this.name,
+      required this.appearance,
+      required this.selected,
+      required this.onTap,
+      this.placeholder});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = SurfaceStyle.of(context);
+    return Material(
+        color: s.soft,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(s.controlRadius),
+            side: BorderSide(
+                color: selected ? s.accent : s.edge,
+                width: selected ? Design.px(2) : 1)),
+        child: InkWell(
+            key: ValueKey('wallpaper-$id'),
+            onTap: onTap,
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              AspectRatio(
+                  key: ValueKey('wallpaper-preview-$id'),
+                  aspectRatio: 16 / 9,
+                  child: Stack(fit: StackFit.expand, children: [
+                    if (id != 'custom' || appearance.wallpaperPath.isNotEmpty)
+                      SceneBackground(
+                          wallpaperCacheWidth: 360,
+                          appearance: id == 'custom'
+                              ? appearance.copyWith(wallpaper: 'custom')
+                              : appearance,
+                          child: const SizedBox.expand())
+                    else
+                      Center(child: placeholder),
+                    if (selected)
+                      Align(
+                          alignment: Alignment.topRight,
+                          child: Padding(
+                              padding: EdgeInsets.all(Design.px(7)),
+                              child: Container(
+                                  width: Design.px(25),
+                                  height: Design.px(25),
+                                  decoration: BoxDecoration(
+                                      color: s.accent, shape: BoxShape.circle),
+                                  child: Center(
+                                      child: UniIcon('check',
+                                          size: Design.px(15),
+                                          color: s.accentText)))))
+                  ])),
+              SizedBox(
+                  height: Design.px(38),
+                  child: Center(
+                      child: Text(name,
+                          maxLines: 1,
+                          style: TextStyle(fontSize: Design.px(16)))))
+            ])));
+  }
 }
 
 class RadiusSetting extends StatelessWidget {
@@ -932,7 +1085,7 @@ class SourceSettings extends StatelessWidget {
                             c.command('system-navigation-hidden', enabled: v)
                         : null),
                 Row(children: [
-                  Text('UNI 0.5.2 · xyz.i4o.uni.launcher',
+                  Text('UNI 0.6.0 · xyz.i4o.uni.launcher',
                       style:
                           TextStyle(fontSize: Design.px(18), color: s.muted)),
                   const Spacer(),

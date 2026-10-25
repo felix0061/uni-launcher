@@ -1,12 +1,16 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:uni_launcher/controller/launcher_controller.dart';
 import 'package:uni_launcher/launcher_app.dart';
 import 'package:uni_launcher/model/seat_control.dart';
+import 'package:uni_launcher/platform/native_gateway.dart';
 import 'package:uni_launcher/screens/settings_screen.dart';
+import 'package:uni_launcher/theme/launcher_theme.dart';
 import 'package:uni_launcher/widgets/launcher_dialog.dart';
 import 'package:uni_launcher/widgets/climate_panel.dart';
 import 'package:uni_launcher/widgets/seat_controls.dart';
+import 'package:uni_launcher/widgets/scene_background.dart';
 import 'fake_gateway.dart';
 
 void main() {
@@ -48,6 +52,8 @@ void main() {
         t.getRect(find.byKey(const ValueKey('tab-indicator-appearance')));
     expect(indicator.left, closeTo(62, .1));
     expect(indicator.width, closeTo(96, .1));
+    await t.ensureVisible(find.byKey(const ValueKey('radius-number-28')));
+    await t.pumpAndSettle();
     expect(find.byKey(const ValueKey('radius-number-28')).hitTestable(),
         findsOneWidget);
     expect(t.takeException(), null);
@@ -76,6 +82,87 @@ void main() {
             .inputDecorationTheme
             .border;
     expect((border! as OutlineInputBorder).borderRadius, BorderRadius.zero);
+    expect(t.takeException(), null);
+  });
+  testWidgets('wallpaper presets update the persisted appearance', (t) async {
+    final (c, g) = await launch(t);
+    c.openSettings();
+    await t.pumpAndSettle();
+    expect(
+        t
+            .widget<Switch>(find.byKey(const ValueKey('wallpaper-overlay')))
+            .onChanged,
+        isNull);
+    final dawn = find.byKey(const ValueKey('wallpaper-dawn'));
+    await t.ensureVisible(dawn);
+    await t.pumpAndSettle();
+    await t.tap(dawn);
+    await t.pumpAndSettle();
+    expect(c.appearance.wallpaper, 'dawn');
+    expect(c.appearance.mode, 'smart');
+    expect(
+        t
+            .widget<Switch>(find.byKey(const ValueKey('wallpaper-overlay')))
+            .onChanged,
+        isNotNull);
+    expect(jsonDecode(g.saved!)['preferences']['wallpaper'], 'dawn');
+    expect(c.appearance.wallpaperOverlay, true);
+    final beforeToggle =
+        t.state<ScrollableState>(find.byType(Scrollable).first).position.pixels;
+    await t.tap(find.byKey(const ValueKey('wallpaper-overlay')));
+    await t.pumpAndSettle();
+    expect(c.appearance.wallpaperOverlay, false);
+    expect(
+        t.state<ScrollableState>(find.byType(Scrollable).first).position.pixels,
+        closeTo(beforeToggle, 1));
+    expect(jsonDecode(g.saved!)['preferences']['wallpaperOverlay'], false);
+    expect(find.byKey(const ValueKey('wallpaper-neon')), findsOneWidget);
+    expect(find.byKey(const ValueKey('wallpaper-precision')), findsOneWidget);
+    expect(find.byKey(const ValueKey('wallpaper-terrain')), findsOneWidget);
+    final preview =
+        t.getSize(find.byKey(const ValueKey('wallpaper-preview-dawn')));
+    expect(preview.width / preview.height, closeTo(16 / 9, .01));
+    expect(find.byType(WallpaperImage), findsWidgets);
+    expect(t.takeException(), null);
+  });
+  testWidgets('desktop text contrast follows built-in and custom wallpapers',
+      (t) async {
+    final (c, g) = await launch(t);
+    c.setAppearance(c.appearance.copyWith(mode: 'smart', wallpaper: 'neon'));
+    await t.pumpAndSettle();
+    expect(
+        SurfaceStyle.of(t.element(find.byKey(const ValueKey('desktop-name'))))
+            .dark,
+        true);
+    c.setAppearance(
+        c.appearance.copyWith(mode: 'smart', wallpaper: 'precision'));
+    await t.pumpAndSettle();
+    expect(
+        SurfaceStyle.of(t.element(find.byKey(const ValueKey('desktop-name'))))
+            .dark,
+        false);
+    c.setAppearance(c.appearance.copyWith(mode: 'dark'));
+    await t.pumpAndSettle();
+    expect(
+        SurfaceStyle.of(t.element(find.byKey(const ValueKey('desktop-name'))))
+            .dark,
+        true);
+    c.openSettings();
+    g.wallpaper = const PickedWallpaper('/tmp/dark-wallpaper.jpg', .16);
+    await t.pumpAndSettle();
+    final custom = find.byKey(const ValueKey('wallpaper-custom'));
+    await t.ensureVisible(custom);
+    await t.tap(custom);
+    await t.pumpAndSettle();
+    expect(c.appearance.wallpaper, 'custom');
+    expect(c.appearance.mode, 'smart');
+    expect(c.appearance.wallpaperLuminance, .16);
+    c.home();
+    await t.pumpAndSettle();
+    expect(
+        SurfaceStyle.of(t.element(find.byKey(const ValueKey('desktop-name'))))
+            .dark,
+        true);
     expect(t.takeException(), null);
   });
   testWidgets(

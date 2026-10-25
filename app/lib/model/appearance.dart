@@ -19,6 +19,27 @@ const accentPresets = [
       'rose', '玫瑰', Color(0xFFCB748A), Color(0xFFF4B1C4), Color(0xFF98465F)),
 ];
 
+class WallpaperPreset {
+  final String id, name;
+  final String? asset;
+  final bool? dark;
+  const WallpaperPreset(this.id, this.name, [this.asset, this.dark]);
+}
+
+const wallpaperPresets = <WallpaperPreset>[
+  WallpaperPreset('gradient', '主题渐变'),
+  WallpaperPreset(
+      'coastal', '海岸晨雾', 'assets/wallpapers/coastal-mist.jpg', false),
+  WallpaperPreset(
+      'graphite', '石墨夜色', 'assets/wallpapers/graphite-night.jpg', true),
+  WallpaperPreset('dawn', '暖曦沙丘', 'assets/wallpapers/warm-dawn.jpg', false),
+  WallpaperPreset('neon', '霓光地平', 'assets/wallpapers/neon-horizon.jpg', true),
+  WallpaperPreset(
+      'precision', '精密曲面', 'assets/wallpapers/precision-grid.jpg', false),
+  WallpaperPreset(
+      'terrain', '数字地形', 'assets/wallpapers/digital-terrain.jpg', true),
+];
+
 class Appearance {
   static const defaultDesktopName = 'LYNK & CO / 05';
   static String normalizeDesktopName(Object? value) {
@@ -29,9 +50,16 @@ class Appearance {
         : String.fromCharCodes(name.runes.take(24));
   }
 
-  final String mode, palette, custom, pageTransition, desktopName;
+  final String mode,
+      palette,
+      custom,
+      pageTransition,
+      desktopName,
+      wallpaper,
+      wallpaperPath;
   final double radius;
-  final bool glass;
+  final double? wallpaperLuminance;
+  final bool glass, wallpaperOverlay;
   const Appearance(
       {this.desktopName = defaultDesktopName,
       this.mode = 'system',
@@ -39,10 +67,14 @@ class Appearance {
       this.custom = '#38A4A0',
       this.radius = 28,
       this.glass = false,
-      this.pageTransition = 'none'});
+      this.pageTransition = 'none',
+      this.wallpaper = 'gradient',
+      this.wallpaperPath = '',
+      this.wallpaperLuminance,
+      this.wallpaperOverlay = true});
   factory Appearance.fromJson(Map<String, dynamic> json) => Appearance(
         desktopName: normalizeDesktopName(json['desktopName']),
-        mode: ['system', 'light', 'dark'].contains(json['mode'])
+        mode: ['smart', 'system', 'light', 'dark'].contains(json['mode'])
             ? json['mode']
             : 'system',
         palette: [...accentPresets.map((p) => p.id), 'custom']
@@ -60,6 +92,18 @@ class Appearance {
             ['none', 'fade', 'slide'].contains(json['pageTransition'])
                 ? json['pageTransition']
                 : 'none',
+        wallpaper: [...wallpaperPresets.map((item) => item.id), 'custom']
+                .contains(json['wallpaper'])
+            ? json['wallpaper']
+            : 'gradient',
+        wallpaperPath: json['wallpaperPath'] is String &&
+                (json['wallpaperPath'] as String).length <= 1024
+            ? json['wallpaperPath']
+            : '',
+        wallpaperLuminance: json['wallpaperLuminance'] is num
+            ? (json['wallpaperLuminance'] as num).toDouble().clamp(0, 1)
+            : null,
+        wallpaperOverlay: json['wallpaperOverlay'] != false,
       );
   Appearance copyWith(
           {String? desktopName,
@@ -68,7 +112,11 @@ class Appearance {
           String? custom,
           double? radius,
           bool? glass,
-          String? pageTransition}) =>
+          String? pageTransition,
+          String? wallpaper,
+          String? wallpaperPath,
+          double? wallpaperLuminance,
+          bool? wallpaperOverlay}) =>
       Appearance(
           desktopName: normalizeDesktopName(desktopName ?? this.desktopName),
           mode: mode ?? this.mode,
@@ -76,7 +124,11 @@ class Appearance {
           custom: custom ?? this.custom,
           radius: (radius ?? this.radius).clamp(0, 40),
           glass: glass ?? this.glass,
-          pageTransition: pageTransition ?? this.pageTransition);
+          pageTransition: pageTransition ?? this.pageTransition,
+          wallpaper: wallpaper ?? this.wallpaper,
+          wallpaperPath: wallpaperPath ?? this.wallpaperPath,
+          wallpaperLuminance: wallpaperLuminance ?? this.wallpaperLuminance,
+          wallpaperOverlay: wallpaperOverlay ?? this.wallpaperOverlay);
   Map<String, dynamic> toJson() => {
         'desktopName': desktopName,
         'mode': mode,
@@ -84,10 +136,33 @@ class Appearance {
         'custom': custom,
         'radius': radius.round(),
         'glass': glass,
-        'pageTransition': pageTransition
+        'pageTransition': pageTransition,
+        'wallpaper': wallpaper,
+        'wallpaperOverlay': wallpaperOverlay,
+        if (wallpaperPath.isNotEmpty) 'wallpaperPath': wallpaperPath,
+        if (wallpaperLuminance != null)
+          'wallpaperLuminance': wallpaperLuminance,
       };
+
+  WallpaperPreset? get wallpaperPreset {
+    for (final preset in wallpaperPresets) {
+      if (preset.id == wallpaper) return preset;
+    }
+    return null;
+  }
+
   bool isDark(bool systemDark) =>
-      mode == 'dark' || (mode == 'system' && systemDark);
+      mode == 'dark' || ({'smart', 'system'}.contains(mode) && systemDark);
+  bool backgroundIsDark(bool systemDark) {
+    if (wallpaper == 'gradient') return isDark(systemDark);
+    if (wallpaper == 'custom') {
+      return wallpaperLuminance == null
+          ? isDark(systemDark)
+          : wallpaperLuminance! < .48;
+    }
+    return wallpaperPreset?.dark ?? isDark(systemDark);
+  }
+
   Color seed() => palette == 'custom'
       ? Color(0xFF000000 | int.parse(custom.substring(1), radix: 16))
       : accentPresets.firstWhere((p) => p.id == palette).seed;

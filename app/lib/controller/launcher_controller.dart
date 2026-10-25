@@ -13,6 +13,7 @@ class LauncherController extends ChangeNotifier {
   Map<String, String> appNames = {};
   List<LauncherCard> cards = defaultCards();
   int page = 0, pageCount = 2;
+  final pageChanged = ValueNotifier<int>(0);
   bool settings = false, editing = false, ready = false;
   Future<void> Function()? beforeExternalLaunch;
   String _overlayDesign = '';
@@ -53,7 +54,7 @@ class LauncherController extends ChangeNotifier {
           final data = jsonDecode(raw) as Map<String, dynamic>;
           appearance = Appearance.fromJson(
               Map<String, dynamic>.from(data['preferences'] ?? {}));
-          appNames = _decodeAppNames(data['appNames']);
+          appNames = _decodeAppNames(state['appNames'] ?? data['appNames']);
           final parsed = (data['cards'] as List)
               .map((c) => LauncherCard.fromJson(Map<String, dynamic>.from(c)))
               .toList();
@@ -117,9 +118,18 @@ class LauncherController extends ChangeNotifier {
       try {
         appearance = Appearance.fromJson(Map<String, dynamic>.from(
             jsonDecode(_overlayDesign)['preferences']));
-        appNames = _decodeAppNames(jsonDecode(_overlayDesign)['appNames']);
+        if (state['appNames'] is! Map) {
+          appNames = _decodeAppNames(jsonDecode(_overlayDesign)['appNames']);
+        }
         overlayThemeChanged = true;
       } catch (_) {}
+    }
+    if (state['appNames'] is Map) {
+      final nextNames = _decodeAppNames(state['appNames']);
+      if (!mapEquals(appNames, nextNames)) {
+        appNames = nextNames;
+        overlayThemeChanged = true;
+      }
     }
     final oldDark = native.value['dark'];
     final oldDemo = native.value['demo'];
@@ -164,7 +174,7 @@ class LauncherController extends ChangeNotifier {
   }
 
   String serialize() => jsonEncode({
-        'version': 5,
+        'version': 6,
         'preferences': appearance.toJson(),
         'cards': cards.map((c) => c.toJson()).toList(),
         'pageCount': pageCount,
@@ -194,7 +204,9 @@ class LauncherController extends ChangeNotifier {
         '${app['label'] ?? package ?? '应用'}';
   }
 
-  Future<void> renameApp(String package, String name) {
+  Future<void> renameApp(String package, String name) async {
+    package = package.trim();
+    if (package.isEmpty) return;
     final normalized = _normalizeAppName(name);
     appNames = Map.of(appNames);
     if (normalized.isEmpty) {
@@ -204,7 +216,13 @@ class LauncherController extends ChangeNotifier {
     }
     native.value = Map.of(native.value);
     notifyListeners();
-    return persist();
+    try {
+      await gateway.action('rename-app', zone: package, value: normalized);
+    } catch (_) {
+      message = '应用名称保存失败，请重试';
+      notifyListeners();
+    }
+    await persist();
   }
 
   Future<void> persist() {
@@ -232,7 +250,7 @@ class LauncherController extends ChangeNotifier {
     }
     if (editing) return;
     settings = false;
-    page = 0;
+    _setPage(0);
     notifyListeners();
   }
 
@@ -261,8 +279,16 @@ class LauncherController extends ChangeNotifier {
   }
 
   void switchPage(int value) {
-    page = value.clamp(0, pageCount - 1);
-    notifyListeners();
+    _setPage(value.clamp(0, pageCount - 1));
+    // Page selection is intentionally a small one-way platform call. Sending
+    // it through the general action channel publishes a complete vehicle
+    // snapshot and rebuilds every telemetry/media card during a swipe.
+    unawaited(gateway.setDesktopPage(page));
+  }
+
+  void _setPage(int value) {
+    page = value;
+    if (pageChanged.value != value) pageChanged.value = value;
   }
 
   void beginEdit() {
@@ -275,7 +301,7 @@ class LauncherController extends ChangeNotifier {
 
   void finishEdit() {
     pageCount = cards.fold<int>(1, (n, c) => max(n, c.page + 1));
-    page = page.clamp(0, pageCount - 1);
+    _setPage(page.clamp(0, pageCount - 1));
     editing = false;
     _backup = null;
     persist();
@@ -285,7 +311,7 @@ class LauncherController extends ChangeNotifier {
   void cancelEdit() {
     cards = _backup ?? cards;
     pageCount = _backupPages;
-    page = page.clamp(0, pageCount - 1);
+    _setPage(page.clamp(0, pageCount - 1));
     editing = false;
     _backup = null;
     notifyListeners();
@@ -341,7 +367,7 @@ class LauncherController extends ChangeNotifier {
           for (final item in cards)
             if (item.id == id) next else item
         ];
-        page = targetPage;
+        _setPage(targetPage);
         notifyListeners();
         return true;
       }
@@ -365,7 +391,7 @@ class LauncherController extends ChangeNotifier {
     }
     if (next == null) {
       if (pageCount >= 20) return false;
-      page = pageCount++;
+      _setPage(pageCount++);
       next = LauncherCard('card-${DateTime.now().microsecondsSinceEpoch}', type,
           spec.label, 0, 0, spec.w, spec.h, page);
     }
@@ -376,7 +402,7 @@ class LauncherController extends ChangeNotifier {
 
   void newPage() {
     if (pageCount < 20) {
-      page = pageCount++;
+      _setPage(pageCount++);
       notifyListeners();
     }
   }
@@ -384,7 +410,7 @@ class LauncherController extends ChangeNotifier {
   void resetLayout() {
     cards = defaultCards();
     pageCount = 2;
-    page = 0;
+    _setPage(0);
     persist();
     notifyListeners();
   }
@@ -392,6 +418,7 @@ class LauncherController extends ChangeNotifier {
   @override
   void dispose() {
     _subscription?.cancel();
+    pageChanged.dispose();
     native.dispose();
     super.dispose();
   }

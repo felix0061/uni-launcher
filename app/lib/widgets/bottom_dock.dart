@@ -16,11 +16,11 @@ class BottomDock extends StatelessWidget {
   final LauncherController controller;
   const BottomDock({super.key, required this.controller});
   @override
-  Widget build(BuildContext context) => ValueListenableBuilder<
-          Map<String, dynamic>>(
-      valueListenable: controller.native,
-      builder: (context, native, _) {
-        final c = controller,
+  Widget build(BuildContext context) => AnimatedBuilder(
+      animation: Listenable.merge([controller.native, controller.pageChanged]),
+      builder: (context, _) {
+        final native = controller.native.value,
+            c = controller,
             s = SurfaceStyle.of(context),
             demo = native['demo'] == true,
             climate = mapOf(native['climate']),

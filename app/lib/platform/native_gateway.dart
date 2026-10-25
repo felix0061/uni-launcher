@@ -1,6 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 
+class PickedWallpaper {
+  final String path;
+  final double luminance;
+  const PickedWallpaper(this.path, this.luminance);
+}
+
 abstract class NativeGateway {
   Future<Map<String, dynamic>> bootstrap();
   Stream<Map<String, dynamic>> get events;
@@ -8,6 +14,8 @@ abstract class NativeGateway {
       {String? value, String? zone, bool? enabled});
   Future<void> save(String value);
   void onHome(void Function() callback);
+  Future<PickedWallpaper?> pickWallpaper() async => null;
+  Future<void> setDesktopPage(int page) async {}
 }
 
 class AndroidGateway implements NativeGateway {
@@ -43,6 +51,19 @@ class AndroidGateway implements NativeGateway {
     if (await methods.invokeMethod<bool>('saveDesign', value) != true)
       throw StateError('保存未完成');
   }
+
+  @override
+  Future<PickedWallpaper?> pickWallpaper() async {
+    final raw = await methods.invokeMapMethod<String, dynamic>('pickWallpaper');
+    final path = raw?['path'];
+    final luminance = raw?['luminance'];
+    if (path is! String || path.isEmpty || luminance is! num) return null;
+    return PickedWallpaper(path, luminance.toDouble().clamp(0, 1));
+  }
+
+  @override
+  Future<void> setDesktopPage(int page) =>
+      methods.invokeMethod<void>('desktopPage', page);
 
   @override
   void onHome(void Function() callback) {

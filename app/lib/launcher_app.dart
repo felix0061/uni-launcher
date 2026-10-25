@@ -11,7 +11,8 @@ class LauncherApp extends StatelessWidget {
       animation: controller,
       builder: (context, _) {
         final style = SurfaceStyle.from(
-            controller.appearance, controller.native.value['dark'] == true);
+            controller.appearance, controller.native.value['dark'] == true,
+            adaptToWallpaper: !controller.settings);
         return MaterialApp(
             title: 'UNI 桌面',
             debugShowCheckedModeBanner: false,

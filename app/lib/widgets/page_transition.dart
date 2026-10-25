@@ -37,7 +37,7 @@ class _DesktopPageStackState extends State<DesktopPageStack>
     super.initState();
     _fromPage = _toPage = _bounded(widget.page);
     _controller = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 220));
+        vsync: this, duration: const Duration(milliseconds: 150));
     _curve = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed && mounted) {
@@ -59,7 +59,7 @@ class _DesktopPageStackState extends State<DesktopPageStack>
         _fromPage = _toPage;
       } else {
         _controller.duration =
-            Duration(milliseconds: widget.effect == 'fade' ? 180 : 220);
+            Duration(milliseconds: widget.effect == 'fade' ? 120 : 150);
         _controller.forward(from: 0);
       }
     } else if (_motionDisabled || oldWidget.effect != widget.effect) {
@@ -98,9 +98,10 @@ class _DesktopPageStackState extends State<DesktopPageStack>
                   Positioned.fill(
                       key: ValueKey('desktop-motion-page-$i'),
                       child: Offstage(
-                          offstage: moving
-                              ? i != _fromPage && i != _toPage
-                              : i != _toPage,
+                          // Painting and laying out both card-heavy pages made
+                          // Android 9 miss frames. The incoming workspace alone
+                          // carries the short transition over the stable scene.
+                          offstage: i != _toPage,
                           child: IgnorePointer(
                               ignoring: i != _toPage,
                               child: ExcludeSemantics(
@@ -121,12 +122,9 @@ class _DesktopPageStackState extends State<DesktopPageStack>
         key: ValueKey('desktop-motion-frame-$index'),
         child: widget.children[index]);
     if (!moving) return framed;
-    if (widget.effect == 'fade') {
-      return Opacity(
-          opacity: index == _toPage ? value : 1 - value, child: framed);
-    }
-    final offset =
-        index == _toPage ? _direction * (1 - value) : -_direction * value;
+    if (widget.effect == 'fade')
+      return Opacity(opacity: .72 + .28 * value, child: framed);
+    final offset = _direction * .08 * (1 - value);
     return FractionalTranslation(
         translation: Offset(offset.toDouble(), 0), child: framed);
   }

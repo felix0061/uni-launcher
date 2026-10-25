@@ -34,6 +34,7 @@ class FakeGateway implements NativeGateway {
     'savedDesign': ''
   };
   String? saved;
+  PickedWallpaper? wallpaper;
   final List<Map<String, dynamic>> commands = [];
   @override
   Future<Map<String, dynamic>> bootstrap() async => Map.of(state);
@@ -54,6 +55,15 @@ class FakeGateway implements NativeGateway {
         'globalDock': {'enabled': enabled, 'allowed': true}
       };
     if (action == 'demo-mode') state = {...state, 'demo': enabled};
+    if (action == 'rename-app' && zone != null) {
+      final names = Map<String, dynamic>.from(state['appNames'] as Map? ?? {});
+      if (value == null || value.isEmpty) {
+        names.remove(zone);
+      } else {
+        names[zone] = value;
+      }
+      state = {...state, 'appNames': names};
+    }
     stream.add(Map.of(state));
   }
 
@@ -64,5 +74,12 @@ class FakeGateway implements NativeGateway {
 
   @override
   void onHome(void Function() callback) {}
+  @override
+  Future<PickedWallpaper?> pickWallpaper() async => wallpaper;
+  @override
+  Future<void> setDesktopPage(int page) async {
+    commands.add({'action': 'desktop-page', 'value': '$page'});
+  }
+
   Future<void> dispose() => stream.close();
 }

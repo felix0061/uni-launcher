@@ -1,52 +1,118 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import '../model/appearance.dart';
 import '../theme/launcher_theme.dart';
 
 class SceneBackground extends StatelessWidget {
   final Widget child;
-  const SceneBackground({super.key, required this.child});
+  final Appearance? appearance;
+  final int wallpaperCacheWidth;
+  final bool forceOverlay;
+  const SceneBackground(
+      {super.key,
+      required this.child,
+      this.appearance,
+      this.wallpaperCacheWidth = 1920,
+      this.forceOverlay = false});
   @override
   Widget build(BuildContext context) {
     final s = SurfaceStyle.of(context);
-    return DecoratedBox(
-        decoration: BoxDecoration(
-            gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                stops: const [0, .63, 1],
-                colors: s.dark
-                    ? const [
-                        Color(0xFF0E1920),
-                        Color(0xFF273E46),
-                        Color(0xFF172A34)
-                      ]
-                    : const [
-                        Color(0xFFE1ECE7),
-                        Color(0xFFD4E1E0),
-                        Color(0xFFE9EEF0)
-                      ])),
-        child: DecoratedBox(
+    final wallpaper = appearance;
+    final hasWallpaper = wallpaper != null && wallpaper.wallpaper != 'gradient';
+    final showOverlay =
+        !hasWallpaper || wallpaper.wallpaperOverlay || forceOverlay;
+    return Stack(fit: StackFit.expand, children: [
+      if (hasWallpaper)
+        WallpaperImage(appearance: wallpaper, cacheWidth: wallpaperCacheWidth),
+      if (!showOverlay)
+        child
+      else
+        DecoratedBox(
             decoration: BoxDecoration(
-                gradient: RadialGradient(
-                    center: s.dark
-                        ? const Alignment(-.76, -.92)
-                        : const Alignment(-.84, -.64),
-                    radius: .9,
-                    colors: [
-                  s.seed.withValues(alpha: s.dark ? .20 : .16),
-                  s.seed.withValues(alpha: 0)
-                ])),
+                gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    stops: const [0, .63, 1],
+                    colors: !hasWallpaper
+                        ? (s.dark
+                            ? const [
+                                Color(0xFF0E1920),
+                                Color(0xFF273E46),
+                                Color(0xFF172A34)
+                              ]
+                            : const [
+                                Color(0xFFE1ECE7),
+                                Color(0xFFD4E1E0),
+                                Color(0xFFE9EEF0)
+                              ])
+                        : (s.dark
+                            ? const [
+                                Color(0xB30A151C),
+                                Color(0x7A1D3038),
+                                Color(0xA30E2029)
+                              ]
+                            : const [
+                                Color(0x70E1ECE7),
+                                Color(0x66D4E1E0),
+                                Color(0x78E9EEF0)
+                              ]))),
             child: DecoratedBox(
                 decoration: BoxDecoration(
                     gradient: RadialGradient(
-                        center: const Alignment(.7, .36),
-                        radius: .8,
+                        center: s.dark
+                            ? const Alignment(-.76, -.92)
+                            : const Alignment(-.84, -.64),
+                        radius: .9,
                         colors: [
-                      (s.dark
-                              ? const Color(0xFF79A2B7)
-                              : const Color(0xFF9FC0D5))
-                          .withValues(alpha: s.dark ? .24 : .42),
-                      const Color(0x0079A2B7)
+                      s.seed.withValues(alpha: s.dark ? .20 : .16),
+                      s.seed.withValues(alpha: 0)
                     ])),
-                child: child)));
+                child: DecoratedBox(
+                    decoration: BoxDecoration(
+                        gradient: RadialGradient(
+                            center: const Alignment(.7, .36),
+                            radius: .8,
+                            colors: [
+                          (s.dark
+                                  ? const Color(0xFF79A2B7)
+                                  : const Color(0xFF9FC0D5))
+                              .withValues(alpha: s.dark ? .24 : .42),
+                          const Color(0x0079A2B7)
+                        ])),
+                    child: child))),
+    ]);
+  }
+}
+
+class WallpaperImage extends StatelessWidget {
+  final Appearance appearance;
+  final BoxFit fit;
+  final int cacheWidth;
+  const WallpaperImage(
+      {super.key,
+      required this.appearance,
+      this.fit = BoxFit.cover,
+      this.cacheWidth = 1920});
+
+  @override
+  Widget build(BuildContext context) {
+    final preset = appearance.wallpaperPreset;
+    if (preset?.asset != null) {
+      return Image.asset(preset!.asset!,
+          fit: fit,
+          cacheWidth: cacheWidth,
+          filterQuality: FilterQuality.medium);
+    }
+    if (appearance.wallpaper == 'custom' &&
+        appearance.wallpaperPath.isNotEmpty) {
+      return Image.file(File(appearance.wallpaperPath),
+          key: ValueKey(appearance.wallpaperPath),
+          fit: fit,
+          cacheWidth: cacheWidth,
+          filterQuality: FilterQuality.medium,
+          gaplessPlayback: true,
+          errorBuilder: (_, __, ___) => const SizedBox.expand());
+    }
+    return const SizedBox.expand();
   }
 }

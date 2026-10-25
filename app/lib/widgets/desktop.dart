@@ -112,65 +112,26 @@ class Desktop extends StatelessWidget {
   const Desktop({super.key, required this.controller});
   @override
   Widget build(BuildContext context) {
-    final c = controller, visiblePage = controller.page;
+    final c = controller;
     // Android 9 surfaces cannot participate in Flutter's outgoing-page
     // animation. Keep page elements mounted and only change their visibility.
     // Other layouts retain the selected Flutter page transition.
-    Widget grid(int page) => EmbeddedContentPolicy(
-        key: ValueKey('desktop-page-$page'),
-        enabled: EmbeddedContentPolicy.allowed(context),
-        visible: page == visiblePage && !c.settings,
-        child: _grid(context, page));
-    return GestureDetector(
-        key: const ValueKey('card-grid'),
-        behavior: HitTestBehavior.translucent,
-        onLongPress: c.editing ? null : c.beginEdit,
-        onHorizontalDragEnd: c.editing
-            ? null
-            : (details) {
-                final velocity = details.primaryVelocity ?? 0;
-                if (velocity.abs() > 180)
-                  c.switchPage(c.page + (velocity < 0 ? 1 : -1));
-              },
-        child: Padding(
-            padding: EdgeInsets.fromLTRB(
-                Design.px(32), Design.px(16), Design.px(32), Design.px(24)),
-            child: Column(children: [
-              if (c.editing)
-                SizedBox(
-                    height: Design.px(74),
-                    child: Row(children: [
-                      const Text('编辑桌面', style: TextStyle(fontSize: 28)),
-                      const SizedBox(width: 24),
-                      Text('拖动卡片移动 · 拖到屏幕边缘换页 · 拖动角点缩放',
-                          style: TextStyle(
-                              color: SurfaceStyle.of(context).muted,
-                              fontSize: 17)),
-                      const Spacer(),
-                      TextButton(
-                          key: const ValueKey('cancel-edit'),
-                          onPressed: c.cancelEdit,
-                          child: const Text('取消')),
-                      TextButton.icon(
-                          key: const ValueKey('add-card'),
-                          onPressed: () => showCardLibrary(context, c),
-                          icon: const Icon(Icons.add),
-                          label: const Text('添加卡片')),
-                      FilledButton(
-                          key: const ValueKey('finish-edit'),
-                          onPressed: c.finishEdit,
-                          child: const Text('完成'))
-                    ])),
-              Expanded(
-                  child: DesktopPageStack(
-                      page: visiblePage,
-                      effect: c.editing ? 'none' : c.appearance.pageTransition,
-                      children: [
-                    for (int i = 0; i < c.pageCount; i++) grid(i)
-                  ])),
-              SizedBox(height: Design.px(16)),
-              _DesktopPageIndicator(controller: c),
-            ])));
+    final grids = <Widget>[
+      for (int page = 0; page < c.pageCount; page++) _grid(context, page)
+    ];
+    // Page changes use a dedicated signal. Header, dock, theme, inactive cards
+    // and the MaterialApp no longer rebuild for every swipe.
+    return ValueListenableBuilder<int>(
+        valueListenable: c.pageChanged,
+        builder: (context, page, __) =>
+            _DesktopStaticLayers(controller: c, grids: [
+              for (int i = 0; i < grids.length; i++)
+                EmbeddedContentPolicy(
+                    key: ValueKey('desktop-page-$i'),
+                    enabled: EmbeddedContentPolicy.allowed(context),
+                    visible: i == page && !c.settings,
+                    child: grids[i])
+            ]));
   }
 
   Widget _grid(BuildContext context, int page) {
@@ -223,6 +184,64 @@ class Desktop extends StatelessWidget {
   }
 }
 
+class _DesktopStaticLayers extends StatelessWidget {
+  final LauncherController controller;
+  final List<Widget> grids;
+  const _DesktopStaticLayers({required this.controller, required this.grids});
+  @override
+  Widget build(BuildContext context) {
+    final c = controller;
+    return GestureDetector(
+        key: const ValueKey('card-grid'),
+        behavior: HitTestBehavior.translucent,
+        onLongPress: c.editing ? null : c.beginEdit,
+        onHorizontalDragEnd: c.editing
+            ? null
+            : (details) {
+                final velocity = details.primaryVelocity ?? 0;
+                if (velocity.abs() > 180)
+                  c.switchPage(c.page + (velocity < 0 ? 1 : -1));
+              },
+        child: Padding(
+            padding: EdgeInsets.fromLTRB(
+                Design.px(32), Design.px(16), Design.px(32), Design.px(24)),
+            child: Column(children: [
+              if (c.editing)
+                SizedBox(
+                    height: Design.px(74),
+                    child: Row(children: [
+                      const Text('编辑桌面', style: TextStyle(fontSize: 28)),
+                      const SizedBox(width: 24),
+                      Text('拖动卡片移动 · 拖到屏幕边缘换页 · 拖动角点缩放',
+                          style: TextStyle(
+                              color: SurfaceStyle.of(context).muted,
+                              fontSize: 17)),
+                      const Spacer(),
+                      TextButton(
+                          key: const ValueKey('cancel-edit'),
+                          onPressed: c.cancelEdit,
+                          child: const Text('取消')),
+                      TextButton.icon(
+                          key: const ValueKey('add-card'),
+                          onPressed: () => showCardLibrary(context, c),
+                          icon: const Icon(Icons.add),
+                          label: const Text('添加卡片')),
+                      FilledButton(
+                          key: const ValueKey('finish-edit'),
+                          onPressed: c.finishEdit,
+                          child: const Text('完成'))
+                    ])),
+              Expanded(
+                  child: DesktopPageStack(
+                      page: c.page,
+                      effect: c.editing ? 'none' : c.appearance.pageTransition,
+                      children: grids)),
+              SizedBox(height: Design.px(16)),
+              _DesktopPageIndicator(controller: c),
+            ])));
+  }
+}
+
 class _DesktopPageIndicator extends StatelessWidget {
   final LauncherController controller;
   const _DesktopPageIndicator({required this.controller});
@@ -262,7 +281,7 @@ class _DesktopPageIndicator extends StatelessWidget {
                             tween: Tween(end: c.page.toDouble()),
                             duration: reduced
                                 ? Duration.zero
-                                : const Duration(milliseconds: 220),
+                                : const Duration(milliseconds: 150),
                             curve: Curves.easeOutCubic,
                             builder: (context, value, child) =>
                                 Transform.translate(

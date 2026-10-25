@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:uni_launcher/controller/launcher_controller.dart';
 import 'package:uni_launcher/model/appearance.dart';
 import 'package:uni_launcher/model/card_layout.dart';
+import 'package:uni_launcher/theme/launcher_theme.dart';
 import 'fake_gateway.dart';
 
 void main() {
@@ -21,6 +22,93 @@ void main() {
     expect(a.custom, '#38A4A0');
     expect(a.mode, 'system');
     expect(a.palette, 'mint');
+  });
+  test('wallpaper selection and custom path round trip safely', () {
+    final builtIn = Appearance.fromJson(const Appearance()
+        .copyWith(wallpaper: 'terrain', wallpaperOverlay: false)
+        .toJson());
+    expect(builtIn.wallpaper, 'terrain');
+    expect(builtIn.wallpaperOverlay, false);
+    final custom = Appearance.fromJson(const Appearance()
+        .copyWith(
+            wallpaper: 'custom',
+            wallpaperPath: '/data/user/wall.jpg',
+            wallpaperLuminance: .24)
+        .toJson());
+    expect(custom.wallpaper, 'custom');
+    expect(custom.wallpaperPath, '/data/user/wall.jpg');
+    expect(custom.wallpaperLuminance, .24);
+    expect(Appearance.fromJson({'wallpaper': 'invalid'}).wallpaper, 'gradient');
+    expect(Appearance.fromJson(const {}).wallpaperOverlay, true);
+  });
+  test('smart contrast follows wallpaper while manual themes remain explicit',
+      () {
+    expect(
+        SurfaceStyle.from(
+                const Appearance(mode: 'smart', wallpaper: 'neon'), false,
+                adaptToWallpaper: true)
+            .dark,
+        true);
+    expect(
+        SurfaceStyle.from(
+                const Appearance(mode: 'smart', wallpaper: 'precision'), true,
+                adaptToWallpaper: true)
+            .dark,
+        false);
+    expect(
+        SurfaceStyle.from(
+                const Appearance(mode: 'light', wallpaper: 'neon'), true,
+                adaptToWallpaper: true)
+            .dark,
+        false);
+    expect(
+        SurfaceStyle.from(
+                const Appearance(mode: 'dark', wallpaper: 'precision'), false,
+                adaptToWallpaper: true)
+            .dark,
+        true);
+  });
+  test('renamed app is persisted by package and restored from native store',
+      () async {
+    final g = FakeGateway(), c = LauncherController(g);
+    g.state['apps'] = [
+      {'package': 'com.example.music', 'label': '系统名称'}
+    ];
+    await c.initialize();
+    await c.renameApp('com.example.music', '我的音乐');
+    expect(c.appNames['com.example.music'], '我的音乐');
+    expect(g.commands.last, containsPair('action', 'rename-app'));
+    expect(g.commands.last, containsPair('zone', 'com.example.music'));
+    expect(jsonDecode(g.saved!)['appNames']['com.example.music'], '我的音乐');
+
+    final next = FakeGateway()
+      ..state['savedDesign'] = g.saved
+      ..state['appNames'] = {'com.example.music': '我的音乐'}
+      ..state['apps'] = [
+        {'package': 'com.example.music', 'label': '系统名称'}
+      ];
+    final restored = LauncherController(next);
+    await restored.initialize();
+    expect(restored.appName(Map<String, dynamic>.from(next.state['apps'][0])),
+        '我的音乐');
+    c.dispose();
+    restored.dispose();
+    await g.dispose();
+    await next.dispose();
+  });
+  test('page switch uses lightweight signal without vehicle snapshot rebuild',
+      () async {
+    final g = FakeGateway(), c = LauncherController(g);
+    await c.initialize();
+    var nativeRebuilds = 0;
+    c.native.addListener(() => nativeRebuilds++);
+    c.switchPage(1);
+    await Future<void>.delayed(Duration.zero);
+    expect(c.pageChanged.value, 1);
+    expect(nativeRebuilds, 0);
+    expect(g.commands.last, containsPair('action', 'desktop-page'));
+    c.dispose();
+    await g.dispose();
   });
   test('default OEM layout has no overlap', () {
     expect(validLayout(defaultCards()), true);

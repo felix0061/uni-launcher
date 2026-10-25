@@ -207,7 +207,7 @@ void main() {
     }
   });
   testWidgets(
-      'Motion setting persists, page swipe changes only workspace and none is instant',
+      'Motion setting persists and fast page changes paint only incoming workspace',
       (t) async {
     t.view.physicalSize = const Size(1920, 1080);
     t.view.devicePixelRatio = 1;
@@ -237,7 +237,7 @@ void main() {
         find.byKey(const ValueKey('card-grid')), const Offset(-550, 0), 1000);
     await t.pump();
     expect(c.page, 1);
-    await t.pump(const Duration(milliseconds: 160));
+    await t.pump(const Duration(milliseconds: 70));
     final indicatorMid =
         t.getRect(find.byKey(const ValueKey('page-indicator-active'))).left;
     expect(indicatorMid, greaterThan(indicatorStart));
@@ -245,12 +245,10 @@ void main() {
         find.descendant(
             of: find.byType(DesktopPageStack),
             matching: find.byType(FractionalTranslation)),
-        findsNWidgets(2));
-    final outgoing =
-        t.getRect(find.byKey(const ValueKey('desktop-motion-frame-0')));
-    final incoming =
-        t.getRect(find.byKey(const ValueKey('desktop-motion-frame-1')));
-    expect(outgoing.right, closeTo(incoming.left, .1));
+        findsOneWidget);
+    expect(find.byKey(const ValueKey('nav-1')), findsNothing,
+        reason: 'the outgoing card-heavy page is not painted');
+    expect(find.byKey(const ValueKey('tpms-1')), findsOneWidget);
     await t.pumpAndSettle();
     final indicatorEnd =
         t.getRect(find.byKey(const ValueKey('page-indicator-active'))).left;
@@ -265,9 +263,9 @@ void main() {
     expect(
         find.descendant(
             of: find.byType(DesktopPageStack), matching: find.byType(Opacity)),
-        findsWidgets);
+        findsOneWidget);
     expect(find.byKey(const ValueKey('nav-1')), findsOneWidget);
-    expect(find.byKey(const ValueKey('tpms-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('tpms-1')), findsNothing);
     await t.pumpAndSettle();
     expect(find.byKey(const ValueKey('nav-1')), findsOneWidget);
     expect(find.byKey(const ValueKey('tpms-1')), findsNothing);

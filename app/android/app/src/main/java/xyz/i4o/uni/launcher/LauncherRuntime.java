@@ -102,7 +102,7 @@ public final class LauncherRuntime {
                 .put("dark",(context.getResources().getConfiguration().uiMode&Configuration.UI_MODE_NIGHT_MASK)==Configuration.UI_MODE_NIGHT_YES)
                 .put("apps",installed).put("climate",climate).put("vehicle",telemetry).put("media",media.snapshot().put("preferredPackage",prefs.getString("mediaPackage","auto"))).put("version",xyz.i4o.uni.launcher.BuildConfig.VERSION_NAME+"-flutter");
             state.put("desktopSelected",homeVisible&&desktopContent);
-            state.put("savedDesign",prefs.getString("savedDesign", "")).put("runtimeOwnerCount",listeners.size());
+            state.put("savedDesign",prefs.getString("savedDesign", "")).put("appNames",storedAppNames()).put("runtimeOwnerCount",listeners.size());
             if(prefs.getBoolean("demo",false))state.put("media",new JSONObject().put("available",true).put("playing",demoPlaying)
                 .put("title",demoTrack%2==0?"向海而行":"山海之间").put("artist",demoTrack%2==0?"Coastline":"Northbound").put("collection","晨间驾驶歌单").put("source","simulator").put("canNext",true).put("canPrevious",true).put("canToggle",true).put("canSeek",true)
                 .put("lyrics","[00:00.00]晨光沿着海岸慢慢亮起\n[00:03.00]风把远方带进了呼吸\n[00:06.00]穿过山与海的交界\n[00:09.00]每一程都有新的风景\n[00:12.00]跟着潮声向前去\n[00:15.00]让今天从容开启")
@@ -115,11 +115,18 @@ public final class LauncherRuntime {
             try{
                 JSONObject data=new JSONObject(raw);JSONObject p=data.getJSONObject("preferences");
                 int version=data.optInt("version");
-                if((version<4||version>5)||!p.optString("custom").matches("#[0-9a-fA-F]{6}"))return false;
+                if((version<4||version>6)||!p.optString("custom").matches("#[0-9a-fA-F]{6}"))return false;
                 String mode=p.optString("mode"),palette=p.optString("palette");
                 String effect=p.optString("pageTransition","none");
                 if(!"none".equals(effect)&&!"fade".equals(effect)&&!"slide".equals(effect))return false;
-                if(!"system".equals(mode)&&!"dark".equals(mode)&&!"light".equals(mode))return false;
+                if(!"smart".equals(mode)&&!"system".equals(mode)&&!"dark".equals(mode)&&!"light".equals(mode))return false;
+                String wallpaper=p.optString("wallpaper","gradient");
+                if(!"gradient".equals(wallpaper)&&!"coastal".equals(wallpaper)&&!"graphite".equals(wallpaper)&&!"dawn".equals(wallpaper)&&!"neon".equals(wallpaper)&&!"precision".equals(wallpaper)&&!"terrain".equals(wallpaper)&&!"custom".equals(wallpaper))return false;
+                if(p.optString("wallpaperPath","").length()>1024)return false;
+                if(p.has("wallpaperLuminance")){
+                    double luminance=p.optDouble("wallpaperLuminance",Double.NaN);
+                    if(Double.isNaN(luminance)||luminance<0||luminance>1)return false;
+                }
                 if(!"mint".equals(palette)&&!"blue".equals(palette)&&!"violet".equals(palette)&&!"amber".equals(palette)&&!"rose".equals(palette)&&!"custom".equals(palette))return false;
                 int radius=p.getInt("radius"),pages=data.getInt("pageCount");
                 if(radius<0||radius>40||pages<1||pages>20)return false;
@@ -137,12 +144,23 @@ public final class LauncherRuntime {
                         if(key.length()==0||key.length()>255||name.length()>96||name.indexOf('\n')>=0||name.indexOf('\r')>=0)return false;
                     }
                 }
-                if(!prefs.edit().putString("savedDesign",raw).commit())return false;
+                SharedPreferences.Editor editor=prefs.edit().putString("savedDesign",raw);
+                if(data.has("appNames"))editor.putString("appNames",data.getJSONObject("appNames").toString());
+                if(!editor.commit())return false;
             }catch(Exception e){return false;}
             publish();return true;
         }
     private boolean handleOnMain(JSONObject request)throws Exception{
-        String action=request.optString("action"),value=request.optString("value");
+        String action=request.optString("action"),value=request.optString("value"),zone=request.optString("zone");
+        if("rename-app".equals(action)){
+            if(zone.length()==0||zone.length()>255||zone.indexOf('\n')>=0||zone.indexOf('\r')>=0||value.length()>96||value.indexOf('\n')>=0||value.indexOf('\r')>=0)return true;
+            JSONObject names=storedAppNames();
+            if(value.isEmpty())names.remove(zone);else names.put(zone,value);
+            prefs.edit().putString("appNames",names.toString()).commit();publish();return true;
+        }
+        if("desktop-page".equals(action)){
+            setDesktopContent("0".equals(value));return true;
+        }
         if("demo-mode".equals(action)){
             prefs.edit().putBoolean("demo",request.optBoolean("enabled",false)).commit();publish();return true;
         }
@@ -232,6 +250,9 @@ public final class LauncherRuntime {
     public void setDesktopContent(boolean selected){
         onMain(()->{if(desktopContent!=selected){desktopContent=selected;publish();}return null;});
     }
+    public void setDesktopContentSilently(boolean selected){
+        onMain(()->{desktopContent=selected;return null;});
+    }
     public boolean homeVisible(){return onMain(()->homeVisible);}
 
     public void setHomeVisible(boolean visible){
@@ -239,6 +260,17 @@ public final class LauncherRuntime {
     }
 
     private void toast(String text){Toast.makeText(context,text,Toast.LENGTH_SHORT).show();}
+
+    private JSONObject storedAppNames(){
+        try{
+            String raw=prefs.getString("appNames","");
+            if(raw!=null&&!raw.isEmpty())return new JSONObject(raw);
+            JSONObject design=new JSONObject(prefs.getString("savedDesign","{}"));
+            JSONObject migrated=design.optJSONObject("appNames");
+            if(migrated!=null){prefs.edit().putString("appNames",migrated.toString()).apply();return new JSONObject(migrated.toString());}
+        }catch(Exception ignored){}
+        return new JSONObject();
+    }
 
     private static <T> T callOnMain(Callable<T> call)throws Exception{
         if(Looper.myLooper()==Looper.getMainLooper())return call.call();

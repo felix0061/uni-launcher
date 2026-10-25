@@ -29,8 +29,11 @@ class SurfaceStyle extends ThemeExtension<SurfaceStyle> {
       required this.soft,
       required this.edge,
       required this.shadow});
-  factory SurfaceStyle.from(Appearance a, bool systemDark) {
-    final dark = a.isDark(systemDark);
+  factory SurfaceStyle.from(Appearance a, bool systemDark,
+      {bool adaptToWallpaper = false}) {
+    final dark = adaptToWallpaper && a.mode == 'smart'
+        ? a.backgroundIsDark(systemDark)
+        : a.isDark(systemDark);
     return SurfaceStyle(
         dark: dark,
         glass: a.glass,

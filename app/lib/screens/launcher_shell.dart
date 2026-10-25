@@ -24,6 +24,8 @@ class LauncherShell extends StatelessWidget {
             // that inset a second time to the desktop or move the dock for it.
             resizeToAvoidBottomInset: false,
             body: SceneBackground(
+              appearance: controller.appearance,
+              forceOverlay: controller.settings,
               child: SafeArea(
                   top: false,
                   bottom: false,
