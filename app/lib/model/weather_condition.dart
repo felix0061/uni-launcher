@@ -93,13 +93,74 @@ enum WeatherKind {
     if (value.contains('转')) return fromText(value.split('转').last);
     return unknown;
   }
+
+  /// WMO weather interpretation codes used by the optional forecast source.
+  /// These codes are deliberately kept separate from the OEM provider codes.
+  static WeatherKind fromWmo(Object? code) => switch (code) {
+        0 => clear,
+        1 || 2 => partlyCloudy,
+        3 => overcast,
+        45 => fog,
+        48 => freezingRain,
+        51 || 53 || 55 => lightRain,
+        56 || 57 => freezingRain,
+        61 => lightRain,
+        63 => moderateRain,
+        65 => heavyRain,
+        66 || 67 => freezingRain,
+        71 => lightSnow,
+        73 => moderateSnow,
+        75 => heavySnow,
+        77 => snowShower,
+        80 => shower,
+        81 => moderateRain,
+        82 => rainstorm,
+        85 => snowShower,
+        86 => heavySnow,
+        95 => thunderstorm,
+        96 || 99 => hail,
+        _ => unknown,
+      };
+}
+
+class WeatherForecast {
+  final DateTime? date;
+  final WeatherKind condition;
+  final num? minimum, maximum, precipitation, windSpeed;
+  const WeatherForecast(
+      {required this.date,
+      required this.condition,
+      this.minimum,
+      this.maximum,
+      this.precipitation,
+      this.windSpeed});
+
+  factory WeatherForecast.fromNative(Map<dynamic, dynamic> raw) {
+    final dateText = raw['date']?.toString();
+    return WeatherForecast(
+        date: dateText == null ? null : DateTime.tryParse(dateText),
+        condition: raw['wmoCode'] is num
+            ? WeatherKind.fromWmo((raw['wmoCode'] as num).toInt())
+            : WeatherKind.fromText(raw['condition']),
+        minimum: raw['minimum'] is num ? raw['minimum'] as num : null,
+        maximum: raw['maximum'] is num ? raw['maximum'] as num : null,
+        precipitation:
+            raw['precipitation'] is num ? raw['precipitation'] as num : null,
+        windSpeed: raw['windSpeed'] is num ? raw['windSpeed'] as num : null);
+  }
 }
 
 class WeatherSnapshot {
   final WeatherKind condition;
   final bool night, available;
-  final String city, description, source;
-  final num? temperature;
+  final String city, description, source, forecastSource, forecastReason;
+  final num? temperature,
+      apparentTemperature,
+      humidity,
+      windSpeed,
+      windDirection;
+  final int? syncedAtMs, forecastUpdatedAtMs;
+  final List<WeatherForecast> forecasts;
   const WeatherSnapshot(
       {required this.condition,
       required this.night,
@@ -107,12 +168,28 @@ class WeatherSnapshot {
       required this.city,
       required this.description,
       required this.source,
-      this.temperature});
+      required this.forecastSource,
+      required this.forecastReason,
+      required this.forecasts,
+      this.temperature,
+      this.apparentTemperature,
+      this.humidity,
+      this.windSpeed,
+      this.windDirection,
+      this.syncedAtMs,
+      this.forecastUpdatedAtMs});
   factory WeatherSnapshot.fromNative(Map<String, dynamic> n) {
     final raw = n['weather'] is Map ? n['weather'] as Map : const {};
     final demo = n['demo'] == true && raw['available'] != true;
     final available = raw['available'] == true;
     final text = raw['condition'] ?? raw['description'];
+    final rawForecasts =
+        raw['forecasts'] is List ? raw['forecasts'] as List : const [];
+    final forecasts = rawForecasts
+        .whereType<Map>()
+        .map(WeatherForecast.fromNative)
+        .toList(growable: false);
+    final now = DateTime.now();
     return WeatherSnapshot(
         condition: available
             ? WeatherKind.fromText(text)
@@ -136,10 +213,58 @@ class WeatherSnapshot {
             : demo
                 ? '天气示例'
                 : '原车天气',
+        forecastSource: forecasts.isNotEmpty
+            ? '${raw['forecastSource'] ?? '天气预报'}'
+            : demo
+                ? '天气示例'
+                : '',
+        forecastReason: '${raw['forecastReason'] ?? ''}',
+        forecasts: forecasts.isNotEmpty
+            ? forecasts
+            : demo
+                ? List.generate(
+                    5,
+                    (index) => WeatherForecast(
+                        date: DateTime(now.year, now.month, now.day + index),
+                        condition: const [
+                          WeatherKind.cloudy,
+                          WeatherKind.partlyCloudy,
+                          WeatherKind.lightRain,
+                          WeatherKind.overcast,
+                          WeatherKind.clear
+                        ][index],
+                        minimum: 17 + index,
+                        maximum: 24 + index,
+                        precipitation: const [20, 10, 70, 30, 5][index],
+                        windSpeed: 12 + index))
+                : const [],
         temperature: available
             ? (raw['temperature'] is num ? raw['temperature'] as num : null)
             : demo
                 ? 24
-                : null);
+                : null,
+        apparentTemperature: raw['apparentTemperature'] is num
+            ? raw['apparentTemperature'] as num
+            : demo
+                ? 25
+                : null,
+        humidity: raw['humidity'] is num
+            ? raw['humidity'] as num
+            : demo
+                ? 62
+                : null,
+        windSpeed: raw['windSpeed'] is num
+            ? raw['windSpeed'] as num
+            : demo
+                ? 12
+                : null,
+        windDirection:
+            raw['windDirection'] is num ? raw['windDirection'] as num : null,
+        syncedAtMs: raw['syncedAtMs'] is num
+            ? (raw['syncedAtMs'] as num).toInt()
+            : null,
+        forecastUpdatedAtMs: raw['forecastUpdatedAtMs'] is num
+            ? (raw['forecastUpdatedAtMs'] as num).toInt()
+            : null);
   }
 }

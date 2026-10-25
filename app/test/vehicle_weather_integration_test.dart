@@ -123,6 +123,10 @@ void main() {
     expect(WeatherKind.fromText('123456'), WeatherKind.unknown);
     expect(WeatherKind.fromText(null), WeatherKind.unknown);
     expect(WeatherKind.fromText('新天气代码'), WeatherKind.unknown);
+    expect(WeatherKind.fromWmo(0), WeatherKind.clear);
+    expect(WeatherKind.fromWmo(65), WeatherKind.heavyRain);
+    expect(WeatherKind.fromWmo(96), WeatherKind.hail);
+    expect(WeatherKind.fromWmo(1234), WeatherKind.unknown);
   });
   testWidgets('Every weather icon paints visible pixels by day and night',
       (t) async {
@@ -180,6 +184,35 @@ void main() {
     expect(value.condition, WeatherKind.freezingRain);
     expect(value.temperature, -3);
     expect(value.night, true);
+  });
+  test('Weather forecast parses separately from OEM condition codes', () {
+    final value = WeatherSnapshot.fromNative({
+      'weather': {
+        'available': true,
+        'condition': '多云',
+        'temperature': 23,
+        'city': '杭州',
+        'humidity': 68,
+        'forecastSource': 'Open-Meteo',
+        'forecastUpdatedAtMs': 1000,
+        'forecasts': [
+          {
+            'date': '2026-10-26',
+            'wmoCode': 61,
+            'minimum': 17.2,
+            'maximum': 25.4,
+            'precipitation': 70,
+            'windSpeed': 13
+          }
+        ]
+      }
+    });
+    expect(value.humidity, 68);
+    expect(value.forecastSource, 'Open-Meteo');
+    expect(value.forecasts, hasLength(1));
+    expect(value.forecasts.single.condition, WeatherKind.lightRain);
+    expect(value.forecasts.single.minimum, 17.2);
+    expect(value.forecasts.single.precipitation, 70);
   });
   test('Vehicle fields expire individually and disconnect removes readings',
       () {

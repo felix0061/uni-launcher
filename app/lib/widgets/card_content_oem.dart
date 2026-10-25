@@ -334,10 +334,12 @@ class TireDiagram extends StatelessWidget {
 
 class _WeatherCard extends StatelessWidget {
   final LauncherCard card;
+  final LauncherController controller;
   final bool demo, editing;
   final Map<String, dynamic> native;
   const _WeatherCard(
       {required this.card,
+      required this.controller,
       required this.demo,
       required this.editing,
       required this.native});
@@ -348,61 +350,79 @@ class _WeatherCard extends StatelessWidget {
     final weather = WeatherSnapshot.fromNative(native);
     final city =
         demo ? (card.title == '天气' ? weather.city : card.title) : weather.city;
-    return _CardCanvas(
-        minHeight: editing ? 180 : 230,
-        child:
-            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Row(children: [
-            UniIcon('pin', size: Design.px(23), color: s.text),
-            SizedBox(width: Design.px(8)),
-            Expanded(
-                child: Text(city,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: Design.px(23), height: 1.2))),
-            Text(weather.source.replaceAll('原车', ''),
-                style: TextStyle(fontSize: Design.px(20), color: s.muted)),
-          ]),
-          Expanded(
-              child: Row(children: [
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(weather.temperature?.toString() ?? '—',
-                  style: TextStyle(
-                      fontSize: Design.px(editing ? 48 : 65),
-                      height: 1,
-                      fontWeight: FontWeight.w400,
-                      letterSpacing: Design.px(-2))),
-              Padding(
-                  padding: EdgeInsets.only(top: Design.px(7)),
-                  child: Text('°',
-                      style: TextStyle(
-                          fontSize: Design.px(editing ? 28 : 36), height: 1))),
-            ]),
-            SizedBox(width: Design.px(20)),
-            Expanded(
-                child: Text(weather.description,
-                    style: TextStyle(fontSize: Design.px(25)))),
-            WeatherIcon(
-                condition: weather.condition,
-                night: weather.night,
-                size: Design.px(editing ? 80 : 100),
-                color: s.accent),
-          ])),
-          if (!editing)
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text('天气',
-                  style: TextStyle(fontSize: Design.px(17), color: s.muted)),
-              Flexible(
-                  child: Text(
-                      weather.available
-                          ? '已同步'
-                          : '${(mapOf(native['weather'])['reason'] ?? '等待天气同步').toString().replaceAll('原车', '')}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style:
-                          TextStyle(fontSize: Design.px(17), color: s.muted))),
-            ]),
-        ]));
+    return Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+            key: const ValueKey('weather-card-open'),
+            borderRadius: BorderRadius.circular(s.radius),
+            onTap:
+                editing ? null : () => showWeatherDetails(context, controller),
+            child: _CardCanvas(
+                minHeight: editing ? 180 : 230,
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(children: [
+                        UniIcon('pin', size: Design.px(23), color: s.text),
+                        SizedBox(width: Design.px(8)),
+                        Expanded(
+                            child: Text(city,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    fontSize: Design.px(23), height: 1.2))),
+                        Text(weather.source.replaceAll('原车', ''),
+                            style: TextStyle(
+                                fontSize: Design.px(20), color: s.muted)),
+                      ]),
+                      Expanded(
+                          child: Row(children: [
+                        Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(weather.temperature?.toString() ?? '—',
+                                  style: TextStyle(
+                                      fontSize: Design.px(editing ? 48 : 65),
+                                      height: 1,
+                                      fontWeight: FontWeight.w400,
+                                      letterSpacing: Design.px(-2))),
+                              Padding(
+                                  padding: EdgeInsets.only(top: Design.px(7)),
+                                  child: Text('°',
+                                      style: TextStyle(
+                                          fontSize:
+                                              Design.px(editing ? 28 : 36),
+                                          height: 1))),
+                            ]),
+                        SizedBox(width: Design.px(20)),
+                        Expanded(
+                            child: Text(weather.description,
+                                style: TextStyle(fontSize: Design.px(25)))),
+                        WeatherIcon(
+                            condition: weather.condition,
+                            night: weather.night,
+                            size: Design.px(editing ? 80 : 100),
+                            color: s.accent),
+                      ])),
+                      if (!editing)
+                        Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('天气',
+                                  style: TextStyle(
+                                      fontSize: Design.px(17), color: s.muted)),
+                              Flexible(
+                                  child: Text(
+                                      weather.available
+                                          ? '已同步'
+                                          : '${(mapOf(native['weather'])['reason'] ?? '等待天气同步').toString().replaceAll('原车', '')}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                          fontSize: Design.px(17),
+                                          color: s.muted))),
+                            ]),
+                    ]))));
   }
 }
 

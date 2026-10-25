@@ -9,7 +9,7 @@ import 'package:uni_launcher/widgets/glass_surface.dart';
 import 'fake_gateway.dart';
 
 void main() {
-  for (final type in ['weather', 'calendar', 'member', 'cleanup']) {
+  for (final type in ['calendar', 'member', 'cleanup']) {
     testWidgets('$type has an OEM entry without claiming live fields',
         (t) async {
       final g = FakeGateway()..state['demo'] = false;
@@ -35,7 +35,7 @@ void main() {
             'member' => '打开账号中心',
             'cleanup' => '打开清理',
             'calendar' => '打开日历',
-            _ => '打开天气',
+            _ => '打开日历',
           });
       expect(button, findsOneWidget);
       expect(find.textContaining('未同步'), findsWidgets);
@@ -49,6 +49,41 @@ void main() {
       await g.dispose();
     });
   }
+  testWidgets('weather card opens the detailed forecast sheet', (t) async {
+    t.view.physicalSize = const Size(1920, 1080);
+    t.view.devicePixelRatio = 1;
+    final g = FakeGateway();
+    final c = LauncherController(g);
+    await c.initialize();
+    final style = SurfaceStyle.from(const Appearance(mode: 'dark'), true);
+    const card = LauncherCard('weather-live', 'weather', '天气', 0, 0, 4, 2, 0);
+    await t.pumpWidget(MaterialApp(
+        theme: launcherTheme(style),
+        home: Scaffold(
+            body: Center(
+                child: SizedBox(
+                    width: 620,
+                    height: 300,
+                    child: GlassSurface(
+                        padding: EdgeInsets.zero,
+                        child: CardContent(card: card, controller: c)))))));
+    await t.pumpAndSettle();
+    expect(find.text('打开天气'), findsNothing);
+    await t.tap(find.byKey(const ValueKey('weather-card-open')));
+    await t.pumpAndSettle();
+    expect(find.text('天气详情'), findsOneWidget);
+    expect(
+        find.byKey(const ValueKey('weather-current-detail')), findsOneWidget);
+    expect(find.byKey(const ValueKey('weather-forecast-0')), findsOneWidget);
+    expect(find.text('未来天气'), findsOneWidget);
+    expect(g.commands.last['action'], 'weather-forecast-refresh');
+    expect(t.takeException(), isNull);
+    await t.pumpWidget(const SizedBox.shrink());
+    c.dispose();
+    await g.dispose();
+    t.view.resetPhysicalSize();
+    t.view.resetDevicePixelRatio();
+  });
   testWidgets('calendar renders system date and upcoming agenda', (t) async {
     final g = FakeGateway()
       ..state['demo'] = false

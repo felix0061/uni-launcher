@@ -173,6 +173,7 @@ public final class LauncherRuntime {
         }
         if("embed-navigation".equals(action)){prefs.edit().putBoolean("embedNavigation",request.optBoolean("enabled",true)).commit();publish();return true;}
         if("calendar-refresh".equals(action)){calendar.refresh();publish();return true;}
+        if("weather-forecast-refresh".equals(action)){weather.refreshForecast();return true;}
         if("launch-navigation".equals(action)){if(!navigation.launchFullscreen())toast("请选择已安装的导航应用");return true;}
         if("launch-player".equals(action)){
             String selected=prefs.getString("mediaPackage","auto");

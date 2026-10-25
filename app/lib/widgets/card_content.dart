@@ -17,6 +17,7 @@ import 'embedded_navigation.dart';
 import 'media_artwork.dart';
 import 'media_source_badge.dart';
 import 'weather_icon.dart';
+import 'weather_details_sheet.dart';
 import 'vehicle_cards.dart';
 import 'official_card_entry.dart';
 import '../model/weather_condition.dart';
@@ -83,15 +84,12 @@ class CardContent extends StatelessWidget {
                   : _NavigationWaiting(card: card, controller: controller),
           'music' =>
             _MusicCard(card: card, controller: controller, state: native),
-          'weather' => OfficialCardEntry(
-              type: 'weather',
-              label: '天气',
+          'weather' => _WeatherCard(
+              card: card,
               controller: controller,
-              child: _WeatherCard(
-                  card: card,
-                  demo: native['demo'] == true,
-                  native: native,
-                  editing: controller.editing)),
+              demo: native['demo'] == true,
+              native: native,
+              editing: controller.editing),
           'calendar' => OfficialCardEntry(
               type: 'calendar',
               label: '日历',
@@ -101,11 +99,8 @@ class CardContent extends StatelessWidget {
                   controller: controller,
                   demo: native['demo'] == true)),
           'clock' => ClockCard(title: card.title),
-          'clockWeather' => ClockWeatherCard(
-              card: card,
-              native: native,
-              editing: controller.editing,
-            ),
+          'clockWeather' => _ClockWeatherCardEntry(
+              card: card, controller: controller, native: native),
           'battery' => BatteryCard(native: native, title: card.title),
           'air' => AirQualityCard(
               native: native,
@@ -120,6 +115,29 @@ class CardContent extends StatelessWidget {
               card: card, controller: controller, demo: native['demo'] == true),
         },
       );
+}
+
+class _ClockWeatherCardEntry extends StatelessWidget {
+  final LauncherCard card;
+  final LauncherController controller;
+  final Map<String, dynamic> native;
+  const _ClockWeatherCardEntry(
+      {required this.card, required this.controller, required this.native});
+  @override
+  Widget build(BuildContext context) {
+    final enabled =
+        !controller.editing && clockWeatherLayoutId(card.layout) != 'clock';
+    return Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+            key: const ValueKey('clock-weather-card-open'),
+            borderRadius:
+                BorderRadius.circular(SurfaceStyle.of(context).radius),
+            onTap:
+                enabled ? () => showWeatherDetails(context, controller) : null,
+            child: ClockWeatherCard(
+                card: card, native: native, editing: controller.editing)));
+  }
 }
 
 /// Only undersized grids use a smaller fitted canvas. Default sizes retain the
