@@ -241,24 +241,36 @@ void main() {
     final indicatorMid =
         t.getRect(find.byKey(const ValueKey('page-indicator-active'))).left;
     expect(indicatorMid, greaterThan(indicatorStart));
-    expect(find.byType(AnimatedSlide), findsWidgets);
+    expect(
+        find.descendant(
+            of: find.byType(DesktopPageStack),
+            matching: find.byType(FractionalTranslation)),
+        findsNWidgets(2));
+    final outgoing =
+        t.getRect(find.byKey(const ValueKey('desktop-motion-frame-0')));
+    final incoming =
+        t.getRect(find.byKey(const ValueKey('desktop-motion-frame-1')));
+    expect(outgoing.right, closeTo(incoming.left, .1));
     await t.pumpAndSettle();
     final indicatorEnd =
         t.getRect(find.byKey(const ValueKey('page-indicator-active'))).left;
     expect(indicatorEnd, greaterThan(indicatorMid));
     expect(t.getRect(find.byKey(const ValueKey('bottom-dock'))), dockBefore);
+    expect(find.byKey(const ValueKey('nav-1')), findsNothing);
+    expect(find.byKey(const ValueKey('tpms-1')), findsOneWidget);
     c.setAppearance(c.appearance.copyWith(pageTransition: 'fade'));
     await t.pumpAndSettle();
     c.switchPage(0);
     await t.pump();
     expect(
         find.descendant(
-            of: find.byType(DesktopPageStack),
-            matching: find.byType(AnimatedOpacity)),
+            of: find.byType(DesktopPageStack), matching: find.byType(Opacity)),
         findsWidgets);
     expect(find.byKey(const ValueKey('nav-1')), findsOneWidget);
     expect(find.byKey(const ValueKey('tpms-1')), findsOneWidget);
     await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('nav-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('tpms-1')), findsNothing);
     c.setAppearance(c.appearance.copyWith(pageTransition: 'none'));
     await t.pumpAndSettle();
     c.switchPage(1);
@@ -266,8 +278,7 @@ void main() {
     expect(find.byKey(const ValueKey('nav-1')), findsNothing);
     expect(
         find.descendant(
-            of: find.byType(DesktopPageStack),
-            matching: find.byType(AnimatedOpacity)),
+            of: find.byType(DesktopPageStack), matching: find.byType(Opacity)),
         findsNothing);
     expect(t.takeException(), null);
   });
@@ -279,7 +290,12 @@ void main() {
                 page: 0,
                 effect: 'slide',
                 children: [Text('page 1'), Text('page 2')]))));
-    expect(find.byType(AnimatedOpacity), findsNothing);
-    expect(find.byType(IndexedStack), findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byType(DesktopPageStack),
+            matching: find.byType(FractionalTranslation)),
+        findsNothing);
+    expect(find.text('page 1'), findsOneWidget);
+    expect(find.text('page 2'), findsNothing);
   });
 }
