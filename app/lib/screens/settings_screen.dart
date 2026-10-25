@@ -751,22 +751,26 @@ class SourceSettings extends StatelessWidget {
                     value: n['demo'] == true,
                     onChanged: (v) => c.command('demo-mode', enabled: v)),
                 SwitchListTile(
-                    key: const ValueKey('hide-navigation'),
-                    title: const Text('隐藏系统导航栏'),
-                    subtitle: const Text('桌面窗口使用更多显示空间'),
-                    value: n['hideNavigation'] == true,
-                    onChanged: (v) => c.command('hide-navigation', enabled: v)),
+                    key: const ValueKey('global-dock'),
+                    title: const Text('全局底栏'),
+                    subtitle: Text(mapOf(n['globalDock'])['allowed'] == true
+                        ? '在其他应用中使用相同的首页、空调和音乐控制'
+                        : '开启后需允许悬浮显示'),
+                    value: mapOf(n['globalDock'])['enabled'] == true,
+                    onChanged: (v) => c.command('global-dock', enabled: v)),
                 SwitchListTile(
-                    title: const Text('全局隐藏'),
-                    subtitle: Text(n['globalNavigationGranted'] == true
-                        ? '已获得系统授权'
-                        : '需要系统授权'),
-                    value: n['globalNavigation'] == true,
-                    onChanged: n['globalNavigationGranted'] == true
-                        ? (v) => c.command('global-navigation', enabled: v)
+                    key: const ValueKey('system-navigation-hidden'),
+                    title: const Text('隐藏系统原有导航栏'),
+                    subtitle: Text(n['systemNavigationGranted'] == true
+                        ? '关闭后恢复原有显示；与全局底栏分别设置'
+                        : '需要系统授予导航栏管理权限'),
+                    value: n['systemNavigationHidden'] == true,
+                    onChanged: n['systemNavigationGranted'] == true
+                        ? (v) =>
+                            c.command('system-navigation-hidden', enabled: v)
                         : null),
                 Row(children: [
-                  Text('UNI 0.4.1 · xyz.i4o.uni.launcher',
+                  Text('UNI 0.5.0 · xyz.i4o.uni.launcher',
                       style:
                           TextStyle(fontSize: Design.px(18), color: s.muted)),
                   const Spacer(),

@@ -33,7 +33,7 @@ void main() {
     final after = t.getRect(find.byKey(const ValueKey('bottom-dock'))).bottom;
     expect(after, before);
     expect(after, greaterThan(920));
-    expect(after, lessThan(944));
+    expect(after, closeTo(944, .1));
     // Some Android 9 car builds report the reserved bar as a keyboard inset.
     t.view.padding = const FakeViewPadding();
     t.view.viewInsets = const FakeViewPadding(bottom: 136);

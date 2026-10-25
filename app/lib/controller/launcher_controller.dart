@@ -13,6 +13,9 @@ class LauncherController extends ChangeNotifier {
   List<LauncherCard> cards = defaultCards();
   int page = 0, pageCount = 2;
   bool settings = false, editing = false, ready = false;
+  Future<void> Function()? beforeExternalLaunch;
+  String _overlayDesign = '';
+  bool get isGlobalDock => native.value['hostMode'] == 'global-dock';
   String settingsTab = 'appearance', message = '';
   List<LauncherCard>? _backup, _undo;
   int _backupPages = 2;
@@ -22,6 +25,8 @@ class LauncherController extends ChangeNotifier {
   LauncherController(this.gateway);
   Future<void> initialize() async {
     gateway.onHome(home);
+    if (gateway is AndroidGateway)
+      (gateway as AndroidGateway).onOpenSettings(openSettings);
     try {
       final state = await gateway.bootstrap();
       final raw = state['savedDesign'];
@@ -46,6 +51,7 @@ class LauncherController extends ChangeNotifier {
         }
       }
       _receive(state);
+      if (state['initialSettings'] == true) settings = true;
       _subscription = gateway.events.listen(_receive, onError: (Object e) {
         message = '原生连接暂不可用';
         notifyListeners();
@@ -70,6 +76,17 @@ class LauncherController extends ChangeNotifier {
         }
       }
     }
+    bool overlayThemeChanged = false;
+    if (state['hostMode'] == 'global-dock' &&
+        state['savedDesign'] is String &&
+        state['savedDesign'] != _overlayDesign) {
+      _overlayDesign = state['savedDesign'];
+      try {
+        appearance = Appearance.fromJson(Map<String, dynamic>.from(
+            jsonDecode(_overlayDesign)['preferences']));
+        overlayThemeChanged = true;
+      } catch (_) {}
+    }
     final oldDark = native.value['dark'];
     final oldDemo = native.value['demo'];
     final oldEmbed = (native.value['navigation'] as Map?)?['canEmbed'];
@@ -79,7 +96,8 @@ class LauncherController extends ChangeNotifier {
       message = state['message'];
       notifyListeners();
     }
-    if ((appearance.mode == 'system' && oldDark != state['dark']) ||
+    if (overlayThemeChanged ||
+        (appearance.mode == 'system' && oldDark != state['dark']) ||
         oldDemo != state['demo'] ||
         oldHeight != state['viewportHeightPx'] ||
         oldEmbed != (state['navigation'] as Map?)?['canEmbed'])
@@ -89,6 +107,18 @@ class LauncherController extends ChangeNotifier {
   Future<void> command(String action,
       {String? value, String? zone, bool? enabled}) async {
     try {
+      if (isGlobalDock &&
+          {
+            'launch-app',
+            'launch-navigation',
+            'launch-player',
+            'open-official',
+            'official-widget',
+            'show-home',
+            'show-desktop-settings'
+          }.contains(action)) {
+        await beforeExternalLaunch?.call();
+      }
       await gateway.action(action, value: value, zone: zone, enabled: enabled);
     } catch (_) {
       message = '操作暂不可用';
@@ -121,6 +151,10 @@ class LauncherController extends ChangeNotifier {
   }
 
   void home() {
+    if (isGlobalDock) {
+      command('show-home');
+      return;
+    }
     if (editing) return;
     settings = false;
     page = 0;
@@ -128,6 +162,10 @@ class LauncherController extends ChangeNotifier {
   }
 
   void openSettings() {
+    if (isGlobalDock) {
+      command('show-desktop-settings');
+      return;
+    }
     if (editing) return;
     settings = true;
     notifyListeners();

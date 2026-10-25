@@ -16,7 +16,7 @@ class _OemCard extends StatelessWidget {
       return _CardCanvas(
           minHeight: card.type == 'member'
               ? 340
-              : card.type == 'tpms' || card.type == 'vehicle'
+              : card.type == 'tpms'
                   ? 310
                   : 300,
           child:
@@ -152,7 +152,7 @@ class _OemCard extends StatelessWidget {
                                   color: s.muted)),
                         ])),
                   ])),
-            ] else if (card.type == 'tpms' || card.type == 'vehicle') ...[
+            ] else if (card.type == 'tpms') ...[
               Expanded(child: TireDiagram(native: controller.native.value)),
               _StateLine(
                   VehicleField.fromNative(
@@ -161,35 +161,6 @@ class _OemCard extends StatelessWidget {
                       ? '胎压原始值 · 单位待核对'
                       : '等待车辆数据',
                   dot: true),
-            ] else if (card.type == 'air') ...[
-              Expanded(
-                  child: Center(
-                      child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                    UniIcon('air', size: Design.px(65), color: s.accent),
-                    SizedBox(width: Design.px(26)),
-                    Text(
-                        VehicleField.fromNative(controller.native.value, 'pm25')
-                            .display(decimals: 0),
-                        style: TextStyle(
-                            fontSize: Design.px(65),
-                            fontWeight: FontWeight.w300)),
-                    SizedBox(width: Design.px(26)),
-                    Flexible(
-                        child: Text(
-                            VehicleField.fromNative(
-                                        controller.native.value, 'pm25')
-                                    .valid
-                                ? 'PM2.5 · µg/m³'
-                                : '空气质量未同步',
-                            style: TextStyle(
-                                fontSize: Design.px(21), color: s.muted))),
-                  ]))),
-              _StateLine(VehicleField.fromNative(controller.native.value, 'aqi')
-                      .valid
-                  ? '车内 AQI ${VehicleField.fromNative(controller.native.value, 'aqi').display(decimals: 0)}'
-                  : '按车辆空气质量功能支持情况启用'),
             ] else ...[
               Expanded(
                   child: Center(

@@ -248,6 +248,7 @@ public final class OfficialCarReader implements VehicleAdapter {
             add(fields, readField("pressureRearRight", OfficialCarContract.PA_PRESSURE_RR, 0, 0, "pressure"), "pressureRearRight");
             add(fields, readField("pressureUnitPreference", OfficialCarContract.PA_PRESSURE_UNIT, 0, 0, "pressureUnit"), "pressureUnitPreference");
             JSONObject extraSensors=new OfficialVehicleSensors(sdkCar,signals).appendTo(fields);
+            new OfficialHybridReader(propertyManager).appendTo(fields);
             JSONArray sensorErrors=extraSensors.optJSONArray("errors");
             if(sensorErrors!=null)for(int i=0;i<sensorErrors.length();i++)errors.put(sensorErrors.get(i));
             int validCount = 0;

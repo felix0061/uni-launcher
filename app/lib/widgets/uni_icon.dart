@@ -47,6 +47,7 @@ final _originalIcons = <IconData, String>{
   Icons.person_outline: 'user',
   Icons.cleaning_services_outlined: 'broom',
   Icons.tire_repair_outlined: 'tire',
+  Icons.battery_std_outlined: 'battery',
   Icons.local_taxi_outlined: 'ride',
   Icons.check: 'check',
   Icons.light_mode_outlined: 'sun',

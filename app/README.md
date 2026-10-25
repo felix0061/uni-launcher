@@ -1,6 +1,8 @@
-# UNI Launcher 0.4.2 · Flutter Android
+# UNI Launcher 0.5.0 · Flutter Android
 
-0.4.2 固定底栏可用区域、复用地图卡片并在设置/弹窗隐藏原生 Surface；增加网易云专用控制、拖动进度和歌词事件接收。车辆改用本车官方 Car / CarPropertyManager，读取 HVAC、座椅、胎压和传感器，并按逐项能力接收用户操作。实车包 `UNI-Launcher-0.4.2-IP753.apk`；结果和限制见[本轮记录](../docs/IP753_0_4_2.md)。
+0.5.0 增加全局底栏、独立系统导航栏开关和三张车辆信息卡。底栏背景铺满屏幕宽度、外层直角、底部无留白；跨应用媒体 / 空调与桌面共用原生 Runtime。实现和限制见[全局底栏](../docs/GLOBAL_DOCK.md)、[车辆卡片](../docs/VEHICLE_CARD_DESIGN.md)、[官方能力对照](../docs/OEM_PARITY_0_5.md)。
+
+0.5.0 新增全局底栏与系统导航栏独立开关，底栏背景铺满、直角、底边不留白；新增动力电池 / 驾驶模式 / 能量流卡片和空气质量卡片，并补齐原车 Widget 配置与应用回退。实车包 `UNI-Launcher-0.5.0-IP753.apk` 尚待上车，本轮结果见 [0.5 验收范围](../docs/IP753_0_5.md)。0.4.2 已完成的地图 / 窗口修复和历史实车读数保留于 [0.4.2 记录](../docs/IP753_0_4_2.md)。
 
 包名 `xyz.i4o.uni.launcher`，面向领克 05 IP753 / Android 9。界面由 Flutter 绘制，Android 平台通道复用已有 Java 适配器。源代码直接保存在本目录并由仓库的本地 Git commit 管理，不另行打包源码。
 
@@ -68,9 +70,11 @@ flutter test --no-pub
 flutter build apk --release --target-platform android-arm64,android-x64 --split-per-abi
 ```
 
-构建产物在 `build/app/outputs/flutter-apk/`。`app-arm64-v8a-release.apk` 是普通开发签名包，`app-x86_64-release.apk` 供模拟器。IP753 实车使用单独签名的 `UNI-Launcher-0.4.2-IP753.apk`；两种证书不能相互覆盖安装，同一实车证书的后续版本可正常升级。当前启动、地图、媒体与车辆边界见[0.4.2 实车记录](../docs/IP753_0_4_2.md)。
+构建产物在 `build/app/outputs/flutter-apk/`。`app-arm64-v8a-release.apk` 是普通开发签名包，`app-x86_64-release.apk` 供模拟器。IP753 实车使用单独签名的 `UNI-Launcher-0.5.0-IP753.apk`；两种证书不能相互覆盖安装，同一实车证书的后续版本可正常升级。当前启动、地图、媒体与车辆边界见[0.4.2 实车记录](../docs/IP753_0_4_2.md)。
 
-分 ABI APK 的 versionCode 由 Flutter 添加 ABI 前缀，本次 arm64 为 2006、x86_64 为 4006；后续升级应提高 `pubspec.yaml` 的构建号。当前签名、大小和 SHA-256 记录于[构建报告](verification/build-report.json)。
+分 ABI APK 的 versionCode 由 Flutter 添加 ABI 前缀，本次 arm64 为 2007、x86_64 为 4007；后续升级应提高 `pubspec.yaml` 的构建号。当前签名、大小和 SHA-256 记录于[构建报告](verification/build-report.json)。
+
+JDK 保存在 `/data/tools/linkco-android/java-runtime/`，不再依赖 `/tmp`；Flutter 已配置此持久路径。
 
 本机 Flutter SDK 位于 `/data/tools/flutter`、Android SDK 位于 `/data/tools/linkco-android/sdk`。需要本地代理环境时可用 `python3 tools/flutter_task.py <flutter 参数>`；脚本为 Gradle 继承已有代理，测试连接本机 VM service 时绕过代理。可用 `FLUTTER_SDK` 覆盖 Flutter 路径。SDK、Gradle 缓存和 build 均不提交。
 

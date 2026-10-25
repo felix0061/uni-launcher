@@ -8,10 +8,11 @@ const _libraryDescriptions = {
   'member': '原车账号与登录状态',
   'cleanup': '原车清理信息与操作',
   'tpms': '原车四轮胎压信息',
-  'air': '原车空气质量 · 按车型支持',
+  'battery': '电量、混动与充电状态',
+  'air': '车内 PM2.5 与独立 AQI 读数',
   'clock': '时间、日期与星期',
   'shortcuts': '你常用的四个应用',
-  'vehicle': '车辆信息兼容卡片',
+  'vehicle': '车速、总里程、续航与距保养',
 };
 const _desktopTypes = {'clock', 'shortcuts', 'vehicle'};
 
@@ -229,9 +230,14 @@ class _CardEditorState extends State<_CardEditor> {
     final s = SurfaceStyle.of(context), spec = specFor(draft.type);
     final previewCity = draft.type == 'weather' &&
         widget.controller.native.value['demo'] == true;
+    final vehicleCard =
+        const {'battery', 'air', 'vehicle'}.contains(draft.type);
     final sizes = <(int, int)>[
       draft.type == 'weather' ? (4, 2) : (spec.minW, spec.minH),
-      (spec.minW > 4 ? spec.minW : 4, spec.minH > 4 ? spec.minH : 4),
+      if (vehicleCard)
+        (4, 3)
+      else
+        (spec.minW > 4 ? spec.minW : 4, spec.minH > 4 ? spec.minH : 4),
       (spec.minW > 8 ? spec.minW : 8, 6),
     ].toSet().toList();
     return SingleChildScrollView(

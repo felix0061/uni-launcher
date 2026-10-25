@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../controller/launcher_controller.dart';
 import '../model/vehicle_data.dart';
+import '../model/vehicle_card_data.dart';
 import '../theme/design_tokens.dart';
 import '../theme/launcher_theme.dart';
 import 'card_content.dart' show TireDiagram;
@@ -54,6 +55,18 @@ class VehicleReadout extends StatelessWidget {
               ]))
       ]),
       SizedBox(height: Design.px(22)),
+      for (final item in const [
+        ('driveMode', '驾驶模式'),
+        ('hybridSelected', '混动选择'),
+        ('energyFlow', '能量流')
+      ])
+        Padding(
+            padding: EdgeInsets.only(bottom: Design.px(10)),
+            child: Row(children: [
+              Text(item.$2, style: TextStyle(color: s.muted)),
+              const Spacer(),
+              Text(vehicleStatusLabel(native, item.$1)),
+            ])),
       Text('${vehicle['reason'] ?? '等待原车车辆服务'}',
           style:
               TextStyle(fontSize: Design.px(18), color: s.muted, height: 1.6)),

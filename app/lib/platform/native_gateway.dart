@@ -13,6 +13,11 @@ abstract class NativeGateway {
 class AndroidGateway implements NativeGateway {
   static const methods = MethodChannel('xyz.i4o.uni.launcher/platform');
   static const eventChannel = EventChannel('xyz.i4o.uni.launcher/events');
+  void Function()? _home, _settings;
+  void onOpenSettings(void Function() callback) {
+    _settings = callback;
+  }
+
   @override
   Future<Map<String, dynamic>> bootstrap() async => Map<String, dynamic>.from(
       jsonDecode(await methods.invokeMethod<String>('snapshot') ?? '{}'));
@@ -41,8 +46,10 @@ class AndroidGateway implements NativeGateway {
 
   @override
   void onHome(void Function() callback) {
+    _home = callback;
     methods.setMethodCallHandler((call) async {
-      if (call.method == 'home') callback();
+      if (call.method == 'home') _home?.call();
+      if (call.method == 'open-settings') _settings?.call();
     });
   }
 }

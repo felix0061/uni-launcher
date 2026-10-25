@@ -12,14 +12,15 @@ from pathlib import Path
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--input', required=True, type=Path)
 parser.add_argument('--out', required=True, type=Path)
-parser.add_argument('--toolchain', type=Path, default=Path('/tmp/linkco-build'))
+parser.add_argument('--toolchain', type=Path, default=Path('/data/tools/linkco-android/ip753-signing'))
 args = parser.parse_args()
 source = args.input.resolve()
 target = args.out.resolve()
 if source == target:
     parser.error('Choose a separate output APK; preserve the development artifact')
 toolchain = args.toolchain.resolve()
-java = toolchain / 'root/usr/lib/jvm/java-17-openjdk-amd64/bin/java'
+java = Path('/data/tools/linkco-android/java-runtime/usr/lib/jvm/java-17-openjdk-amd64/bin/java')
+if not java.is_file(): java = toolchain / 'root/usr/lib/jvm/java-17-openjdk-amd64/bin/java'
 jar = Path('/data/tools/linkco-android/sdk/build-tools/36.0.0/lib/apksigner.jar')
 key = toolchain / 'platform.pk8'
 cert = toolchain / 'platform.x509.pem'

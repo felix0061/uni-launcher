@@ -1,0 +1,230 @@
+{
+  "data": "fixed review examples, no vehicle connection",
+  "checks": [
+    {
+      "name": "default layout stays unchanged",
+      "passed": true
+    },
+    {
+      "name": "examples clearly labelled",
+      "passed": true
+    },
+    {
+      "name": "minimum row has all three cards",
+      "passed": true
+    },
+    {
+      "name": "independent mode, energy and external charging rows",
+      "passed": true
+    },
+    {
+      "name": "95 percent has exact track ratio",
+      "passed": true
+    },
+    {
+      "name": "vehicle-cards-dark-live fits canvas",
+      "passed": true
+    },
+    {
+      "name": "vehicle-cards-dark-live contents fit",
+      "passed": true
+    },
+    {
+      "name": "default layout stays unchanged",
+      "passed": true
+    },
+    {
+      "name": "examples clearly labelled",
+      "passed": true
+    },
+    {
+      "name": "minimum row has all three cards",
+      "passed": true
+    },
+    {
+      "name": "independent mode, energy and external charging rows",
+      "passed": true
+    },
+    {
+      "name": "disconnection hides every sample",
+      "passed": true
+    },
+    {
+      "name": "vehicle-cards-dark-disconnected fits canvas",
+      "passed": true
+    },
+    {
+      "name": "vehicle-cards-dark-disconnected contents fit",
+      "passed": true
+    },
+    {
+      "name": "default layout stays unchanged",
+      "passed": true
+    },
+    {
+      "name": "examples clearly labelled",
+      "passed": true
+    },
+    {
+      "name": "minimum row has all three cards",
+      "passed": true
+    },
+    {
+      "name": "independent mode, energy and external charging rows",
+      "passed": true
+    },
+    {
+      "name": "air fields remain independent",
+      "passed": true
+    },
+    {
+      "name": "vehicle-cards-dark-partial fits canvas",
+      "passed": true
+    },
+    {
+      "name": "vehicle-cards-dark-partial contents fit",
+      "passed": true
+    },
+    {
+      "name": "default layout stays unchanged",
+      "passed": true
+    },
+    {
+      "name": "examples clearly labelled",
+      "passed": true
+    },
+    {
+      "name": "minimum row has all three cards",
+      "passed": true
+    },
+    {
+      "name": "independent mode, energy and external charging rows",
+      "passed": true
+    },
+    {
+      "name": "95 percent has exact track ratio",
+      "passed": true
+    },
+    {
+      "name": "vehicle-cards-light-live fits canvas",
+      "passed": true
+    },
+    {
+      "name": "vehicle-cards-light-live contents fit",
+      "passed": true
+    },
+    {
+      "name": "default layout stays unchanged",
+      "passed": true
+    },
+    {
+      "name": "examples clearly labelled",
+      "passed": true
+    },
+    {
+      "name": "minimum row has all three cards",
+      "passed": true
+    },
+    {
+      "name": "independent mode, energy and external charging rows",
+      "passed": true
+    },
+    {
+      "name": "disconnection hides every sample",
+      "passed": true
+    },
+    {
+      "name": "vehicle-cards-light-disconnected fits canvas",
+      "passed": true
+    },
+    {
+      "name": "vehicle-cards-light-disconnected contents fit",
+      "passed": true
+    },
+    {
+      "name": "default layout stays unchanged",
+      "passed": true
+    },
+    {
+      "name": "examples clearly labelled",
+      "passed": true
+    },
+    {
+      "name": "minimum row has all three cards",
+      "passed": true
+    },
+    {
+      "name": "independent mode, energy and external charging rows",
+      "passed": true
+    },
+    {
+      "name": "air fields remain independent",
+      "passed": true
+    },
+    {
+      "name": "vehicle-cards-light-partial fits canvas",
+      "passed": true
+    },
+    {
+      "name": "vehicle-cards-light-partial contents fit",
+      "passed": true
+    },
+    {
+      "name": "radius 0 reaches cards",
+      "passed": true
+    },
+    {
+      "name": "vehicle-cards-radius-0 fits canvas",
+      "passed": true
+    },
+    {
+      "name": "vehicle-cards-radius-0 contents fit",
+      "passed": true
+    },
+    {
+      "name": "radius 40 reaches cards",
+      "passed": true
+    },
+    {
+      "name": "vehicle-cards-radius-40 fits canvas",
+      "passed": true
+    },
+    {
+      "name": "vehicle-cards-radius-40 contents fit",
+      "passed": true
+    },
+    {
+      "name": "library adds, edits and serializes the same three types",
+      "passed": true
+    },
+    {
+      "name": "oem-cards-dark fits canvas",
+      "passed": true
+    },
+    {
+      "name": "oem-cards-dark contents fit",
+      "passed": true
+    },
+    {
+      "name": "oem-cards-light fits canvas",
+      "passed": true
+    },
+    {
+      "name": "oem-cards-light contents fit",
+      "passed": true
+    }
+  ],
+  "shots": [
+    "vehicle-cards-dark-live.png",
+    "vehicle-cards-dark-disconnected.png",
+    "vehicle-cards-dark-partial.png",
+    "vehicle-cards-light-live.png",
+    "vehicle-cards-light-disconnected.png",
+    "vehicle-cards-light-partial.png",
+    "vehicle-cards-radius-0.png",
+    "vehicle-cards-radius-40.png",
+    "oem-cards-dark.png",
+    "oem-cards-light.png"
+  ],
+  "runtimeErrors": []
+}

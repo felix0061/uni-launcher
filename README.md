@@ -2,6 +2,10 @@
 
 针对领克 05 PHEV / IP753 / Android 9 的桌面项目，包含 APK 分析、设计和 Flutter Android 实现。包名 `xyz.i4o.uni.launcher`；源码、测试和报告由本地 Git 管理，先模拟器验证，再配合实车接入。
 
+- [0.5 版本范围与上车清单](docs/IP753_0_5.md)。
+- [0.5 全局底栏](docs/GLOBAL_DOCK.md)：跨应用复用现有底栏，独立控制系统导航栏，背景铺满、直角、底边无空白。
+- [车辆卡片设计与实现](docs/VEHICLE_CARD_DESIGN.md)：动力电池 / 驾驶模式 / 能量流、车内 PM2.5 / AQI、行车信息的深浅色和紧凑布局。
+- [官方能力逐项迁移记录](docs/OEM_PARITY_0_5.md)：已接通、原厂兼容入口与缺失字段分开验收。
 - [0.4.2 底栏、地图、网易云与官方车控](docs/IP753_0_4_2.md)：固定窗口几何、复用地图容器、专用媒体兼容、官方 HVAC/座椅与传感器。
 - [官方车辆接口](docs/OFFICIAL_CAR_API.md)、[网易云专用接口](docs/NETEASE_MEDIA.md)。
 - [0.4.0 官方能力对照与上车准备](docs/OEM_PARITY_0_4.md)：真导航容器、播放器关联、候选车辆读取及 38 类天气图标。

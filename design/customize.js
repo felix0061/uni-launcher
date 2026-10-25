@@ -24,7 +24,7 @@ const cardCatalog = {
   ...oemCardDefinitions,
   clock:{name:'时钟',icon:'clock',description:'时间、日期与星期',w:4,h:2,minW:3,minH:2},
   shortcuts:{name:'快捷应用',icon:'apps',description:'你常用的四个应用',w:4,h:2,minW:3,minH:2},
-  vehicle:{name:'车辆信息',icon:'car',description:'车辆信息兼容卡片',source:'原车车辆信息',w:4,h:3,minW:3,minH:2}
+  vehicle:{name:'行车信息',icon:'car',description:'车速、总里程、续航与距保养',source:'原车车辆信息',w:4,h:3,minW:3,minH:2}
 };
 const preferences = {palette:'mint',custom:'#38A4A0',mode:'system',radius:28,glass:false,pageTransition:'none'};
 let cards = defaultCards();
@@ -100,7 +100,8 @@ function layoutSettings() {
 }
 function sourceSettings() {
   const types=officialCardTypes.filter(t=>t!=='ride');
-  return `<div class="source-settings">${types.map(type=>{const c=cardCatalog[type];return `<div class="settings-block source-row">${icon(c.icon)}<div><h3>${c.name}</h3><p>${c.conditional?'按车型能力启用':'保持官方信息来源'}</p></div><span>${c.source}</span><small>待连接</small></div>`;}).join('')}<p class="source-note">样式演示使用占位数据；实际显示内容以原车应用提供的信息为准。</p></div>`;
+  const switches=[['globalDockEnabled','全局底栏','切换到其他应用时，保留底部操作栏'],['systemNavigationHidden','隐藏系统原有导航栏','关闭时恢复原有导航栏显示']];
+  return `<div class="source-settings">${switches.map(([key,title,note])=>`<section class="settings-block dock-policy-setting"><div><h3>${title}</h3><p>${note}</p></div><button class="glass-switch" role="switch" aria-label="${title}" aria-checked="${!!preferences[key]}" data-action="toggle-dock-policy" data-key="${key}"><span></span></button></section>`).join('')}${types.map(type=>{const c=cardCatalog[type];return `<div class="settings-block source-row">${icon(c.icon)}<div><h3>${c.name}</h3><p>${c.conditional?'按车型能力启用':'保持官方信息来源'}</p></div><span>${c.source}</span><small>待连接</small></div>`;}).join('')}<p class="source-note">样式演示使用占位数据；实际显示内容以原车应用提供的信息为准。</p></div>`;
 }
 function settingsScreen(theme) {
   return `<div class="screen glass ${theme} settings-screen" style="${themeStyle(theme)}">${statusBar()}<div class="settings-content"><header class="settings-heading">${actionButton('home','arrow-left','返回桌面','back-button')}<div><h1>桌面设置</h1><p>外观、配色与卡片布局</p></div><span class="autosave-label">${icon('check')}更改自动保存</span></header><nav class="settings-tabs">${[['appearance','外观主题'],['layout','卡片布局'],['motion','切换动效'],['sources','功能接入']].map(([id,t])=>`<button data-action="settings-tab" data-tab="${id}" class="${ui.tab===id?'active':''}">${t}</button>`).join('')}</nav><div class="settings-body ${ui.tab==='appearance'?'appearance-body':''}">${ui.tab==='appearance'?appearanceSettings(theme):ui.tab==='layout'?layoutSettings():ui.tab==='motion'?motionSettings():sourceSettings()}</div></div>${dock()}${modalMarkup(theme)}</div>`;
@@ -113,7 +114,7 @@ function modalMarkup(theme) {
   if(ui.modal==='library')return collectionSheet();
   const c=ui.draft||cards.find(c=>c.id===ui.selected);if(!c)return '';
   const catalog=cardCatalog[c.type];
-  const sizes=[c.type==='weather'?[4,2]:[catalog.minW,catalog.minH],[Math.max(4,catalog.minW),Math.max(4,catalog.minH)],[Math.max(8,catalog.minW),6]];
+  const sizes=[c.type==='weather'?[4,2]:[catalog.minW,catalog.minH],['battery','air','vehicle'].includes(c.type)?[4,3]:[Math.max(4,catalog.minW),Math.max(4,catalog.minH)],[Math.max(8,catalog.minW),6]];
   return `<div class="modal-backdrop"><section class="modal-glass card-config"><header><div><h2>编辑${catalog.name}卡片</h2><p>调整展示，保持官方信息来源</p></div>${actionButton('close-modal','close','关闭卡片设置','close-button')}</header><label class="field-label">${c.type==='weather'?'预览城市（示例）':'卡片名称'}<input name="card-title" value="${safe(c.type==='weather'?(c.city||'杭州'):c.title)}" maxlength="20"></label><div class="field-label">卡片尺寸<div class="size-picker">${sizes.map(([w,h])=>`<button data-action="choose-size" data-w="${w}" data-h="${h}" class="${c.w===w&&c.h===h?'selected':''}"><span class="size-icon" style="aspect-ratio:${w}/${h}"></span><b>${w} × ${h}</b></button>`).join('')}</div></div><div class="config-source"><span>信息来源</span><b>${catalog.source||({clock:'系统时间',shortcuts:'所选原车应用'})[c.type]||'原车应用'}</b></div><div class="modal-actions"><button class="text-button" data-action="close-modal">取消</button><button class="solid-button" data-action="save-card">保存卡片</button></div></section></div>`;
 }
 
@@ -155,6 +156,7 @@ function handleDesignAction(button) {
   if(a==='open-settings'){if(ui.editing){showToast('请先完成或取消本次布局编辑');return;}ui.view='settings';ui.modal=null;renderStandalone();}
   if(a==='set-transition'){preferences.pageTransition=button.dataset.value;persistDesign();renderStandalone();}
   if(a==='settings-tab'){ui.tab=button.dataset.tab;renderStandalone();}
+  if(a==='toggle-dock-policy'&&['globalDockEnabled','systemNavigationHidden'].includes(button.dataset.key)){preferences[button.dataset.key]=!preferences[button.dataset.key];persistDesign();renderStandalone();}
   if(a==='set-mode'){preferences.mode=button.dataset.value;persistDesign();renderStandalone();}
   if(a==='set-palette'){preferences.palette=button.dataset.value;persistDesign();renderStandalone();}
   if(a==='use-custom'){preferences.palette='custom';persistDesign();renderStandalone();}
@@ -240,6 +242,15 @@ function initCustomization() {
     if(view==='secondary')ui.page=Math.min(1,pageCount-1);
     if(['climate','music','vehicle','camera'].includes(view))ui.modal=view;
     renderStandalone();
+  }
+  if(view==='vehicle-cards'){
+    const radius=designQuery.get('radius');
+    if(radius!==null&&Number.isFinite(+radius))preferences.radius=Math.max(0,Math.min(40,+radius));
+    if(designQuery.has('glass'))preferences.glass=designQuery.get('glass')==='1';
+    const palette=designQuery.get('palette');
+    if(palettePresets.some(p=>p.id===palette))preferences.palette=palette;
+    document.body.classList.add('vehicle-cards-only');
+    document.getElementById('single-screen').innerHTML=vehicleGallery(activeTheme());
   }
   if(view==='cards'){document.body.classList.add('cards-only');document.getElementById('single-screen').innerHTML=oemGallery(activeTheme());}
   initHomeHold();

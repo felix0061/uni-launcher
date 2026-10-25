@@ -85,8 +85,11 @@ class BottomDock extends StatelessWidget {
             key: const ValueKey('bottom-dock'),
             height: Design.px(96),
             child: GlassSurface(
+                radius: 0,
+                shadow: false,
+                tone: SurfaceTone.strong,
                 padding: EdgeInsets.symmetric(
-                    horizontal: Design.px(20), vertical: Design.px(12)),
+                    horizontal: Design.px(52), vertical: Design.px(12)),
                 child: Row(children: [
                   SizedBox(
                       width: Design.px(142),

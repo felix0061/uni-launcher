@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="ecarx.calendar">
+  <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="28"/>
+  <application android:label="SYNTHETIC Calendar TEST ONLY" android:testOnly="true" android:theme="@android:style/Theme.Material.Light.NoActionBar">
+    <activity android:name="ecarx.calendar.ConfigureActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
+    <receiver android:name="ecarx.calendar.ModeReceiver" android:exported="true"/>
+    <receiver android:name="ecarx.calendar.widget.WidgetDynamicProvider" android:exported="true"><intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE"/></intent-filter><meta-data android:name="android.appwidget.provider" android:resource="@xml/widget"/></receiver>
+  </application>
+</manifest>

@@ -1,0 +1,1 @@
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android" android:minWidth="80dp" android:minHeight="60dp" android:initialLayout="@android:layout/simple_list_item_1" android:configure="ecarx.calendar.ConfigureActivity" android:widgetCategory="home_screen"/>

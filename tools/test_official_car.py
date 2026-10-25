@@ -17,7 +17,7 @@ def executable(explicit, name):
     if os.environ.get('JAVA_HOME'):
         candidates.append(str(Path(os.environ['JAVA_HOME']) / 'bin' / name))
     candidates.extend([shutil.which(name),
-        str(Path('/tmp/linkco-build/root/usr/lib/jvm/java-17-openjdk-amd64/bin') / name)])
+        str(Path('/data/tools/linkco-android/java-runtime/usr/lib/jvm/java-17-openjdk-amd64/bin') / name)])
     for candidate in candidates:
         if candidate and Path(candidate).is_file() and os.access(candidate, os.X_OK):
             return Path(candidate).resolve()
@@ -69,9 +69,12 @@ def validate(args, output):
         run([javac, '-source', '8', '-target', '8', '-Xlint:-options', '-encoding', 'UTF-8',
              '-bootclasspath', platform, '-d', compiled, SOURCE / 'VehicleAdapter.java',
              *pure, SOURCE / 'OfficialCarReader.java', SOURCE / 'OfficialVehicleSensors.java',
+             SOURCE / 'OfficialHybridReader.java', TESTS / 'OfficialHybridReaderTest.java',
              TESTS / 'OfficialVehicleSensorsTest.java'])
         run([java, '-cp', os.pathsep.join([str(compiled), str(platform)]),
              'xyz.i4o.uni.launcher.integration.OfficialVehicleSensorsTest'])
+        run([java, '-cp', os.pathsep.join([str(compiled), str(platform)]),
+             'xyz.i4o.uni.launcher.integration.OfficialHybridReaderTest'])
     print('Official-car local validation passed; no device access or vehicle commands.', flush=True)
 
 

@@ -13,11 +13,12 @@ const cardSpecs = [
   CardSpec('member', '领克账号', '原车账号中心', 4, 6, 3, 3),
   CardSpec('cleanup', '系统清理', '原车安全中心', 4, 3, 3, 2),
   CardSpec('tpms', '胎压', '原车车辆信息', 4, 6, 4, 3),
-  CardSpec('air', '空气质量', '原车空气质量', 4, 3, 3, 2),
+  CardSpec('battery', '动力电池', '原车动力电池', 4, 3, 3, 2),
+  CardSpec('air', '车内空气', '原车空气质量', 4, 3, 3, 2),
   CardSpec('ride', '出行服务', '其他车型的原厂出行服务', 4, 3, 3, 2),
   CardSpec('clock', '时钟', '系统时间', 4, 2, 3, 2),
   CardSpec('shortcuts', '快捷应用', '系统应用', 4, 2, 3, 2),
-  CardSpec('vehicle', '车辆信息', '原车车辆信息', 4, 3, 3, 2),
+  CardSpec('vehicle', '行车信息', '原车车辆信息', 4, 3, 3, 2),
 ];
 final librarySpecs =
     cardSpecs.where((s) => s.type != 'ride').toList(growable: false);

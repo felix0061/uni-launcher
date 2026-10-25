@@ -15,6 +15,8 @@ import 'media_progress.dart';
 import 'embedded_navigation.dart';
 import 'media_artwork.dart';
 import 'weather_icon.dart';
+import 'vehicle_cards.dart';
+import 'official_card_entry.dart';
 import '../model/weather_condition.dart';
 import '../model/vehicle_data.dart';
 
@@ -36,6 +38,7 @@ IconData cardIcon(String type) =>
       'member': Icons.person_outline,
       'cleanup': Icons.cleaning_services_outlined,
       'tpms': Icons.tire_repair_outlined,
+      'battery': Icons.battery_std_outlined,
       'air': Icons.air,
       'ride': Icons.local_taxi_outlined,
       'clock': Icons.schedule,
@@ -51,6 +54,7 @@ String cardSymbol(String type) =>
       'member': 'user',
       'cleanup': 'broom',
       'tpms': 'tire',
+      'battery': 'battery',
       'air': 'air',
       'vehicle': 'car',
       'shortcuts': 'apps',
@@ -75,12 +79,33 @@ class CardContent extends StatelessWidget {
                   : _NavigationWaiting(card: card, controller: controller),
           'music' =>
             _MusicCard(card: card, controller: controller, state: native),
-          'weather' => _WeatherCard(
-              card: card,
-              demo: native['demo'] == true,
-              native: native,
-              editing: controller.editing),
+          'weather' => OfficialCardEntry(
+              type: 'weather',
+              label: '天气',
+              controller: controller,
+              child: _WeatherCard(
+                  card: card,
+                  demo: native['demo'] == true,
+                  native: native,
+                  editing: controller.editing)),
+          'calendar' => OfficialCardEntry(
+              type: 'calendar',
+              label: '日历',
+              controller: controller,
+              child: _OemCard(
+                  card: card,
+                  controller: controller,
+                  demo: native['demo'] == true)),
           'clock' => ClockCard(title: card.title),
+          'battery' => BatteryCard(native: native, title: card.title),
+          'air' => AirQualityCard(
+              native: native,
+              title: card.title == '空气质量' ? '车内空气' : card.title),
+          'vehicle' => DrivingInfoCard(
+              native: native,
+              title: const ['车辆信息', '行驶信息'].contains(card.title)
+                  ? '行车信息'
+                  : card.title),
           'shortcuts' => _ShortcutCard(card: card, controller: controller),
           _ => _OemCard(
               card: card, controller: controller, demo: native['demo'] == true),

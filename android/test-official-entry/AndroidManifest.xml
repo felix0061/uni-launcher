@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="xyz.i4o.uni.fixture.officialentry">
+  <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="28"/>
+  <application android:label="UNI Official Entry TEST ONLY" android:testOnly="true" android:theme="@android:style/Theme.Material.Light.NoActionBar">
+    <uses-library android:name="android.test.mock" android:required="true"/>
+    <activity android:name="xyz.i4o.uni.launcher.integration.OfficialWidgetActivity" android:exported="false" android:screenOrientation="landscape"/>
+  </application>
+  <instrumentation android:name="xyz.i4o.uni.launcher.integration.OfficialEntryInstrumentation" android:targetPackage="xyz.i4o.uni.fixture.officialentry"/>
+</manifest>

@@ -17,6 +17,8 @@ parser.add_argument('--test-only', action='store_true')
 args = parser.parse_args()
 toolchain = args.toolchain.resolve()
 jvm = toolchain / 'root/usr/lib/jvm/java-17-openjdk-amd64/bin'
+if not (jvm / 'javac').is_file():
+    jvm = Path('/data/tools/linkco-android/java-runtime/usr/lib/jvm/java-17-openjdk-amd64/bin')
 android = args.sdk / 'platforms/android-9/android.jar'
 if not android.exists():
     android = args.sdk / 'platforms/android-28/android.jar'

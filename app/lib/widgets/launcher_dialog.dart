@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../theme/design_tokens.dart';
 import '../theme/launcher_theme.dart';
 import 'glass_surface.dart';
+import 'dock_window_scope.dart';
 
 /// One glass sheet and one design-coordinate system for every desktop overlay.
 Future<T?> showLauncherSheet<T>(
@@ -14,8 +15,18 @@ Future<T?> showLauncherSheet<T>(
   required double width,
   double? height,
   required WidgetBuilder builder,
-}) =>
-    showGeneralDialog<T>(
+}) async {
+  final dock = DockWindowScope.of(context);
+  if (dock != null) {
+    await dock.expand(true);
+    await WidgetsBinding.instance.endOfFrame;
+    if (!context.mounted) {
+      await dock.expand(false);
+      return null;
+    }
+  }
+  try {
+    return await showGeneralDialog<T>(
         context: context,
         barrierDismissible: true,
         barrierLabel: closeLabel,
@@ -28,6 +39,10 @@ Future<T?> showLauncherSheet<T>(
             width: width,
             height: height,
             child: Builder(builder: builder)));
+  } finally {
+    if (dock != null) await dock.expand(false);
+  }
+}
 
 class LauncherSheet extends StatelessWidget {
   final String title, closeLabel;
@@ -63,73 +78,86 @@ class LauncherSheet extends StatelessWidget {
                         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                         child: const SizedBox.expand()))),
           Positioned.fill(
-              child: SafeArea(child: LayoutBuilder(builder: (context, box) {
-            final scale = box.maxWidth / Design.canvasWidth;
-            final canvasHeight = box.maxHeight / scale;
-            return SizedBox.expand(
-                child: FittedBox(
-                    fit: BoxFit.fill,
-                    child: SizedBox(
-                        width: Design.canvasWidth,
-                        height: canvasHeight,
-                        child: Center(
-                            child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                    maxWidth: width,
-                                    maxHeight: math.max(
-                                        120, canvasHeight - Design.px(64))),
-                                child: SizedBox(
-                                    width: width,
-                                    height: height,
-                                    child: GlassSurface(
-                                        tone: SurfaceTone.strong,
-                                        padding: EdgeInsets.symmetric(
-                                            horizontal: Design.px(40),
-                                            vertical: Design.px(34)),
-                                        child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.stretch,
-                                            children: [
-                                              Row(children: [
-                                                Expanded(
-                                                    child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                      Text(title,
-                                                          style: TextStyle(
-                                                              fontSize:
-                                                                  Design.px(34),
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w500)),
-                                                      if (subtitle != null) ...[
-                                                        SizedBox(
-                                                            height:
-                                                                Design.px(12)),
-                                                        Text(subtitle!,
-                                                            style: TextStyle(
-                                                                fontSize:
-                                                                    Design.px(
-                                                                        20),
-                                                                color: s.muted))
-                                                      ],
-                                                    ])),
-                                                IconAction(
-                                                    icon: Icons.close,
-                                                    label: closeLabel,
-                                                    size: Design.px(54),
-                                                    iconSize: Design.px(25),
-                                                    soft: true,
-                                                    onTap: () =>
-                                                        Navigator.pop(context))
-                                              ]),
-                                              SizedBox(height: Design.px(28)),
-                                              Flexible(child: child),
-                                            ]))))))));
-          }))),
+              child: SafeArea(
+                  top: DockWindowScope.of(context) == null,
+                  bottom: DockWindowScope.of(context) == null,
+                  child: LayoutBuilder(builder: (context, box) {
+                    final scale = box.maxWidth / Design.canvasWidth;
+                    final canvasHeight = box.maxHeight / scale;
+                    return SizedBox.expand(
+                        child: FittedBox(
+                            fit: BoxFit.fill,
+                            child: SizedBox(
+                                width: Design.canvasWidth,
+                                height: canvasHeight,
+                                child: Center(
+                                    child: ConstrainedBox(
+                                        constraints: BoxConstraints(
+                                            maxWidth: width,
+                                            maxHeight: math.max(120,
+                                                canvasHeight - Design.px(64))),
+                                        child: SizedBox(
+                                            width: width,
+                                            height: height,
+                                            child: GlassSurface(
+                                                tone: SurfaceTone.strong,
+                                                padding: EdgeInsets.symmetric(
+                                                    horizontal: Design.px(40),
+                                                    vertical: Design.px(34)),
+                                                child: Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .stretch,
+                                                    children: [
+                                                      Row(children: [
+                                                        Expanded(
+                                                            child: Column(
+                                                                crossAxisAlignment:
+                                                                    CrossAxisAlignment
+                                                                        .start,
+                                                                children: [
+                                                              Text(title,
+                                                                  style: TextStyle(
+                                                                      fontSize:
+                                                                          Design.px(
+                                                                              34),
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .w500)),
+                                                              if (subtitle !=
+                                                                  null) ...[
+                                                                SizedBox(
+                                                                    height:
+                                                                        Design.px(
+                                                                            12)),
+                                                                Text(subtitle!,
+                                                                    style: TextStyle(
+                                                                        fontSize:
+                                                                            Design.px(
+                                                                                20),
+                                                                        color: s
+                                                                            .muted))
+                                                              ],
+                                                            ])),
+                                                        IconAction(
+                                                            icon: Icons.close,
+                                                            label: closeLabel,
+                                                            size: Design.px(54),
+                                                            iconSize:
+                                                                Design.px(25),
+                                                            soft: true,
+                                                            onTap: () =>
+                                                                Navigator.pop(
+                                                                    context))
+                                                      ]),
+                                                      SizedBox(
+                                                          height:
+                                                              Design.px(28)),
+                                                      Flexible(child: child),
+                                                    ]))))))));
+                  }))),
         ]));
   }
 }

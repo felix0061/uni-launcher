@@ -416,17 +416,17 @@ void main() {
     await settle();
     await binding.takeScreenshot('flutter-integration-settings');
     await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('hide-navigation')), 300,
+        find.byKey(const ValueKey('system-navigation-hidden')), 300,
         scrollable: find.byType(Scrollable).first);
     await settle();
-    await tester.tap(find.byKey(const ValueKey('hide-navigation')));
+    await tester.tap(find.byKey(const ValueKey('system-navigation-hidden')));
     await settle();
     verify('Native navigation setting applied',
-        c.native.value['hideNavigation'] == true);
-    await tester.tap(find.byKey(const ValueKey('hide-navigation')));
+        c.native.value['systemNavigationHidden'] == true);
+    await tester.tap(find.byKey(const ValueKey('system-navigation-hidden')));
     await settle();
     verify('Native navigation setting restored',
-        c.native.value['hideNavigation'] == false);
+        c.native.value['systemNavigationHidden'] == false);
     c.setAppearance(c.appearance
         .copyWith(mode: 'dark', palette: 'mint', radius: 28, glass: false));
     await c.persist();

@@ -188,13 +188,20 @@ try {
     for(const [,action,zone] of seatSpecs)await click(seatSelector(action,zone,0));
     check(theme+' component explicit off',await evaluate(`ui.climate.driverHeat===0&&ui.climate.driverVent===0&&ui.climate.passengerHeat===0`)&&await seatStateMatches());
   }
+  await navigate('settings');
+  await click('[data-action="settings-tab"][data-tab="sources"]');
+  await click('[data-key="globalDockEnabled"]');
+  check('global dock design switch is independent',await evaluate(`preferences.globalDockEnabled===true&&!preferences.systemNavigationHidden`));
+  await click('[data-key="systemNavigationHidden"]');
+  check('system navigation design switch is independent',await evaluate(`preferences.globalDockEnabled===true&&preferences.systemNavigationHidden===true`));
   check('no runtime errors',errors.length===0);
   const exports=[
     ['home-dark','single','dark',1920,1080],['home-light','single','light',1920,1080],
     ['home-pair','pair','dark',2400,760],['secondary-dark','secondary','dark',1920,1080],['secondary-light','secondary','light',1920,1080],
     ['settings-dark','settings','dark',1920,1080],['settings-light','settings','light',1920,1080],
+    ['settings-sources-dark','settings','dark',1920,1080],['settings-sources-light','settings','light',1920,1080],
     ['card-edit-mode','edit','dark',1920,1080],['card-library','library','dark',1920,1080],['card-settings','card-edit','dark',1920,1080],
-    ['oem-cards-dark','cards','dark',1920,1464],['oem-cards-light','cards','light',1920,1464],
+    ['oem-cards-dark','cards','dark',1920,1872],['oem-cards-light','cards','light',1920,1872],
     ['dock-detail','dock','dark',1920,320],['climate-dark','component','dark',900,720],['climate-light','component','light',900,720],
     ['climate-panel','climate','dark',1920,1080],['climate-panel-light','climate','light',1920,1080],['settings-glass-on','settings','dark',1920,1080],
     ['music-panel','music','dark',1920,1080],['vehicle-panel','vehicle','dark',1920,1080],['camera-panel','camera','dark',1920,1080],
@@ -207,6 +214,7 @@ try {
       await click(seatSelector('seat-heat','right',1));
     }
     if(name==='settings-motion')await click('[data-action="settings-tab"][data-tab="motion"]');
+    if(name.startsWith('settings-sources-'))await click('[data-action="settings-tab"][data-tab="sources"]');
     if(name==='settings-glass-on')await click('[data-action="toggle-glass"]');
     if(name==='home-square'){await evaluate(`(()=>{const r=document.querySelector('#single-screen [data-setting="radius"]');r.value=0;r.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('#single-screen [data-action="home"]').click();return true})()`);}
     const layout=await evaluate(`({width:document.documentElement.scrollWidth,height:document.documentElement.scrollHeight,clippedCards:[...document.querySelectorAll('#single-screen .widget-content')].filter(el=>[...el.children].some(c=>c.getBoundingClientRect().bottom>el.getBoundingClientRect().bottom+2)).map(el=>el.parentElement.dataset.type),clippedControls:[...document.querySelectorAll('#single-screen .mini-screen-wrap>.screen,#single-screen .climate-sheet,#single-screen .climate-glass,#single-screen .climate-sheet button,#single-screen .seat-controls,#single-screen .seat-heading,#single-screen .seat-label,#single-screen .seat-levels button,#single-screen .seat-note,#single-screen .glass-setting,#single-screen .glass-switch,#single-screen .settings-preview>.outline-button')].filter(el=>{const r=el.getBoundingClientRect(),parent=el.parentElement.closest('.mini-screen-wrap,.climate-glass,.modal-glass,.settings-preview,.screen'),p=parent.getBoundingClientRect();return r.left<p.left-1||r.right>p.right+1||r.top<p.top-1||r.bottom>p.bottom+1||el.scrollWidth>el.clientWidth+1||el.scrollHeight>el.clientHeight+1;}).map(el=>el.className||el.dataset.action)})`);
@@ -217,7 +225,7 @@ try {
     console.log('rendered',name,layout.clippedCards.length?'clipped: '+layout.clippedCards.join(','):'');
   }
   check('no runtime errors after exports',errors.length===0);
-  await writeFile(path.join(root,'analysis/design-verification.json'),JSON.stringify({version:'V04',checks:results,runtimeErrors:errors,officialTypesCovered:9,providerComponentsMapped:14,officialFieldParity:'not verified: provider apps/device unavailable',vehicleIntegration:false,seatLevels:'demo 0–3; actual vehicle contract unverified',componentCanvas:{width:900,height:720},exports:exports.map(([name,view,theme,width,height])=>({name,view,theme,width,height}))},null,2)+'\n');
+  await writeFile(path.join(root,'analysis/design-verification.json'),JSON.stringify({version:'V04',checks:results,runtimeErrors:errors,officialTypesCovered:11,providerComponentsMapped:14,officialFieldParity:'not verified: provider apps/device unavailable',vehicleIntegration:false,seatLevels:'demo 0–3; actual vehicle contract unverified',componentCanvas:{width:900,height:720},exports:exports.map(([name,view,theme,width,height])=>({name,view,theme,width,height}))},null,2)+'\n');
   console.log('Verified',results.length,'design checks; rendered',exports.length,'images');
 } finally {
   if(ws?.readyState===1){try{const id=++seq;ws.send(JSON.stringify({id,method:'Browser.close'}));}catch{}ws.close();}

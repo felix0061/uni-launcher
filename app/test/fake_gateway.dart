@@ -8,6 +8,9 @@ class FakeGateway implements NativeGateway {
     'dark': true,
     'hideNavigation': false,
     'globalNavigationGranted': false,
+    'globalDock': {'enabled': false, 'allowed': true},
+    'systemNavigationGranted': true,
+    'systemNavigationHidden': false,
     'apps': <dynamic>[],
     'climate': {
       'left': 22.5,
@@ -43,6 +46,13 @@ class FakeGateway implements NativeGateway {
         {'action': action, 'value': value, 'zone': zone, 'enabled': enabled});
     if (action == 'hide-navigation')
       state = {...state, 'hideNavigation': enabled};
+    if (action == 'system-navigation-hidden')
+      state = {...state, 'systemNavigationHidden': enabled};
+    if (action == 'global-dock')
+      state = {
+        ...state,
+        'globalDock': {'enabled': enabled, 'allowed': true}
+      };
     if (action == 'demo-mode') state = {...state, 'demo': enabled};
     stream.add(Map.of(state));
   }

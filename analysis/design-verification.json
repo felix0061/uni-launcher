@@ -278,6 +278,14 @@
       "passed": true
     },
     {
+      "name": "global dock design switch is independent",
+      "passed": true
+    },
+    {
+      "name": "system navigation design switch is independent",
+      "passed": true
+    },
+    {
       "name": "no runtime errors",
       "passed": true
     },
@@ -307,6 +315,14 @@
     },
     {
       "name": "settings-light controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "settings-sources-dark controls fit canvas",
+      "passed": true
+    },
+    {
+      "name": "settings-sources-light controls fit canvas",
       "passed": true
     },
     {
@@ -379,7 +395,7 @@
     }
   ],
   "runtimeErrors": [],
-  "officialTypesCovered": 9,
+  "officialTypesCovered": 11,
   "providerComponentsMapped": 14,
   "officialFieldParity": "not verified: provider apps/device unavailable",
   "vehicleIntegration": false,
@@ -439,6 +455,20 @@
       "height": 1080
     },
     {
+      "name": "settings-sources-dark",
+      "view": "settings",
+      "theme": "dark",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "name": "settings-sources-light",
+      "view": "settings",
+      "theme": "light",
+      "width": 1920,
+      "height": 1080
+    },
+    {
       "name": "card-edit-mode",
       "view": "edit",
       "theme": "dark",
@@ -464,14 +494,14 @@
       "view": "cards",
       "theme": "dark",
       "width": 1920,
-      "height": 1464
+      "height": 1872
     },
     {
       "name": "oem-cards-light",
       "view": "cards",
       "theme": "light",
       "width": 1920,
-      "height": 1464
+      "height": 1872
     },
     {
       "name": "dock-detail",

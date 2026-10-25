@@ -59,13 +59,13 @@ void main() {
     c.tab('sources');
     await t.pumpAndSettle();
     await t.scrollUntilVisible(
-        find.byKey(const ValueKey('hide-navigation')), 300,
+        find.byKey(const ValueKey('system-navigation-hidden')), 300,
         scrollable: find.byType(Scrollable).first);
     await t.pumpAndSettle();
-    await t.tap(find.byKey(const ValueKey('hide-navigation')));
+    await t.tap(find.byKey(const ValueKey('system-navigation-hidden')));
     await t.pumpAndSettle();
-    expect(g.commands.last['action'], 'hide-navigation');
-    expect(c.native.value['hideNavigation'], true);
+    expect(g.commands.last['action'], 'system-navigation-hidden');
+    expect(c.native.value['systemNavigationHidden'], true);
   });
   testWidgets('card library adds card and completes persistent layout',
       (t) async {

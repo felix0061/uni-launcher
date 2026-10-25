@@ -23,6 +23,13 @@ Future<void> main() async {
     throw StateError('Build the synthetic media fixture first');
   await adb([
     'shell',
+    'pm',
+    'grant',
+    'xyz.i4o.uni.launcher',
+    'android.permission.WRITE_SECURE_SETTINGS'
+  ]);
+  await adb([
+    'shell',
     'cmd',
     'notification',
     'allow_listener',

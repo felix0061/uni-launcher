@@ -87,3 +87,13 @@ body.pair .settings-section,body.pair .editing-section{display:none}
 /* Reserve the lyric row inside the original 4×4 card. */
 .widget-card.music-card:not(.compact) .hero-cover{width:180px;height:180px}.widget-card .listening .music-progress{margin-top:14px}.widget-card .listening-note{margin-top:13px}
 .editing .music-card:not(.compact) .hero-cover{width:140px;height:140px}
+
+/* 0.5: persistent edge-to-edge dock; buttons retain the chosen theme radius. */
+.screen .dock-lane{padding:0}
+.screen .music-dock{border-radius:0;margin:0;padding:12px 52px;box-shadow:none;border-left:0;border-right:0;border-bottom:0}
+.screen.glass{grid-template-rows:64px 920px 96px}
+.dock-study>.dock-lane{height:96px}
+.source-settings{height:100%;overflow:auto;box-sizing:border-box}
+.dock-policy-setting{display:flex;align-items:center;justify-content:space-between;gap:24px}
+.dock-policy-setting h3{font-size:25px;font-weight:400;margin:0 0 12px}
+.dock-policy-setting p{font-size:18px;color:var(--muted);margin:0}

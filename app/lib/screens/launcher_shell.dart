@@ -76,14 +76,7 @@ class LauncherShell extends StatelessWidget {
                                                     controller: controller)
                                                 : const SizedBox.shrink(),
                                           ])),
-                                      Padding(
-                                          padding: EdgeInsets.fromLTRB(
-                                              Design.px(32),
-                                              0,
-                                              Design.px(32),
-                                              Design.px(16)),
-                                          child: BottomDock(
-                                              controller: controller)),
+                                      BottomDock(controller: controller),
                                     ])))));
                   })),
             )));

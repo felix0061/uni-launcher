@@ -150,3 +150,19 @@ python3 tools/test_official_car.py --skip-android-compile
 ```
 
 需要 JDK 17；默认检测 `JAVA_HOME/PATH` 与本机已配置工具链、Android SDK。输出默认在临时目录，`--output-dir` 可保留。脚本执行 PA 解码回归、31 项命令编码/边界/读回比较测试，再以 Android 9 Java 8 兼容方式编译全部辅助类，并运行 `OfficialVehicleSensorsTest` 的假 SDK/PA 测试，覆盖可用性、默认零、单位、范围及 PHEV 百分比。`--skip-android-compile` 仅运行前两组纯 JVM 测试。不调用 ADB，不连接网络，不安装应用、不发送车控。
+
+
+## 0.5 PHEV 驾驶模式与能量流（新增只读采集）
+
+同一已审计 adapter JAR（SHA256 `f4704d7d90ad24f8100bcc686b1ca0dba005777466d75b8f65242f2785d597bf`）的 `CarFunctionValueImpl`、`CarFunctionValueUtil` 与 `VehicleSignalManager` 已闭合以下实现链路。新增 `OfficialHybridReader` 借用现有工作线程的 CarPropertyManager，使用原始 HAL 状态及 PA 枚举，避免 SDK `fromInteger` 把未知值回退成有效默认值。没有新增连接或任何驾驶模式／充电写操作。
+
+| 字段 | 属性与原厂 getter | 校验与语义 |
+| --- | --- | --- |
+| `driveMode` | Integer `0x21403018`；`getDidDmSelected()`；高层功能 `0x22010100` | HAL status=0、Integer、原始枚举 1..12；7 PURE、8 HYBRID、9 POWER、11 ECO_HEV_PHEV、12 COMFORT_HEV。原始枚举不是高层 `0x220101xx` 返回码。 |
+| `hybridSelected` | PA `0x21701042`；`getPaDmHybrid()` | ACTIVE、整数 0 NOT_SELECTED／1 SELECTED；表示模式选择，不能证明发动机正在驱动。 |
+| `energyFlow` | PA `0x21701052`；`getPfiPowerFlowIndic()`；高层功能 `0x24010100` | ACTIVE、整数 0..12；NOT_READY、MAIN_CHARGING、BOOST、EAWD、ENGINE_ONLY、ENGINE_ONLY_AND_CHARGE、ELECTRIC_DRIVE、STANDSTILL_ENGINE_OFF、STANDSTILL_ENGINE_ON、STANDSTILL_ENGINE_ON_CHARGE、ENGINE_OFF_REGEN_BRAKE、ENGINE_ON_REGEN_BRAKE、ENGINE_ON_REGEN_BRAKE_CHARGE。保留精确源枚举，不推断外接充电。 |
+| `electricRange` | PA `0x21701069`；`getTsDtehvBattIndicated()` | 专用电池续航，format=0 km、1 mi；缺失／非法 format 不默认 km。有效域、无效编码及 status 含义尚未闭合，**只保留 raw/format/status，valid=false**，不输出 UI 数值。 |
+
+三项状态在原有轮询中更新；保留源时间戳、读取时间、原始值与 apiVerified，实车同值验收之前 verified=false。UI 仍要求逐字段有效、5 秒新鲜度和已知枚举；驾驶模式与能量流可以分别缺失。动力电池卡片显示驾驶模式、能量流和独立的“外接充电待同步”，车辆详情另显示混动选择。
+
+`HevImpl.getChargingManager()` 在本车实现中返回 null，不能仅靠 `ICharging` 的声明常量接通插枪状态。`getPaPmCharge()` / `0x24020200` 是 HYBRID_FUNC_BATTERY_CHARGE_MODE 的 ON/OFF，不是插枪状态。外接充电仍未接通。新增离线 `OfficialHybridReaderTest` 31 项校验覆盖 HAL 状态／类型、精确属性、ZigZag、未知枚举、缺失 PA 和不可信续航；不使用设备。本轮新增字段尚未上车采样。
