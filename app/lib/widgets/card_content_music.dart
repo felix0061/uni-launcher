@@ -11,7 +11,7 @@ String _mediaValue(
 }
 
 String mediaSourceLabel(Map<String, dynamic> state) {
-  if (state['demo'] == true) return '原车媒体中心 · 样式示例';
+  if (state['demo'] == true) return '媒体播放示例';
   final media = mapOf(state['media']);
   final preferred = mapOf(state['integrationPreferences'])['mediaPackage'];
   final source = media['source'] ?? (preferred == 'auto' ? null : preferred);
@@ -49,6 +49,47 @@ class _MediaCover extends StatelessWidget {
   }
 }
 
+class _MusicMetadata extends StatelessWidget {
+  final String title, artist, album;
+  final bool compact;
+  const _MusicMetadata(
+      {required this.title,
+      required this.artist,
+      required this.album,
+      this.compact = false});
+  @override
+  Widget build(BuildContext context) {
+    final s = SurfaceStyle.of(context);
+    return Column(
+        key: const ValueKey('music-card-metadata'),
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: Design.px(compact ? 25 : 30),
+                  height: 1.2,
+                  fontWeight: FontWeight.w500)),
+          SizedBox(height: Design.px(compact ? 6 : 10)),
+          Text(artist,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: Design.px(compact ? 17 : 20), color: s.muted)),
+          if (album.isNotEmpty) ...[
+            SizedBox(height: Design.px(4)),
+            Text(album,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontSize: Design.px(compact ? 16 : 18), color: s.muted)),
+          ],
+        ]);
+  }
+}
+
 class _MusicCard extends StatelessWidget {
   final LauncherCard card;
   final LauncherController controller;
@@ -57,155 +98,88 @@ class _MusicCard extends StatelessWidget {
       {required this.card, required this.controller, required this.state});
   @override
   Widget build(BuildContext context) {
-    final s = SurfaceStyle.of(context), demo = state['demo'] == true;
-    final title = _mediaValue(state, 'title', '向海而行', '暂无播放');
-    final artist = _mediaValue(state, 'artist', 'Coastline', '等待媒体会话');
-    final collection = _mediaValue(state, 'collection', '晨间驾驶歌单', '');
-    final subtitle =
-        [artist, if (collection.isNotEmpty) collection].join(' · ');
-    final editing = controller.editing;
-    return LayoutBuilder(builder: (context, box) {
-      final compact = card.h <= 2 || box.maxHeight < Design.px(250);
-      final coverSize = Design.px(compact
-          ? (editing ? 80 : 90)
-          : editing
-              ? 140
-              : 180);
-      final copy = Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment:
-              compact ? CrossAxisAlignment.start : CrossAxisAlignment.center,
-          children: [
-            Text(title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    fontSize: Design.px(compact || editing ? 29 : 34),
-                    height: 1.2,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: Design.px(1))),
-            SizedBox(height: Design.px(10)),
-            Text(subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    fontSize: Design.px(compact || editing ? 18 : 21),
-                    height: 1.2,
-                    color: s.muted)),
-            SizedBox(height: Design.px(10)),
-            LyricsView(media: mapOf(state['media']), compact: true),
-          ]);
-      return _CardCanvas(
-          minHeight: compact ? 190 : 320,
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            SizedBox(
-                height: Design.px(28),
-                child: Row(children: [
-                  Expanded(
-                      child: Text(card.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                              fontSize: Design.px(23),
-                              height: 1.2,
-                              color: s.muted))),
-                  SizedBox(width: Design.px(14)),
-                  Container(
-                      width: Design.px(7),
-                      height: Design.px(7),
-                      decoration: BoxDecoration(
-                          color: s.accent, shape: BoxShape.circle)),
-                  SizedBox(width: Design.px(9)),
-                  Text(demo ? '原车媒体' : '媒体会话',
-                      style:
-                          TextStyle(fontSize: Design.px(19), color: s.muted)),
-                ])),
-            SizedBox(height: Design.px(editing ? 14 : 22)),
+    final s = SurfaceStyle.of(context),
+        demo = state['demo'] == true,
+        media = mapOf(state['media']);
+    final compact = card.h <= 2;
+    final lyrics = (card.w == 4 && card.h == 4) || (card.w == 8 && card.h == 6);
+    final large = card.w == 8 && card.h == 6;
+    final metadata = _MusicMetadata(
+        title: _mediaValue(state, 'title', '向海而行', '暂无播放'),
+        artist: _mediaValue(state, 'artist', 'Coastline', '等待媒体会话'),
+        album: _mediaValue(state, 'collection', '晨间驾驶歌单', ''),
+        compact: compact);
+    return _CardCanvas(
+        minHeight: compact ? 190 : 320,
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
             Expanded(
-                child: LayoutBuilder(
-                    builder: (context, body) => Align(
-                          alignment: Alignment.topCenter,
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: SizedBox(
-                                width: body.maxWidth,
-                                child: compact
-                                    ? Row(children: [
-                                        _MediaCover(
-                                            demo: demo,
-                                            size: coverSize,
-                                            media: mapOf(state['media'])),
-                                        SizedBox(width: Design.px(20)),
-                                        Expanded(child: copy),
-                                        IconAction(
-                                            icon: Icons.arrow_forward,
-                                            label: '打开音乐详情',
-                                            size: Design.px(28),
-                                            iconSize: Design.px(25),
-                                            active: true,
-                                            onTap: () => showMediaPanel(
-                                                context, controller)),
-                                      ])
-                                    : Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                            _MediaCover(
-                                                demo: demo,
-                                                size: coverSize,
-                                                media: mapOf(state['media'])),
-                                            SizedBox(
-                                                height: Design.px(
-                                                    editing ? 14 : 20)),
-                                            copy,
-                                            SizedBox(height: Design.px(14)),
-                                            Padding(
-                                                padding: EdgeInsets.symmetric(
-                                                    horizontal: Design.px(12)),
-                                                child: MediaProgress(
-                                                    media:
-                                                        mapOf(state['media']),
-                                                    onSeek: (v) => controller
-                                                        .command('seek',
-                                                            value: '$v'))),
-                                            if (!editing) ...[
-                                              SizedBox(height: Design.px(13)),
-                                              Padding(
-                                                  padding: EdgeInsets.symmetric(
-                                                      horizontal:
-                                                          Design.px(12)),
-                                                  child: Row(children: [
-                                                    Expanded(
-                                                        child: Text(
-                                                            mediaSourceLabel(
-                                                                state),
-                                                            style: TextStyle(
-                                                                fontSize:
-                                                                    Design.px(
-                                                                        18),
-                                                                color: s.muted),
-                                                            maxLines: 1,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .ellipsis)),
-                                                    IconAction(
-                                                        icon:
-                                                            Icons.arrow_forward,
-                                                        label: '打开音乐详情',
-                                                        size: Design.px(28),
-                                                        iconSize: Design.px(25),
-                                                        active: true,
-                                                        onTap: () =>
-                                                            showMediaPanel(
-                                                                context,
-                                                                controller)),
-                                                  ])),
-                                            ],
-                                          ])),
-                          ),
-                        ))),
-          ]));
-    });
+                child: Text(card.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: Design.px(23), color: s.muted))),
+            IconAction(
+                icon: Icons.arrow_forward,
+                label: '打开音乐详情',
+                size: Design.px(32),
+                iconSize: Design.px(25),
+                active: true,
+                onTap: () => showMediaPanel(context, controller)),
+          ]),
+          SizedBox(height: Design.px(compact ? 12 : 18)),
+          Expanded(child: LayoutBuilder(builder: (context, box) {
+            final cover = Design.px(compact
+                ? 84
+                : large
+                    ? 260
+                    : 150);
+            if (compact || !lyrics) {
+              return Center(
+                  child: Row(children: [
+                _MediaCover(demo: demo, size: cover, media: media),
+                SizedBox(width: Design.px(20)),
+                Expanded(child: metadata),
+              ]));
+            }
+            return Row(children: [
+              Expanded(
+                  flex: 4,
+                  child: Center(
+                      child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: SizedBox(
+                              width: box.maxWidth * 4 / 9,
+                              child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _MediaCover(
+                                        demo: demo, size: cover, media: media),
+                                    SizedBox(height: Design.px(18)),
+                                    metadata,
+                                  ]))))),
+              SizedBox(width: Design.px(26)),
+              Expanded(
+                  flex: 5,
+                  child: Center(
+                      key: const ValueKey('music-card-lyrics'),
+                      child: LyricsView(
+                          media: media,
+                          visibleLines: large ? 7 : 5,
+                          lineHeight: large ? 48 : 38,
+                          fontSize: large ? 28 : 22,
+                          textAlign: TextAlign.start))),
+            ]);
+          })),
+          if (!compact) ...[
+            SizedBox(height: Design.px(14)),
+            MediaProgress(
+                media: media,
+                onSeek: (v) => controller.command('seek', value: '$v')),
+          ],
+        ]));
   }
 }
 
@@ -232,11 +206,8 @@ class MediaPanel extends StatelessWidget {
                           child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                            TextButton.icon(
-                                onPressed: () =>
-                                    controller.command('launch-player'),
-                                icon: const UniIcon('music', size: 20),
-                                label: const Text('打开关联播放器')),
+                            MediaSourceBadge(controller: controller),
+                            SizedBox(height: Design.px(12)),
                             Text(_mediaValue(state, 'title', '向海而行', '暂无播放'),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,

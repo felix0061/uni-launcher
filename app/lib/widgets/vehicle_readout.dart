@@ -67,7 +67,7 @@ class VehicleReadout extends StatelessWidget {
               const Spacer(),
               Text(vehicleStatusLabel(native, item.$1)),
             ])),
-      Text('${vehicle['reason'] ?? '等待原车车辆服务'}',
+      Text('${vehicle['reason'] ?? '等待车辆服务'}'.replaceAll('原车', ''),
           style:
               TextStyle(fontSize: Design.px(18), color: s.muted, height: 1.6)),
       Text('未获得有效读数或单位的项目显示 —',
@@ -89,7 +89,7 @@ class VehicleReadout extends StatelessWidget {
         FilledButton(
             onPressed: () =>
                 controller.command('open-official', value: 'vehicle'),
-            child: const Text('打开原车车辆')),
+            child: const Text('打开车辆设置')),
       ]),
     ]));
   }

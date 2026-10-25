@@ -41,10 +41,35 @@ public final class AppRepository {
             Bitmap bitmap=Bitmap.createBitmap(72,72,Bitmap.Config.ARGB_8888);Canvas canvas=new Canvas(bitmap);
             drawable.setBounds(0,0,72,72);drawable.draw(canvas);
             ByteArrayOutputStream out=new ByteArrayOutputStream();bitmap.compress(Bitmap.CompressFormat.PNG,100,out);bitmap.recycle();
-            result.put(new JSONObject().put("id",key).put("package",app.activityInfo.packageName).put("label",app.loadLabel(context.getPackageManager()).toString())
+            result.put(new JSONObject().put("id",key).put("package",app.activityInfo.packageName).put("label",app.loadLabel(context.getPackageManager()).toString()).put("canUninstall",canUninstall(app.activityInfo.packageName))
                 .put("icon","data:image/png;base64,"+Base64.encodeToString(out.toByteArray(),Base64.NO_WRAP)));
         } catch(Exception e){android.util.Log.w("UniApps","Unable to read app icon",e);}
         return result;
+    }
+    public boolean canUninstall(String pkg){
+        try{
+            ApplicationInfo a=context.getPackageManager().getApplicationInfo(pkg,0);
+            if(context.getPackageName().equals(pkg)||(a.flags&(ApplicationInfo.FLAG_SYSTEM|ApplicationInfo.FLAG_UPDATED_SYSTEM_APP))!=0)return false;
+            android.os.UserManager users=(android.os.UserManager)context.getSystemService(Context.USER_SERVICE);
+            if(users.hasUserRestriction(android.os.UserManager.DISALLOW_UNINSTALL_APPS))return false;
+            android.app.admin.DevicePolicyManager policy=(android.app.admin.DevicePolicyManager)context.getSystemService(Context.DEVICE_POLICY_SERVICE);
+            java.util.List<ComponentName> admins=policy.getActiveAdmins();
+            if(admins!=null)for(ComponentName admin:admins)if(pkg.equals(admin.getPackageName()))return false;
+            return true;
+        }catch(Exception e){return false;}
+    }
+    private boolean knownPackage(String pkg){for(ComponentName c:allowed.values())if(c.getPackageName().equals(pkg))return true;return false;}
+    public boolean showInfo(String pkg){
+        if(!knownPackage(pkg))return false;
+        try{context.startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            android.net.Uri.parse("package:"+pkg)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));return true;}
+        catch(RuntimeException e){return false;}
+    }
+    public boolean requestUninstall(String pkg){
+        if(!knownPackage(pkg)||!canUninstall(pkg))return false;
+        try{context.startActivity(new Intent(Intent.ACTION_UNINSTALL_PACKAGE,android.net.Uri.parse("package:"+pkg))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));return true;}
+        catch(RuntimeException e){return false;}
     }
     public boolean launch(String key) {
         ComponentName c=allowed.get(key);if(c==null)return false;

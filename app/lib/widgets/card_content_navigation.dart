@@ -247,15 +247,15 @@ class _NavigationWaiting extends StatelessWidget {
     return _CardCanvas(
         minHeight: 280,
         child: Column(children: [
-          _Heading(card.title, '原车导航服务', 'nav'),
+          _Heading(card.title, '导航服务', 'nav'),
           Expanded(
               child: Center(
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
             UniIcon('nav', size: Design.px(60), color: s.accent),
             SizedBox(height: Design.px(18)),
-            Text('等待原车导航信息', style: TextStyle(fontSize: Design.px(28))),
+            Text('等待导航信息', style: TextStyle(fontSize: Design.px(28))),
           ]))),
-          _OpenCardButton('打开原车导航',
+          _OpenCardButton('打开导航',
               onTap: () => controller.command('open-official', value: 'nav')),
         ]));
   }

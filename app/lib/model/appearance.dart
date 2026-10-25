@@ -20,17 +20,28 @@ const accentPresets = [
 ];
 
 class Appearance {
-  final String mode, palette, custom, pageTransition;
+  static const defaultDesktopName = 'LYNK & CO / 05';
+  static String normalizeDesktopName(Object? value) {
+    final name =
+        value is String ? value.replaceAll(RegExp(r'[\r\n]'), ' ').trim() : '';
+    return name.isEmpty
+        ? defaultDesktopName
+        : String.fromCharCodes(name.runes.take(24));
+  }
+
+  final String mode, palette, custom, pageTransition, desktopName;
   final double radius;
   final bool glass;
   const Appearance(
-      {this.mode = 'system',
+      {this.desktopName = defaultDesktopName,
+      this.mode = 'system',
       this.palette = 'mint',
       this.custom = '#38A4A0',
       this.radius = 28,
       this.glass = false,
       this.pageTransition = 'none'});
   factory Appearance.fromJson(Map<String, dynamic> json) => Appearance(
+        desktopName: normalizeDesktopName(json['desktopName']),
         mode: ['system', 'light', 'dark'].contains(json['mode'])
             ? json['mode']
             : 'system',
@@ -51,13 +62,15 @@ class Appearance {
                 : 'none',
       );
   Appearance copyWith(
-          {String? mode,
+          {String? desktopName,
+          String? mode,
           String? palette,
           String? custom,
           double? radius,
           bool? glass,
           String? pageTransition}) =>
       Appearance(
+          desktopName: normalizeDesktopName(desktopName ?? this.desktopName),
           mode: mode ?? this.mode,
           palette: palette ?? this.palette,
           custom: custom ?? this.custom,
@@ -65,6 +78,7 @@ class Appearance {
           glass: glass ?? this.glass,
           pageTransition: pageTransition ?? this.pageTransition);
   Map<String, dynamic> toJson() => {
+        'desktopName': desktopName,
         'mode': mode,
         'palette': palette,
         'custom': custom,

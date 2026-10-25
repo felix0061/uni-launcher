@@ -88,24 +88,48 @@ class BottomDock extends StatelessWidget {
                 shadow: false,
                 tone: SurfaceTone.strong,
                 padding: EdgeInsets.symmetric(
-                    horizontal: Design.px(52), vertical: Design.px(12)),
+                    horizontal: Design.px(28), vertical: Design.px(12)),
                 child: Row(children: [
                   SizedBox(
-                      width: Design.px(142),
+                      width: Design.px(376),
                       child: Row(children: [
+                        action('system-back', Icons.arrow_back, '返回',
+                            () => c.command('system-back')),
+                        SizedBox(width: Design.px(14)),
                         IconAction(
                             key: const ValueKey('home'),
                             icon: Icons.home_outlined,
                             label: '首页，长按进入桌面设置',
                             size: Design.px(64),
                             iconSize: Design.px(29),
-                            active: true,
-                            soft: true,
+                            active: c.isGlobalDock
+                                ? native['desktopSelected'] == true &&
+                                    mapOf(native['globalDock'])['expanded'] !=
+                                        true
+                                : !c.settings &&
+                                    c.page == 0 &&
+                                    (ModalRoute.of(context)?.isCurrent ?? true),
+                            soft: c.isGlobalDock
+                                ? native['desktopSelected'] == true &&
+                                    mapOf(native['globalDock'])['expanded'] !=
+                                        true
+                                : !c.settings &&
+                                    c.page == 0 &&
+                                    (ModalRoute.of(context)?.isCurrent ?? true),
                             onTap: c.home,
                             onLongPress: c.openSettings),
                         SizedBox(width: Design.px(14)),
                         action('all-apps', Icons.apps, '全部应用',
-                            () => showAppsPanel(context, c))
+                            () => showAppsPanel(context, c)),
+                        SizedBox(width: Design.px(14)),
+                        action('recents', Icons.check_box_outline_blank_rounded,
+                            '最近任务', () => c.command('show-recents')),
+                        SizedBox(width: Design.px(14)),
+                        action(
+                            'camera',
+                            Icons.surround_sound_outlined,
+                            '360 影像',
+                            () => c.command('open-official', value: 'camera'))
                       ])),
                   gap(),
                   separator(),
@@ -181,55 +205,60 @@ class BottomDock extends StatelessWidget {
                                         media: media, demo: demo))),
                             SizedBox(width: Design.px(16)),
                             Expanded(
+                                flex: 5,
                                 child: Column(
+                                    key: const ValueKey('dock-track-title'),
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                  Text('${media['title'] ?? '暂无播放'}',
-                                      style: TextStyle(
-                                          fontSize: Design.px(24),
-                                          fontWeight: FontWeight.w500),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis),
-                                  SizedBox(height: Design.px(6)),
-                                  if ((media['lyrics'] as String? ?? '')
-                                      .trim()
-                                      .isNotEmpty)
-                                    LyricsView(
+                                      Text('${media['title'] ?? '暂无播放'}',
+                                          style: TextStyle(
+                                              fontSize: Design.px(23),
+                                              fontWeight: FontWeight.w500),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis),
+                                      SizedBox(height: Design.px(4)),
+                                      Text('${media['artist'] ?? '等待媒体会话'}',
+                                          style: TextStyle(
+                                              fontSize: Design.px(16),
+                                              color: s.muted),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis)
+                                    ])),
+                            SizedBox(width: Design.px(16)),
+                            Expanded(
+                                flex: 6,
+                                child: Center(
+                                    key: const ValueKey('dock-lyrics'),
+                                    child: LyricsView(
                                         media: media,
-                                        compact: true,
-                                        textAlign: TextAlign.start)
-                                  else
-                                    Text(
-                                        '${media['artist'] ?? '等待媒体会话'}${demo ? ' · 原车媒体中心' : ''}',
-                                        style: TextStyle(
-                                            fontSize: Design.px(17),
-                                            color: s.muted),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis)
-                                ]))
+                                        visibleLines: 1,
+                                        currentLineMaxLines: 2,
+                                        lineHeight: 32,
+                                        fontSize: 26,
+                                        textAlign: TextAlign.center)))
                           ]))),
                   gap(),
                   separator(),
                   gap(),
                   action('vehicle', Icons.directions_car_outlined, '车辆信息',
-                      () => showVehiclePanel(context, c)),
-                  gap(),
-                  action('camera', Icons.surround_sound_outlined, '360 影像',
-                      () => c.command('open-official', value: 'camera'))
+                      () => showVehiclePanel(context, c))
                 ])));
       });
 }
 
-Future<void> showVehiclePanel(BuildContext context, LauncherController c) =>
-    showLauncherSheet<void>(context,
-        title: '车辆信息',
-        subtitle: '原车数据 · 只读',
-        closeLabel: '关闭车辆信息',
-        width: Design.px(900),
-        height: Design.px(780),
-        builder: (context) => ValueListenableBuilder<Map<String, dynamic>>(
-            valueListenable: c.native,
-            builder: (context, n, _) =>
-                VehicleReadout(controller: c, native: n)));
+Future<void> showVehiclePanel(
+    BuildContext context, LauncherController c) async {
+  if (await c.presentGlobalPanel('vehicle') || !context.mounted) return;
+  await showLauncherSheet<void>(context,
+      title: '车辆信息',
+      subtitle: '车辆数据 · 只读',
+      closeLabel: '关闭车辆信息',
+      width: Design.px(900),
+      height: Design.px(780),
+      builder: (context) => ValueListenableBuilder<Map<String, dynamic>>(
+          valueListenable: c.native,
+          builder: (context, n, _) =>
+              VehicleReadout(controller: c, native: n)));
+}

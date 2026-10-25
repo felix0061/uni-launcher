@@ -9,6 +9,8 @@ class _OemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = SurfaceStyle.of(context), editing = controller.editing;
+    final account =
+        mapOf(mapOf(controller.native.value['systemStatus'])['account']);
     return LayoutBuilder(builder: (context, box) {
       final compact = box.maxHeight < Design.px(380);
       final title =
@@ -41,11 +43,21 @@ class _OemCard extends StatelessWidget {
                             size: Design.px(compact ? 38 : 70),
                             color: s.accent))),
                 SizedBox(height: Design.px(compact ? 16 : 28)),
-                Text('领克账号',
+                Text(
+                    account['known'] == true && account['loggedIn'] == true
+                        ? '${account['name'] ?? '领克账号'}'
+                        : '领克账号',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                         fontSize: Design.px(compact ? 26 : 34), height: 1.2)),
                 SizedBox(height: Design.px(compact ? 10 : 14)),
-                Text('账号状态未同步',
+                Text(
+                    demo
+                        ? '演示数据'
+                        : account['known'] == true
+                            ? (account['loggedIn'] == true ? '已登录' : '未登录')
+                            : '账号状态未同步',
                     style: TextStyle(
                         fontSize: Design.px(compact ? 18 : 22),
                         color: s.muted)),
@@ -88,7 +100,7 @@ class _OemCard extends StatelessWidget {
                               color: s.muted)),
                     ])),
               ])),
-              _OpenCardButton('打开原车清理',
+              _OpenCardButton('打开清理',
                   compact: editing,
                   onTap: () =>
                       controller.command('official-widget', value: 'cleanup')),
@@ -112,7 +124,7 @@ class _OemCard extends StatelessWidget {
                           style:
                               TextStyle(fontSize: Design.px(25), height: 1.2)),
                       SizedBox(height: Design.px(12)),
-                      Text(demo ? '2026 年 10 月' : '等待原车日期',
+                      Text(demo ? '2026 年 10 月' : '等待日期',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -143,7 +155,7 @@ class _OemCard extends StatelessWidget {
                                   fontSize: Design.px(editing ? 19 : 22),
                                   height: 1.2)),
                           SizedBox(height: Design.px(editing ? 6 : 10)),
-                          Text('连接后显示原车日程',
+                          Text('连接后显示日程',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -312,7 +324,7 @@ class _WeatherCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: Design.px(23), height: 1.2))),
-            Text(weather.source,
+            Text(weather.source.replaceAll('原车', ''),
                 style: TextStyle(fontSize: Design.px(20), color: s.muted)),
           ]),
           Expanded(
@@ -342,10 +354,13 @@ class _WeatherCard extends StatelessWidget {
           ])),
           if (!editing)
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text('原车天气',
+              Text('天气',
                   style: TextStyle(fontSize: Design.px(17), color: s.muted)),
               Flexible(
-                  child: Text('等待官方天气同步',
+                  child: Text(
+                      weather.available
+                          ? '已同步'
+                          : '${(mapOf(native['weather'])['reason'] ?? '等待天气同步').toString().replaceAll('原车', '')}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style:

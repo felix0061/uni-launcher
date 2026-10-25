@@ -5,9 +5,12 @@ import '../theme/launcher_theme.dart';
 import '../theme/design_tokens.dart';
 import 'glass_surface.dart';
 import 'editable_card.dart';
-import 'uni_icon.dart';
 import 'page_transition.dart';
 import 'embedded_navigation.dart';
+import '../model/weather_condition.dart';
+import 'weather_icon.dart';
+import 'desktop_name_dialog.dart';
+import 'system_status_row.dart';
 
 class Header extends StatefulWidget {
   final LauncherController controller;
@@ -45,47 +48,62 @@ class _HeaderState extends State<Header> {
                   style: TextStyle(
                       fontSize: Design.px(23), fontWeight: FontWeight.w500)),
               const SizedBox(width: 28),
-              Text('LYNK & CO / 05',
-                  style: TextStyle(
-                      color: s.muted, fontSize: 15, letterSpacing: 2)),
+              GestureDetector(
+                  key: const ValueKey('desktop-name'),
+                  onLongPress: () =>
+                      showDesktopNameDialog(context, widget.controller),
+                  child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: Design.px(480)),
+                      child: Text(widget.controller.appearance.desktopName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              color: s.muted,
+                              fontSize: 15,
+                              letterSpacing: 2)))),
               const Spacer(),
               ValueListenableBuilder<Map<String, dynamic>>(
                   valueListenable: widget.controller.native,
-                  builder: (context, native, _) => native['demo'] == true
-                      ? Row(children: [
+                  builder: (context, native, _) =>
+                      Row(mainAxisSize: MainAxisSize.min, children: [
+                        if (native['demo'] == true) ...[
                           Text('演示',
                               style: TextStyle(
                                   color: s.muted, fontSize: Design.px(17))),
-                          SizedBox(width: Design.px(24)),
-                          UniIcon('cloud', size: Design.px(24), color: s.muted),
-                          SizedBox(width: Design.px(10)),
-                          Text('24° 多云',
-                              style: TextStyle(
-                                  color: s.muted, fontSize: Design.px(20))),
-                          SizedBox(width: Design.px(40)),
-                          UniIcon('bluetooth',
-                              size: Design.px(28), color: s.muted),
-                          SizedBox(width: Design.px(28)),
-                          Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                for (int i = 0; i < 4; i++)
-                                  Container(
-                                      width: Design.px(4),
-                                      height: Design.px(6 + i * 4),
-                                      margin:
-                                          EdgeInsets.only(right: Design.px(4)),
-                                      color: s.muted)
-                              ]),
                           SizedBox(width: Design.px(20)),
-                          Text('4G',
-                              style: TextStyle(
-                                  color: s.muted, fontSize: Design.px(20)))
-                        ])
-                      : Text('原车接入 · 待核对',
-                          style: TextStyle(
-                              color: s.muted, fontSize: Design.px(19)))),
+                        ],
+                        _HeaderWeather(native: native),
+                        SizedBox(width: Design.px(28)),
+                        SystemStatusRow(
+                            status: native['systemStatus'] is Map
+                                ? Map<String, dynamic>.from(
+                                    native['systemStatus'])
+                                : const {}),
+                      ])),
             ])));
+  }
+}
+
+class _HeaderWeather extends StatelessWidget {
+  final Map<String, dynamic> native;
+  const _HeaderWeather({required this.native});
+  @override
+  Widget build(BuildContext context) {
+    final weather = WeatherSnapshot.fromNative(native),
+        s = SurfaceStyle.of(context);
+    if (!weather.available)
+      return Text('天气暂未更新',
+          style: TextStyle(color: s.muted, fontSize: Design.px(19)));
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      WeatherIcon(
+          condition: weather.condition,
+          night: weather.night,
+          size: Design.px(26),
+          color: s.muted),
+      SizedBox(width: Design.px(12)),
+      Text('${weather.city}  ${weather.temperature}° ${weather.description}',
+          style: TextStyle(color: s.muted, fontSize: Design.px(20))),
+    ]);
   }
 }
 

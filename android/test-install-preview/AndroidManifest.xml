@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="xyz.i4o.uni.fixture.installpreview" android:versionCode="1">
+  <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="28"/>
+  <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+  <application android:label="UNI 安装页验证" android:allowBackup="false">
+    <activity android:name=".PreviewActivity" android:exported="true" android:screenOrientation="landscape"/>
+    <provider android:name=".ApkProvider" android:authorities="xyz.i4o.uni.fixture.installpreview.apk" android:exported="false" android:grantUriPermissions="true"/>
+  </application>
+</manifest>

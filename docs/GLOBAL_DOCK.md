@@ -1,54 +1,53 @@
-# 0.5 全局底栏与系统导航栏
+# 全局底栏与系统工作区（0.5.1）
 
-全局底栏复用原来的 Flutter `BottomDock`：首页、全部应用、双区空调、播放控制、歌曲信息、车辆信息、360 入口。外层背景横向铺满、四角为零、底部无留白；内部按钮仍跟随主题圆角。高度保持 96 设计像素，在 1920 宽车机上占 96 个物理像素；移除旧版额外 16 像素底边空白。
+1920×1080车机上的底栏固定为1920×96，贴住 y=984–1080，四角为零，无底部边距。按钮顺序为：返回、首页、全部应用、最近任务、360、双区空调、音乐控制、音乐信息与歌词、车辆信息。长按首页进入设置。首页只在桌面首页选中，设置和其他应用中不高亮。
 
-## 两个独立开关
+## 系统真正预留96px
 
-设置 → 功能接入：
+车机签名版使用 `NavigationInsets` 和一个无代码、无桌面图标的资源适配包 `xyz.i4o.uni.launcher.insets`。只覆盖Android的四项导航栏高度，含600/720/900dp配置，不改动系统文件。`tools/sign_car_apk.py` 将它构建、签名并嵌入同一个车机APK，首次开启全局底栏时自动安装；开发签名APK不包含该配置。
 
-- **全局底栏**：跨应用显示；首次需要系统允许悬浮显示。默认关闭。桌面中显示内嵌底栏，悬浮副本隐藏；切到其他应用才显示全局副本，避免出现两条。
-- **隐藏系统原有导航栏**：独立控制原车 / Android 原有底栏。需要 `WRITE_SECURE_SETTINGS`；未获授权不启用。关闭时按记录恢复原设置。原厂影像包 `com.ecarx.parking` 排除在全局隐藏规则外。
+实际保留系统导航窗口及其96px内容inset，使用 `TYPE_NAVIGATION_BAR_PANEL` 在同一区域显示UNI控件。`policy_control` 仅隐藏状态栏，不再使用全屏沉浸规则取消导航inset；`NavigationChrome` 同时停止对桌面发送隐藏导航标志。底栏有不透明的基底，避免系统控件透过材质显现。这个模式需要当前车机平台签名下的 `INSTALL_PACKAGES`、`CHANGE_OVERLAY_PACKAGES`、`STATUS_BAR_SERVICE`、`INTERNAL_SYSTEM_WINDOW`。
 
-全局底栏开启时同时执行 `wm overscan 0,0,0,96`（应用内 exec，平台签名已验证可行），把所有应用窗口收缩到 984，悬浮窗加 `FLAG_LAYOUT_NO_LIMITS` 以物理屏幕坐标贴底 984–1080——外部应用内容始终在底栏上方，底部无空白。关闭时恢复 overscan 与 policy。
+Android9缓存策略尺寸，因此启用/恢复资源后，以原来的有效DPI触发策略重新计算；不改变有效密度，不新增原先不存在的强制密度设置。无需重启车机。关闭全局底栏时恢复原资源启用状态与此前的系统栏策略。选择显示系统导航栏时恢复其原高度并让出UNI底栏，桌面卡片弹框仍可在本窗口打开。
 
-系统原有导航栏显示时，全局底栏贴在其上边缘；隐藏后贴在屏幕底边。没有额外装饰性空隙。前台服务通知提供“关闭全局底栏”“显示系统导航栏”入口。
+普通应用和安装确认页由真正的系统inset限制内容区，不再轮询缩小任务。模拟器及车机均已通过安装确认页回归：安装和取消按钮全部在 y<984 区域，取消触摸能返回取消结果。测试只操作临时验证包，未从确认页安装更新，也未卸载用户应用。
 
-## 实现
+`WorkspacePolicy` 只保留为没有平台权限的开发包兼容路径，不把它当作系统确认页的完整支持。旧overscan会迁移清除；不再制造重复inset。旧路径跳过原车影像和原车最近任务，后者在启动期间重建窗口会触发它自身的空Context异常。
 
-`GlobalDockService` 使用 Android 9 `TYPE_APPLICATION_OVERLAY(2038)` 和透明 WindowManager 窗口，常态只占底部条带，条带外触控交给前台应用。打开空调、音乐、车辆或应用列表时临时扩展窗口承载同一套 Flutter 面板，关闭后回到条带；返回键也能关闭展开面板；外部 HOME 返回或宿主隐藏会清除旧面板，再进入外部应用时恢复为窄条带。首页、长按首页分别回到桌面和设置。应用选择或原厂入口启动前先收起悬浮面板。
+资源覆盖机制见 [AOSP RRO说明](https://source.android.com/docs/core/runtime/rros)。本项目具体尺寸与权限结论来自本地IP753资源及实车验证。
 
-第二个 Dart 入口 `globalDockMain` 通过明确的 package library URI 启动，避免集成测试或不同宿主入口下找错函数。独立 engine 只绘制底栏和面板；`LauncherRuntime` 在 Application 进程内唯一持有媒体、车辆、应用目录、偏好和命令分发。Activity 和 Service 按 owner 引用订阅；桌面在后台时仍只有一套原生读取，服务退出后释放自己的订阅。地图容器只归主 Activity。
+## 窗口和原车最近任务
 
-启动使用前台 Service 和低优先级持续通知；只有用户已开启且有悬浮权限时，开机和回到应用才恢复服务。关闭时销毁 FlutterView/engine 并移除窗口。所有新增跨应用命令仍经既有媒体和车控检查，不绕过逐项 capability 或读回确认。
+底栏Flutter窗口的尺寸和Surface始终不变。普通面板使用另一个复用的Flutter窗口，固定1920×984，与底栏不相交。音乐卡片箭头和底栏共用同一面板入口。原生Runtime统一订阅车辆、媒体、天气、状态及配置，窗口不各建一套订阅。
 
-系统栏管理用 `Settings.Global.policy_control`，在保留其他 token 的前提下替换为 `immersive.full` 规则——实测 XCSystemUI 的 CarNavigationBar 只响应 full，navigation 仅清除占位。持久保存原值和本应用写入值；关闭时只有当前值仍属于本应用才恢复，避免覆盖其他应用后来的改动。原值为空时恢复为空。没有使用 overscan、改分辨率或共享 system UID。
+原车最近任务强制使用 `HIDE_NAVIGATION`，所以只保留系统inset仍不足以约束它。`EmbeddedTaskWindow` 使用Android9 ActivityView，在1920×984的独立显示区域内运行原来的 `ecarx.action.OPEN_RECENT_PANEL` / `com.ecarx.recents` Activity。任务卡片仍由原车应用生成和操作；不自建任务列表，也不在启动后缩小其窗口。隐藏时保留容器，避免破坏原车初始化。再次点击最近任务关闭容器，原来的物理屏应用保持原位；选中任务后检测物理屏前台变化并关闭容器。
 
-## 嘟嘟参考证据
+`DisplayTasks` 共用物理屏0的任务筛选。不能直接使用 `getRunningTasks(1)`，因为嵌入地图和任务列表的虚拟屏可能排在桌面前面，造成错误关闭面板或返回到虚拟屏。
 
-本地 Dudu `ui.statebar.k.j` 确认由 WindowManager/Service 承载跨应用栏，普通模式使用 2038；领克另一路 2024 需要更多系统权限，且带人工偏移 / overscan。其部分 `policy_control` 命令字符串实际调用空 helper，不能只按字符串认定有效。因此本实现参考独立窗口与前台服务结构，使用可授权的 2038 和直接的原生设置读写，不复制 50px 偏移或无原值恢复的操作。
+最近任务的底部操作区复用面板engine，窗口暂为1920×120、y=864，仅覆盖原任务列表的页脚，不接管任务卡片触摸。`RecentsFooter` 使用相同的Material主题、OutlinedButton、圆角及按压动画，内存来自Android MemoryInfo。清理仍转交原车按钮：仅支持已核对的XCRecent版本25 / `V2023-08-16_793096d`、1920×984显示区域，向实际 `btn_clear=[108,874,380,934]` 转交点击。版本或尺寸不匹配时保留原页脚，不对其他版本猜测坐标。回归不执行清空用户任务。
 
-Android/Flutter 依据：[Android 9 PhoneWindowManager](https://android.googlesource.com/platform/frameworks/base/+/android-9.0.0_r3/services/core/java/com/android/server/policy/PhoneWindowManager.java)、[PolicyControl](https://android.googlesource.com/platform/frameworks/base/+/android-9.0.0_r3/services/core/java/com/android/server/policy/PolicyControl.java)、本机 Flutter embedding 源码的 `FlutterEngine`、`FlutterView`、`DartEntrypoint`。APK 摘录只保留在本地忽略目录，本文不打包第三方实现。
+返回按钮先关闭当前面板；无面板时发送系统返回键。360仍直接启动原车影像，不增加确认框。
 
-## 已测与限制
+## 毛玻璃、音乐、应用和导航
 
-API28 / 1920×1080 模拟器已验证（10 项界面检查、11 项跨应用检查、9 项发布包 AOT 检查）：桌面不重复显示、外部系统设置上真实绘制、跨应用媒体命令回到共享状态、空调面板展开、返回收起、首页回桌面、长按首页进入设置，未发现 fatal/Dart 布局异常。系统导航栏隐藏后条带到屏幕底边；关闭可恢复原 policy。详细结果与截图在 `app/verification/global-dock/`。
+弹框遵循毛玻璃开关。打开时通过Android9截图API获取当次背景，在面板engine中模糊；只存内存，关闭即释放，不周期性采样，也不写入磁盘。系统保护画面不会被绕过。背景是静态画面，不是下层应用持续视频。
 
-普通应用 overlay **不自动为所有外部应用保留工作区**，可能遮住它们最底部的内容；本版不以 overscan 强制移动整车画面。贴边外观已实现，但不是注册第二个系统导航栏服务。Android 9 半透明表面可透出外部应用，Flutter 的模糊不能承诺对另一个进程的画面采样。
+音乐面板显示关联播放器的图标与名称，点击可进入播放器，没有额外的“打开关联播放器”按钮。底栏当前歌词最多两行，自动换行、超出省略；一行和两行都水平与垂直居中。歌曲标题/歌手也在其区域垂直居中。4×4和8×6音乐卡片左侧为封面、标题、歌手与专辑，右侧为多行歌词；3×2不显示歌词。LRC按真实时间更新，网易云实时三句回调保留真实邻句，不编造完整歌词。当前安装的网易云未开启对外歌词上送时显示实际不可用原因。
 
-点击原厂影像前暂停全局底栏，返回桌面后恢复；尚无已验收的倒挡 / camera 自动状态订阅，不能宣称硬件倒车时的显隐和恢复已完成。上述权限、原车常驻区归属、倒车优先级、休眠 / 开机恢复、长期内存和帧耗时，均留待白天实车验证。
+应用面板宽1560设计像素、六列；长按可进入系统应用信息或请求卸载确认。系统应用、系统更新、当前桌面、用户限制或设备管理员应用禁用卸载，不静默卸载。
 
-## 复现
+导航卡片标题点击打开绑定应用，切换按钮可选择已识别导航及其他已安装应用，保存 `navigationPackage` 并重建对应容器。设置和面板遮挡时隐藏地图原生Surface；不在滑屏时反复创建地图。
 
-```sh
-python3 app/tools/flutter_task.py drive \
-  --driver=test_driver/global_dock_driver.dart \
-  --target=integration_test/global_dock_test.dart -d emulator-5580
-# 重新构建 / 安装普通 debug 主入口后做跨应用验证：
-python3 app/tools/flutter_task.py build apk --debug --target-platform android-x64
-adb -s emulator-5580 install -r -d app/build/app/outputs/flutter-apk/app-debug.apk
-python3 tools/verify_global_dock.py
-# 安装正常 x86_64 release 包并在隔离模拟器授权后：
-python3 tools/verify_release_dock.py
-```
+## 名称、天气和状态
 
-全部验证均只接受模拟器。发布包验证通过界面开关操作，结束后恢复开关及原系统 policy。跨应用脚本在隔离模拟器中显式授予悬浮及系统设置权限，以适应 Flutter 重新安装后的权限重置。前者验证界面与原生开关并比较系统 policy 恢复；后者临时设置本应用 debug 演示 / 全局栏偏好，完成后恢复原偏好文件，不安装其他应用、不接受车机序列号、不发送车辆指令。
+长按顶部名称编辑，最多24个字符，保存在外观配置 `desktopName`；旧配置默认 `LYNK & CO / 05`，不增加设置图标。
+
+天气卡片与顶部共用 `OfficialWeatherAdapter` 的XCHome回调，实车已读取当前城市、温度与天气代码。所有天气图标仍来自统一图标组件，详见 `OFFICIAL_WEATHER_API.md`。
+
+`SystemStatusAdapter` 按XCSystemUIPlugin的网络、Wi-Fi/热点、蓝牙、无线充电、USB、DVR、消息槽位读取，未知或未启用的能力不显示占位图标。账号优先使用UserAPI；本车API339未就绪时，使用XCMemberCenter已导出的兼容Provider，以登录userId匹配userName，顶部和账号卡片共用结果。仅消费登录状态、匹配标识和显示名，不记录完整Cursor，不读取令牌和联系方式字段。
+
+## 验证与边界
+
+模拟器Release验证记录在 `app/verification/global-dock/`，车机结果在 `app/verification/car-051-report.json`。`tools/verify_install_dialog.py` 可单独验证安装确认按钮位置与取消触摸，会删除自身创建的两个临时包。
+
+DVR、无线充电、USB图标须在设备实际启用/连接时核对；隐藏状态不能证明所有状态均通过。倒挡硬件接管、开机/休眠恢复、长时间内存与帧耗时仍需单独验收。清空用户任务未作为自动回归项目执行。

@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="xyz.i4o.uni.launcher.insets" android:versionCode="1" android:versionName="1.0">
+  <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="28"/>
+  <overlay android:targetPackage="android" android:isStatic="false"/>
+  <application android:hasCode="false" android:label="UNI 导航区域适配"/>
+</manifest>

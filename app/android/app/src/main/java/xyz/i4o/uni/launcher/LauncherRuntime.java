@@ -34,10 +34,13 @@ public final class LauncherRuntime {
     private final MediaAdapter media;
     private final VehicleTelemetry vehicle;
     private final NavigationApps navigation;
+    private final OfficialWeatherAdapter weather;
+    private final SystemStatusAdapter systemStatus;
     private final ClimateState simulator=new ClimateState();
     private final Map<Object,Runnable> listeners=new IdentityHashMap<>();
     private JSONArray installed;
     private boolean homeVisible;
+    private boolean desktopContent=true;
     private boolean demoPlaying=true;
     private int demoTrack;
     private long demoPositionMs,demoSampleAt=android.os.SystemClock.elapsedRealtime();
@@ -62,7 +65,7 @@ public final class LauncherRuntime {
         if(!prefs.contains("demo"))prefs.edit().putBoolean("demo",Build.FINGERPRINT.contains("generic")||Build.MODEL.contains("sdk_gphone")||Build.MODEL.contains("Android SDK")).apply();
         apps=new AppRepository(context);catalog=new OfficialCatalog(context);
         vehicle=new VehicleTelemetry(context,this::publish);navigation=new NavigationApps(context,prefs);
-        media=new MediaAdapter(context,this::publish);
+        media=new MediaAdapter(context,this::publish);weather=new OfficialWeatherAdapter(context,this::publish);systemStatus=new SystemStatusAdapter(context,this::publish);
         // setPreferredPackage() starts MediaAdapter; defer it until the first owner.
         installed=apps.refresh();
         IntentFilter filter=new IntentFilter();
@@ -91,12 +94,13 @@ public final class LauncherRuntime {
                 .put("driverHeat",simulator.driverHeat).put("driverVent",simulator.driverVent).put("passengerHeat",simulator.passengerHeat);
             JSONObject telemetry=vehicle.snapshot();
             if(!prefs.getBoolean("demo",false))climate=telemetry.optJSONObject("climate")==null?new JSONObject():telemetry.getJSONObject("climate");
-            state.put("navigation",navigation.snapshot()).put("integrationPreferences",new JSONObject().put("mediaPackage",prefs.getString("mediaPackage","auto"))) ;
+            state.put("systemStatus",systemStatus.snapshot()).put("weather",weather.snapshot()).put("navigation",navigation.snapshot()).put("integrationPreferences",new JSONObject().put("mediaPackage",prefs.getString("mediaPackage","auto"))) ;
             state.put("demo",prefs.getBoolean("demo",false)).put("hideNavigation",prefs.getBoolean("hideNavigation",false))
                 .put("globalNavigation",prefs.getBoolean("globalNavigation",false))
                 .put("globalNavigationGranted",context.checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS")==android.content.pm.PackageManager.PERMISSION_GRANTED)
                 .put("dark",(context.getResources().getConfiguration().uiMode&Configuration.UI_MODE_NIGHT_MASK)==Configuration.UI_MODE_NIGHT_YES)
-                .put("apps",installed).put("climate",climate).put("vehicle",telemetry).put("media",media.snapshot().put("preferredPackage",prefs.getString("mediaPackage","auto"))).put("version","0.5.0-flutter");
+                .put("apps",installed).put("climate",climate).put("vehicle",telemetry).put("media",media.snapshot().put("preferredPackage",prefs.getString("mediaPackage","auto"))).put("version",xyz.i4o.uni.launcher.BuildConfig.VERSION_NAME+"-flutter");
+            state.put("desktopSelected",homeVisible&&desktopContent);
             state.put("savedDesign",prefs.getString("savedDesign", "")).put("runtimeOwnerCount",listeners.size());
             if(prefs.getBoolean("demo",false))state.put("media",new JSONObject().put("available",true).put("playing",demoPlaying)
                 .put("title",demoTrack%2==0?"向海而行":"山海之间").put("artist",demoTrack%2==0?"Coastline":"Northbound").put("collection","晨间驾驶歌单").put("source","simulator").put("canNext",true).put("canPrevious",true).put("canToggle",true).put("canSeek",true)
@@ -146,6 +150,8 @@ public final class LauncherRuntime {
             if(!apps.launchPackage(selected))toast("请选择已安装的音乐播放器");return true;
         }
         if("refresh".equals(action)){installed=apps.refresh();if(!listeners.isEmpty()){media.start();vehicle.stop();vehicle.start();}publish();return true;}
+        if("app-info".equals(action)){if(!apps.showInfo(value))toast("无法打开应用信息");return true;}
+        if("request-uninstall".equals(action)){if(!apps.requestUninstall(value))toast("该应用不可卸载");return true;}
         if("launch-app".equals(action)){if(!apps.launch(value))toast("应用未安装或无法启动");return true;}
         if("media-access".equals(action)){try{context.startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));}catch(Exception e){toast("系统没有提供媒体授权入口");}return true;}
         if("official-widget".equals(action)){
@@ -187,14 +193,14 @@ public final class LauncherRuntime {
         onMain(()->{
             boolean first=listeners.isEmpty();
             listeners.put(owner,listener);
-            if(first){media.setPreferredPackage(prefs.getString("mediaPackage","auto"));vehicle.start();}
+            if(first){media.setPreferredPackage(prefs.getString("mediaPackage","auto"));vehicle.start();weather.start();systemStatus.start();}
             publish();return null;
         });
     }
 
     public void removeListener(Object owner){
         onMain(()->{
-            if(listeners.remove(owner)!=null&&listeners.isEmpty()){media.stop();vehicle.stop();}
+            if(listeners.remove(owner)!=null&&listeners.isEmpty()){media.stop();vehicle.stop();systemStatus.stop();}
             return null;
         });
     }
@@ -211,6 +217,9 @@ public final class LauncherRuntime {
         });
     }
 
+    public void setDesktopContent(boolean selected){
+        onMain(()->{if(desktopContent!=selected){desktopContent=selected;publish();}return null;});
+    }
     public boolean homeVisible(){return onMain(()->homeVisible);}
 
     public void setHomeVisible(boolean visible){

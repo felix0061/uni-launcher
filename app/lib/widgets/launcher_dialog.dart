@@ -26,19 +26,28 @@ Future<T?> showLauncherSheet<T>(
     }
   }
   try {
-    return await showGeneralDialog<T>(
+    final dismissed = showGeneralDialog<T>(
         context: context,
         barrierDismissible: true,
         barrierLabel: closeLabel,
         barrierColor: Colors.transparent,
         transitionDuration: const Duration(milliseconds: 180),
-        pageBuilder: (context, _, __) => LauncherSheet(
-            title: title,
-            subtitle: subtitle,
-            closeLabel: closeLabel,
-            width: width,
-            height: height,
-            child: Builder(builder: builder)));
+        pageBuilder: (context, _, __) => AnimatedPadding(
+            duration: const Duration(milliseconds: 180),
+            padding: EdgeInsets.only(
+                bottom: MediaQuery.viewInsetsOf(context).bottom),
+            child: LauncherSheet(
+                title: title,
+                subtitle: subtitle,
+                closeLabel: closeLabel,
+                width: width,
+                height: height,
+                child: Builder(builder: builder))));
+    if (dock?.onPresented != null) {
+      await WidgetsBinding.instance.endOfFrame;
+      if (context.mounted) await dock!.onPresented!();
+    }
+    return await dismissed;
   } finally {
     if (dock != null) await dock.expand(false);
   }
@@ -63,8 +72,7 @@ void showLauncherToast(BuildContext context, String message) {
                     child: GlassSurface(
                         tone: SurfaceTone.strong,
                         padding: EdgeInsets.symmetric(
-                            horizontal: Design.px(30),
-                            vertical: Design.px(14)),
+                            horizontal: Design.px(30), vertical: Design.px(14)),
                         child: Text(message,
                             style: TextStyle(
                                 fontSize: Design.px(20), color: s.text)))))));

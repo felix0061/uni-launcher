@@ -10,6 +10,7 @@ import 'package:uni_launcher/widgets/media_progress.dart';
 import 'package:uni_launcher/widgets/page_transition.dart';
 import 'fake_gateway.dart';
 import 'package:uni_launcher/theme/launcher_theme.dart';
+import 'package:uni_launcher/theme/design_tokens.dart';
 
 void main() {
   test('LRC supports multiple timestamps, precision, offset and backward seek',
@@ -81,6 +82,84 @@ void main() {
     expect(find.byKey(const ValueKey('lyrics-empty')), findsOneWidget);
     expect(find.text('第三行'), findsNothing);
     expect(t.takeException(), null);
+  });
+  testWidgets(
+      'current dock lyric wraps to two lines and centers short and long text',
+      (t) async {
+    Future<void> show(String line) async {
+      await t.pumpWidget(MaterialApp(
+          theme: launcherTheme(SurfaceStyle.from(const Appearance(), true)),
+          home: Scaffold(
+              body: SizedBox(
+                  width: 240,
+                  height: 80,
+                  child: LyricsView(
+                      media: {'lyricLine': line},
+                      currentLineMaxLines: 2,
+                      lineHeight: 32,
+                      fontSize: 26)))));
+      await t.pumpAndSettle();
+    }
+
+    const key = ValueKey('current-lyric-wrapped');
+    await show('一句歌词');
+    final single = t.getSize(find.byKey(key)).height;
+    expect(t.getCenter(find.byKey(key)), t.getCenter(find.byType(LyricsView)));
+    await show('这是一句需要自动换行且超过两行时以省略号结束的很长歌词' * 3);
+    expect(t.getSize(find.byKey(key)).height, closeTo(single * 2, .1));
+    expect(t.getCenter(find.byKey(key)), t.getCenter(find.byType(LyricsView)));
+    final text = t.widget<Text>(find.byKey(key));
+    expect(text.maxLines, 2);
+    expect(text.softWrap, true);
+    expect(text.overflow, TextOverflow.ellipsis);
+    expect(text.textAlign, TextAlign.center);
+    expect(t.takeException(), isNull);
+  });
+  testWidgets(
+      'single-line dock keeps a long unavailable-lyrics reason inside its row',
+      (t) async {
+    await t.pumpWidget(MaterialApp(
+        theme: launcherTheme(SurfaceStyle.from(const Appearance(), true)),
+        home: Scaffold(
+            body: SizedBox(
+                width: 240,
+                child: LyricsView(
+                    visibleLines: 1,
+                    lineHeight: 40,
+                    fontSize: 26,
+                    media: const {
+                      'lyricsReason': '网易云当前版本未向桌面共享歌词，请选择其他音源'
+                    })))));
+    await t.pumpAndSettle();
+    final label = t.widget<Text>(find.byKey(const ValueKey('lyrics-empty')));
+    expect(label.maxLines, 1);
+    expect(label.overflow, TextOverflow.ellipsis);
+    expect(t.getSize(find.byType(LyricsView)).height, Design.px(40));
+    expect(t.takeException(), isNull);
+  });
+  testWidgets(
+      'Three-line source callbacks keep real neighbors and current line centered',
+      (t) async {
+    await t.pumpWidget(MaterialApp(
+        theme: launcherTheme(SurfaceStyle.from(const Appearance(), true)),
+        home: Scaffold(
+            body: SizedBox(
+                width: 400,
+                child: LyricsView(
+                    visibleLines: 3,
+                    lineHeight: 22,
+                    fontSize: 16,
+                    media: const {
+                      'lyricPrevious': '已唱过',
+                      'lyricLine': '正在唱',
+                      'lyricNext': '将唱到'
+                    })))));
+    await t.pumpAndSettle();
+    expect(find.text('已唱过'), findsOneWidget);
+    expect(find.text('正在唱'), findsOneWidget);
+    expect(find.text('将唱到'), findsOneWidget);
+    expect(t.getCenter(find.text('正在唱')).dy,
+        closeTo(t.getCenter(find.byType(LyricsView)).dy, .1));
   });
   testWidgets(
       'Seek gesture sends one bounded position and unsupported source is read only',

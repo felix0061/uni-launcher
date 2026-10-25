@@ -58,13 +58,13 @@ class BatteryCard extends StatelessWidget {
                   '驾驶模式', vehicleStatusLabel(native, 'driveMode', nowMs: now)),
               SizedBox(height: Design.px(4)),
               if (compact)
-                _Footer('能量流',
-                    vehicleStatusLabel(native, 'energyFlow', nowMs: now))
+                _Footer(
+                    '能量流', vehicleStatusLabel(native, 'energyFlow', nowMs: now))
               else
                 Row(children: [
                   Text('能量流',
-                      style: TextStyle(
-                          fontSize: Design.px(16), color: s.muted)),
+                      style:
+                          TextStyle(fontSize: Design.px(16), color: s.muted)),
                   SizedBox(width: Design.px(12)),
                   Expanded(
                       child: Text(
@@ -73,18 +73,18 @@ class BatteryCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                               fontSize: Design.px(16),
-                              color: vehicleStatusLabel(
-                                          native, 'energyFlow', nowMs: now) ==
+                              color: vehicleStatusLabel(native, 'energyFlow',
+                                          nowMs: now) ==
                                       '未连接'
                                   ? s.muted
                                   : s.accent))),
                   Text('外接充电',
-                      style: TextStyle(
-                          fontSize: Design.px(16), color: s.muted)),
+                      style:
+                          TextStyle(fontSize: Design.px(16), color: s.muted)),
                   SizedBox(width: Design.px(12)),
                   Text('待同步',
-                      style: TextStyle(
-                          fontSize: Design.px(16), color: s.muted)),
+                      style:
+                          TextStyle(fontSize: Design.px(16), color: s.muted)),
                 ]),
               if (compact) ...[
                 SizedBox(height: Design.px(4)),
@@ -135,37 +135,31 @@ class EnergyFlowDiagram extends StatelessWidget {
   // (engine→battery right, battery→wheels right, wheels→battery left)
   (bool, bool, bool, bool engineOn, bool batteryOn, bool wheelsOn) _plan() =>
       switch (state) {
-        'ELECTRIC_DRIVE' || 'EAWD' => (
-          false,
-          true,
-          false,
-          false,
-          true,
-          true
-        ),
+        'ELECTRIC_DRIVE' || 'EAWD' => (false, true, false, false, true, true),
         'ENGINE_ONLY' => (false, true, false, true, false, true),
         'ENGINE_ONLY_AND_CHARGE' || 'STANDSTILL_ENGINE_ON_CHARGE' => (
-          true,
-          true,
-          false,
-          true,
-          true,
-          true
-        ),
+            true,
+            true,
+            false,
+            true,
+            true,
+            true
+          ),
         'BOOST' => (true, true, false, true, true, true),
         'MAIN_CHARGING' => (true, false, false, false, true, false),
-        'ENGINE_OFF_REGEN_BRAKE' || 'ENGINE_ON_REGEN_BRAKE' ||
-        'ENGINE_ON_REGEN_BRAKE_CHARGE' => (
-          false,
-          false,
-          true,
-          state == 'ENGINE_ON_REGEN_BRAKE' ||
-              state == 'ENGINE_ON_REGEN_BRAKE_CHARGE',
-          true,
-          true
-        ),
-        'STANDSTILL_ENGINE_ON' =>
-          (false, false, false, true, false, false),
+        'ENGINE_OFF_REGEN_BRAKE' ||
+        'ENGINE_ON_REGEN_BRAKE' ||
+        'ENGINE_ON_REGEN_BRAKE_CHARGE' =>
+          (
+            false,
+            false,
+            true,
+            state == 'ENGINE_ON_REGEN_BRAKE' ||
+                state == 'ENGINE_ON_REGEN_BRAKE_CHARGE',
+            true,
+            true
+          ),
+        'STANDSTILL_ENGINE_ON' => (false, false, false, true, false, false),
         _ => (false, false, false, false, false, false),
       };
 
@@ -173,14 +167,15 @@ class EnergyFlowDiagram extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = SurfaceStyle.of(context);
     final (chargeAB, driveBW, regenWB, engineOn, batteryOn, wheelsOn) = _plan();
-    Widget node(IconData icon, bool on, String label) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+    Widget node(IconData icon, bool on, String label) =>
+        Column(mainAxisSize: MainAxisSize.min, children: [
           Container(
               width: Design.px(40),
               height: Design.px(40),
               decoration: BoxDecoration(
-                  color: on ? s.accent.withValues(alpha: .16) : s.muted.withValues(alpha: .10),
+                  color: on
+                      ? s.accent.withValues(alpha: .16)
+                      : s.muted.withValues(alpha: .10),
                   shape: BoxShape.circle,
                   border: Border.all(
                       color: on ? s.accent : s.muted.withValues(alpha: .35),
@@ -195,7 +190,7 @@ class EnergyFlowDiagram extends StatelessWidget {
                   color: on ? s.text : s.muted.withValues(alpha: .8))),
         ]);
     Widget link({required bool on, required bool left}) => Expanded(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
           Container(
               height: Design.px(2),
               margin: EdgeInsets.symmetric(horizontal: Design.px(6)),
@@ -221,14 +216,14 @@ class EnergyFlowDiagram extends StatelessWidget {
             Padding(
                 padding: EdgeInsets.only(left: Design.px(10)),
                 child: Text('能量回收',
-                    style: TextStyle(
-                        fontSize: Design.px(15), color: s.accent))),
+                    style:
+                        TextStyle(fontSize: Design.px(15), color: s.accent))),
           if (state == 'MAIN_CHARGING')
             Padding(
                 padding: EdgeInsets.only(left: Design.px(10)),
                 child: Text('充电中',
-                    style: TextStyle(
-                        fontSize: Design.px(15), color: s.accent))),
+                    style:
+                        TextStyle(fontSize: Design.px(15), color: s.accent))),
         ]));
   }
 }
@@ -450,8 +445,10 @@ class _VehicleHeading extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                   fontSize: Design.px(compact ? 21 : 25), height: 1.2))),
-      SizedBox(width: Design.px(12)),
-      Text(source, style: TextStyle(fontSize: Design.px(16), color: s.muted)),
+      if (!source.contains('原车') && !source.contains('官方'))
+        SizedBox(width: Design.px(12)),
+      if (!source.contains('原车') && !source.contains('官方'))
+        Text(source, style: TextStyle(fontSize: Design.px(16), color: s.muted)),
     ]);
   }
 }

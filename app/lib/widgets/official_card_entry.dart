@@ -33,7 +33,7 @@ class OfficialCardEntry extends StatelessWidget {
                       textStyle: TextStyle(fontSize: Design.px(18))),
                   onPressed: () =>
                       controller.command('official-widget', value: type),
-                  child: Text('打开原车$label',
+                  child: Text('打开$label',
                       maxLines: 1, overflow: TextOverflow.ellipsis)))),
     ]);
   }

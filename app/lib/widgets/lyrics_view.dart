@@ -8,11 +8,18 @@ import '../theme/launcher_theme.dart';
 class LyricsView extends StatefulWidget {
   final Map<String, dynamic> media;
   final bool compact;
+  final int? currentLineMaxLines;
+  final int? visibleLines;
+  final double? lineHeight, fontSize;
   final TextAlign textAlign;
   const LyricsView(
       {super.key,
       required this.media,
       this.compact = false,
+      this.currentLineMaxLines,
+      this.visibleLines,
+      this.lineHeight,
+      this.fontSize,
       this.textAlign = TextAlign.center});
   @override
   State<LyricsView> createState() => _LyricsViewState();
@@ -24,7 +31,8 @@ class _LyricsViewState extends State<LyricsView> {
   Lyrics lyrics = const Lyrics([]);
   int active = -1;
   String payload = '';
-  double get rowHeight => Design.px(36);
+  double get rowHeight => Design.px(widget.lineHeight ?? 36);
+  int get visibleLines => widget.visibleLines ?? (widget.compact ? 1 : 3);
   @override
   void initState() {
     super.initState();
@@ -87,21 +95,70 @@ class _LyricsViewState extends State<LyricsView> {
   @override
   Widget build(BuildContext context) {
     final s = SurfaceStyle.of(context);
-    final count = widget.compact ? 1 : 3;
+    final count = visibleLines;
     final liveLine = widget.media['lyricLine']?.toString().trim() ?? '';
-    if (lyrics.lines.isEmpty && liveLine.isNotEmpty)
+    if (widget.currentLineMaxLines != null) {
+      final maxLines = widget.currentLineMaxLines!.clamp(1, 2);
+      final current = liveLine.isNotEmpty
+          ? liveLine
+          : lyrics.lines.isNotEmpty
+              ? lyrics.lines[active < 0 ? 0 : active].text
+              : widget.media['lyricsReason']?.toString() ?? '当前音源未提供歌词';
+      return Semantics(
+          label: '当前歌词',
+          child: SizedBox(
+              height: rowHeight * maxLines,
+              width: double.infinity,
+              child: Center(
+                  child: Text(current,
+                      key: const ValueKey('current-lyric-wrapped'),
+                      textAlign: TextAlign.center,
+                      softWrap: true,
+                      maxLines: maxLines,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontSize: Design.px(widget.fontSize ?? 26),
+                          height: 1.2,
+                          color: liveLine.isNotEmpty || lyrics.lines.isNotEmpty
+                              ? s.accent
+                              : s.muted)))));
+    }
+    if (lyrics.lines.isEmpty && liveLine.isNotEmpty) {
+      final lines = count == 1
+          ? [liveLine]
+          : [
+              widget.media['lyricPrevious']?.toString() ?? '',
+              liveLine,
+              widget.media['lyricNext']?.toString() ?? '',
+            ];
       return SizedBox(
           height: rowHeight * count,
-          child: Center(
-              child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 220),
-                  child: Text(liveLine,
-                      key: ValueKey(liveLine),
-                      maxLines: count,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: widget.textAlign,
-                      style: TextStyle(
-                          fontSize: Design.px(20), color: s.accent)))));
+          child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              child: Column(
+                  key: ValueKey(liveLine),
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (var i = 0; i < lines.length; i++)
+                      SizedBox(
+                          height: rowHeight,
+                          width: double.infinity,
+                          child: Align(
+                              alignment: widget.textAlign == TextAlign.start
+                                  ? Alignment.centerLeft
+                                  : Alignment.center,
+                              child: Text(lines[i],
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: widget.textAlign,
+                                  style: TextStyle(
+                                      fontSize:
+                                          Design.px(widget.fontSize ?? 20),
+                                      color: (lines.length == 1 || i == 1)
+                                          ? s.accent
+                                          : s.muted))))
+                  ])));
+    }
     if (lyrics.lines.isEmpty)
       return SizedBox(
           height: rowHeight * count,
@@ -109,7 +166,12 @@ class _LyricsViewState extends State<LyricsView> {
               child: Text(
                   widget.media['lyricsReason']?.toString() ?? '当前音源未提供歌词',
                   key: const ValueKey('lyrics-empty'),
-                  style: TextStyle(fontSize: Design.px(19), color: s.muted))));
+                  maxLines: count == 1 ? 1 : null,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: widget.textAlign,
+                  style: TextStyle(
+                      fontSize: Design.px(widget.fontSize ?? 19),
+                      color: s.muted))));
     return Semantics(
         label: '歌词',
         child: SizedBox(
@@ -117,8 +179,8 @@ class _LyricsViewState extends State<LyricsView> {
             child: ListView.builder(
               key: const ValueKey('lyrics-scroll'),
               controller: scroll,
-              padding: EdgeInsets.symmetric(
-                  vertical: widget.compact ? 0 : rowHeight),
+              padding:
+                  EdgeInsets.symmetric(vertical: rowHeight * (count - 1) / 2),
               itemExtent: rowHeight,
               itemCount: lyrics.lines.length,
               itemBuilder: (context, i) => Align(
@@ -132,7 +194,8 @@ class _LyricsViewState extends State<LyricsView> {
                       overflow: TextOverflow.ellipsis,
                       textAlign: widget.textAlign,
                       style: TextStyle(
-                          fontSize: Design.px(widget.compact ? 20 : 22),
+                          fontSize: Design.px(
+                              widget.fontSize ?? (widget.compact ? 20 : 22)),
                           color: i == active ? s.accent : s.muted,
                           fontWeight: i == active
                               ? FontWeight.w500

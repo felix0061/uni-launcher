@@ -33,9 +33,9 @@ void main() {
           OutlinedButton,
           switch (type) {
             'member' => '打开账号中心',
-            'cleanup' => '打开原车清理',
-            'calendar' => '打开原车日历',
-            _ => '打开原车天气',
+            'cleanup' => '打开清理',
+            'calendar' => '打开日历',
+            _ => '打开天气',
           });
       expect(button, findsOneWidget);
       expect(find.textContaining('未同步'), findsWidgets);

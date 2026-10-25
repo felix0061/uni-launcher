@@ -6,6 +6,7 @@ plugins {
 android {
     namespace = "xyz.i4o.uni.launcher"
     compileSdk = flutter.compileSdkVersion
+    buildFeatures { buildConfig = true }
 
 
     compileOptions {

@@ -67,11 +67,12 @@ void main() {
     final keys = [
       'home',
       'all-apps',
+      'recents',
+      'camera',
       'climate',
       'play-pause',
       'music-info',
-      'vehicle',
-      'camera'
+      'vehicle'
     ];
     final positions =
         keys.map((k) => tester.getCenter(find.byKey(ValueKey(k))).dx).toList();

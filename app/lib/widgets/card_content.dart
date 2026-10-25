@@ -14,6 +14,7 @@ import 'lyrics_view.dart';
 import 'media_progress.dart';
 import 'embedded_navigation.dart';
 import 'media_artwork.dart';
+import 'media_source_badge.dart';
 import 'weather_icon.dart';
 import 'vehicle_cards.dart';
 import 'official_card_entry.dart';
@@ -158,14 +159,16 @@ class _Heading extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontSize: Design.px(25), height: 1.2))),
-          SizedBox(width: Design.px(14)),
-          Flexible(
-              child: Text(source,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.end,
-                  style: TextStyle(
-                      fontSize: Design.px(16), height: 1.2, color: s.muted))),
+          if (!source.contains('原车') && !source.contains('官方'))
+            SizedBox(width: Design.px(14)),
+          if (!source.contains('原车') && !source.contains('官方'))
+            Flexible(
+                child: Text(source,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                    style: TextStyle(
+                        fontSize: Design.px(16), height: 1.2, color: s.muted))),
         ]));
   }
 }

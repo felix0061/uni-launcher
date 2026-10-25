@@ -13,6 +13,8 @@ class SeatControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = SurfaceStyle.of(context), demo = native['demo'] == true;
+    final writable = ['driverHeat', 'driverVent', 'passengerHeat']
+        .any((key) => SeatControlState.fromNative(native, key).writable);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       SizedBox(height: Design.px(28)),
       Divider(height: 1, color: s.edge),
@@ -22,7 +24,7 @@ class SeatControls extends StatelessWidget {
             style: TextStyle(
                 fontSize: Design.px(24), fontWeight: FontWeight.w500)),
         const Spacer(),
-        Text(demo ? '主驾加热 / 通风互斥' : '只读状态 · 控制待实车确认',
+        Text(demo || writable ? '主驾加热 / 通风互斥' : '只读状态 · 控制待实车确认',
             style: TextStyle(fontSize: Design.px(18), color: s.muted)),
       ]),
       SizedBox(height: Design.px(6)),
@@ -33,7 +35,12 @@ class SeatControls extends StatelessWidget {
       ])
         _row(context, control),
       SizedBox(height: Design.px(18)),
-      Text(demo ? '示例档位 · 不控制车辆' : '有读数时显示当前档位；操作请使用原车空调',
+      Text(
+          demo
+              ? '示例档位 · 不控制车辆'
+              : writable
+                  ? '点击档位调整座椅舒适功能'
+                  : '有读数时显示当前档位；操作请使用空调面板',
           style: TextStyle(fontSize: Design.px(17), color: s.muted)),
     ]);
   }

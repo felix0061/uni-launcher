@@ -27,7 +27,7 @@ public final class NeteaseMediaAdapter {
     private final Runnable changed;
     private MediaController controller;
     private MediaController.Callback callback;
-    private String track = "", mediaId = "", lyrics = "", lyricsSource = "", lyricLine = "";
+    private String track = "", mediaId = "", lyrics = "", lyricsSource = "", lyricLine = "", lyricPrevious = "", lyricNext = "";
 
     public NeteaseMediaAdapter(Runnable changed) { this.changed = changed; }
 
@@ -63,6 +63,8 @@ public final class NeteaseMediaAdapter {
                     } else if ("get_lyric_action".equals(event)) {
                         String[] lines = extras.getStringArray("lyric");
                         lyricLine = lines != null && lines.length > 1 ? text(lines[1]) : "";
+                        lyricPrevious = lines != null && lines.length > 0 ? text(lines[0]) : "";
+                        lyricNext = lines != null && lines.length > 2 ? text(lines[2]) : "";
                     } else if ("lyric_loading_action".equals(event)
                             || "lyric_message_action".equals(event)) {
                         clearLyrics();
@@ -92,7 +94,7 @@ public final class NeteaseMediaAdapter {
                     .put("controlSource", "netease-targeted-session");
             if (!lyrics.isEmpty()) snapshot.put("lyrics", lyrics).put("lyricsSource", lyricsSource);
             // A current sentence is not fabricated into a complete timed LRC document.
-            snapshot.put("lyricLine", lyricLine);
+            snapshot.put("lyricLine", lyricLine).put("lyricPrevious", lyricPrevious).put("lyricNext", lyricNext);
             snapshot.put("lyricsReason", lyrics.isEmpty() && lyricLine.isEmpty()
                     ? "网易云当前版本未向桌面共享歌词" : "");
         } catch (Exception unavailableSession) { /* Keep the standard snapshot. */ }
@@ -169,7 +171,7 @@ public final class NeteaseMediaAdapter {
         lyricsSource = value.isEmpty() ? "" : source;
     }
 
-    private void clearLyrics() { lyrics = ""; lyricsSource = ""; lyricLine = ""; }
+    private void clearLyrics() { lyrics = ""; lyricsSource = ""; lyricLine = ""; lyricPrevious = ""; lyricNext = ""; }
     private static String text(String value) {
         return value != null && value.length() <= MAX_LYRIC_LENGTH ? value : "";
     }

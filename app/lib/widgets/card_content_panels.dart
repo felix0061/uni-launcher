@@ -1,21 +1,24 @@
 part of 'card_content.dart';
 
-Future<void> showAppsPanel(BuildContext context, LauncherController c) =>
-    showLauncherSheet<void>(context,
-        title: '全部应用',
-        subtitle: '原车应用入口',
-        closeLabel: '关闭应用列表',
-        width: Design.px(1130),
-        height: Design.px(650),
-        builder: (context) => AppPanel(controller: c));
+Future<void> showAppsPanel(BuildContext context, LauncherController c) async {
+  if (await c.presentGlobalPanel('apps') || !context.mounted) return;
+  await showLauncherSheet<void>(context,
+      title: '全部应用',
+      subtitle: '已安装的应用',
+      closeLabel: '关闭应用列表',
+      width: Design.px(1560),
+      height: Design.px(760),
+      builder: (context) => AppPanel(controller: c));
+}
 
-Future<void> showMediaPanel(BuildContext context, LauncherController c) =>
-    showLauncherSheet<void>(context,
-        title: '正在播放',
-        subtitle: mediaSourceLabel(c.native.value),
-        closeLabel: '关闭音乐详情',
-        width: Design.px(1040),
-        builder: (context) => MediaPanel(controller: c));
+Future<void> showMediaPanel(BuildContext context, LauncherController c) async {
+  if (await c.presentGlobalPanel('media') || !context.mounted) return;
+  await showLauncherSheet<void>(context,
+      title: '正在播放',
+      closeLabel: '关闭音乐详情',
+      width: Design.px(1040),
+      builder: (context) => MediaPanel(controller: c));
+}
 
 class AppPanel extends StatelessWidget {
   final LauncherController controller;
@@ -40,7 +43,7 @@ class AppPanel extends StatelessWidget {
                 padding: EdgeInsets.symmetric(vertical: Design.px(32)),
                 itemCount: apps.length,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
+                    crossAxisCount: 6,
                     mainAxisSpacing: Design.px(40),
                     crossAxisSpacing: Design.px(24),
                     mainAxisExtent: Design.px(156)),
@@ -54,6 +57,8 @@ class AppPanel extends StatelessWidget {
                           child: InkWell(
                               borderRadius:
                                   BorderRadius.circular(s.controlRadius),
+                              onLongPress: () =>
+                                  showAppMenu(context, controller, app),
                               onTap: app['id'] == null
                                   ? null
                                   : () => controller.command('launch-app',
@@ -89,4 +94,29 @@ class AppPanel extends StatelessWidget {
                               ]))));
                 });
           });
+}
+
+Future<void> showAppMenu(BuildContext context, LauncherController c,
+    Map<String, dynamic> app) async {
+  final action = await showLauncherSheet<String>(context,
+      title: '${app['label'] ?? '应用'}',
+      closeLabel: '关闭应用菜单',
+      width: Design.px(520),
+      height: Design.px(330),
+      builder: (context) => Column(mainAxisSize: MainAxisSize.min, children: [
+            ListTile(
+                key: const ValueKey('app-menu-info'),
+                leading: const Icon(Icons.info_outline),
+                title: const Text('应用信息'),
+                onTap: () => Navigator.pop(context, 'app-info')),
+            ListTile(
+                key: const ValueKey('app-menu-uninstall'),
+                leading: const Icon(Icons.delete_outline),
+                title: const Text('卸载'),
+                enabled: app['canUninstall'] == true,
+                onTap: app['canUninstall'] == true
+                    ? () => Navigator.pop(context, 'request-uninstall')
+                    : null),
+          ]));
+  if (action != null) await c.command(action, value: '${app['package']}');
 }

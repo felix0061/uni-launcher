@@ -1,11 +1,11 @@
 {
-  "version": "0.5.0",
+  "version": "0.5.1",
   "abi": "x86_64",
   "api": 28,
-  "passed": 9,
+  "passed": 14,
   "checks": [
     {
-      "name": "release 0.5 home and settings",
+      "name": "release 0.5.1 home and settings",
       "passed": true
     },
     {
@@ -22,6 +22,26 @@
     },
     {
       "name": "release overlay controls shared media",
+      "passed": true
+    },
+    {
+      "name": "AOT globalPanelMain renders music in its own window",
+      "passed": true
+    },
+    {
+      "name": "music panel never changes dock geometry",
+      "passed": true
+    },
+    {
+      "name": "music panel pixels are visible above dock",
+      "passed": true
+    },
+    {
+      "name": "dock switches panel without hiding or relayout",
+      "passed": true
+    },
+    {
+      "name": "Back closes independent panel while dock stays visible",
       "passed": true
     },
     {

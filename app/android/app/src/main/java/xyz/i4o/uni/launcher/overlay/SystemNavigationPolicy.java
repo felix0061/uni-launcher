@@ -19,7 +19,7 @@ public final class SystemNavigationPolicy {
                 String previous=current==null?"<unset>":current;
                 if(p.contains(SAVED)&&java.util.Objects.equals(current,p.getString(APPLIED,"")))previous=p.getString(SAVED,previous);
                 else if(p.contains("savedPolicy")&&"immersive.navigation=*".equals(current))previous=p.getString("savedPolicy",previous);
-                String desired=merge(current);
+                String desired=merge(current,NavigationInsets.applied(c));
                 if(!Settings.Global.putString(c.getContentResolver(),"policy_control",desired))return false;
                 return p.edit().putString(SAVED,previous).putString(APPLIED,desired).putBoolean("systemNavigationHidden",true).remove("savedPolicy").putBoolean("hideNavigation",false).putBoolean("globalNavigation",false).commit();
             }
@@ -31,13 +31,13 @@ public final class SystemNavigationPolicy {
                 .putBoolean("hideNavigation",false).putBoolean("globalNavigation",false).commit();
         }catch(RuntimeException e){return false;}
     }
-    private static String merge(String current){
+    private static String merge(String current,boolean nativeInsets){
         StringBuilder result=new StringBuilder();
         // XCSystemUI's CarNavigationBar only reacts to immersive.full;
         // immersive.navigation clears the inset but keeps drawing the bar.
         if(current!=null)for(String part:current.split(":"))if(!part.isEmpty()&&!part.startsWith("immersive.")){
             if(result.length()>0)result.append(':');result.append(part);
         }
-        if(result.length()>0)result.append(':');return result.append("immersive.full=*,-com.ecarx.parking").toString();
+        if(result.length()>0)result.append(':');return result.append(nativeInsets?"immersive.status=*,-com.ecarx.parking":"immersive.full=*,-com.ecarx.parking").toString();
     }
 }

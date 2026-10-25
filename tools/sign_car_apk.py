@@ -7,7 +7,11 @@ The regular emulator/development APK retains its own certificate.
 import argparse
 import hashlib
 import subprocess
+import tempfile
+import shutil
+import zipfile
 from pathlib import Path
+from build_nav_insets import build as build_nav_insets
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--input', required=True, type=Path)
@@ -29,10 +33,25 @@ for path in [source, java, jar, key, cert]:
         parser.error('Missing local input: ' + str(path))
 target.parent.mkdir(parents=True, exist_ok=True)
 signer = [str(java), '-cp', str(jar), 'com.android.apksigner.ApkSignerTool']
-subprocess.run([*signer, 'sign', '--key', str(key), '--cert', str(cert),
+with tempfile.TemporaryDirectory(prefix='uni-car-sign-') as temp:
+    temp=Path(temp)
+    with zipfile.ZipFile(source) as apk:
+        launcher='assets/flutter_assets/AssetManifest.bin' in apk.namelist()
+    signing_source=source
+    if launcher:
+        resource=temp/'insets-unsigned.apk'
+        build_nav_insets(resource)
+        signed_resource=temp/'insets.apk'
+        subprocess.run([*signer,'sign','--key',str(key),'--cert',str(cert),
+            '--v4-signing-enabled','false','--out',str(signed_resource),str(resource)],check=True)
+        signing_source=temp/'launcher.apk'
+        shutil.copyfile(source,signing_source)
+        with zipfile.ZipFile(signing_source,'a',zipfile.ZIP_DEFLATED) as apk:
+            apk.write(signed_resource,'assets/uni-nav-insets.apk')
+    subprocess.run([*signer, 'sign', '--key', str(key), '--cert', str(cert),
                 '--v1-signing-enabled', 'true', '--v2-signing-enabled', 'true',
                 '--v3-signing-enabled', 'false', '--v4-signing-enabled', 'false',
-                '--out', str(target), str(source)], check=True)
+                '--out', str(target), str(signing_source)], check=True)
 verified = subprocess.run([*signer, 'verify', '--print-certs', str(target)],
                           check=True, capture_output=True, text=True).stdout
 expected = 'c8a2e9bccf597c2fb6dc66bee293fc13f2fc47ec77bc6b2b0d52c11f51192ab8'

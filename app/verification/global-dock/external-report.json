@@ -21,11 +21,15 @@
       "passed": true
     },
     {
-      "name": "climate panel expands overlay",
+      "name": "separate climate panel keeps dock bounded",
       "passed": true
     },
     {
-      "name": "Barrier tap closes panel and restores bounded overlay",
+      "name": "opening panel never relayouts dock surface",
+      "passed": true
+    },
+    {
+      "name": "Barrier tap closes panel without resizing dock",
       "passed": true
     },
     {
@@ -45,7 +49,7 @@
       "passed": true
     }
   ],
-  "passed": 11,
+  "passed": 12,
   "scope": "API28 emulator only; shared demo commands, no vehicle",
   "preferencesRestored": true
 }

@@ -54,7 +54,7 @@ def main():
         shutil.copy2(ROOT / 'analysis/official-widgets.json', assets)
         apks = {}
         for name, sources, manifest, resources, asset_dir in [
-            ('harness', [*[SOURCE / (n + '.java') for n in ['OfficialCatalog', 'OfficialEntryAdapter', 'OfficialWidgetActivity', 'AppRepository']], *TEST.joinpath('src').rglob('*.java')], TEST / 'AndroidManifest.xml', None, assets),
+            ('harness', [*[SOURCE / (n + '.java') for n in ['OfficialCatalog', 'OfficialEntryAdapter', 'OfficialWidgetActivity', 'AppRepository', 'OfficialCarContract']], *TEST.joinpath('src').rglob('*.java')], TEST / 'AndroidManifest.xml', None, assets),
             ('provider', list(TEST.joinpath('provider').rglob('*.java')), TEST / 'provider/AndroidManifest.xml', TEST / 'provider/res', None),
         ]:
             dest = out / name

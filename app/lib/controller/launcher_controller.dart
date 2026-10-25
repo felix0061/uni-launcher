@@ -15,7 +15,23 @@ class LauncherController extends ChangeNotifier {
   bool settings = false, editing = false, ready = false;
   Future<void> Function()? beforeExternalLaunch;
   String _overlayDesign = '';
-  bool get isGlobalDock => native.value['hostMode'] == 'global-dock';
+  bool get isGlobalDock =>
+      {'global-dock', 'global-panel'}.contains(native.value['hostMode']);
+
+  /// Route card and dock entry points to the same physical panel window.
+  Future<bool> presentGlobalPanel(String panel) async {
+    final dock = native.value['globalDock'];
+    if (native.value['hostMode'] == 'global-panel' ||
+        dock is! Map ||
+        dock['running'] != true ||
+        dock['visible'] == false ||
+        dock['enabled'] != true) {
+      return false;
+    }
+    await command('show-dock-panel', value: panel);
+    return true;
+  }
+
   String settingsTab = 'appearance', message = '';
   List<LauncherCard>? _backup, _undo;
   int _backupPages = 2;
@@ -77,7 +93,7 @@ class LauncherController extends ChangeNotifier {
       }
     }
     bool overlayThemeChanged = false;
-    if (state['hostMode'] == 'global-dock' &&
+    if ({'global-dock', 'global-panel'}.contains(state['hostMode']) &&
         state['savedDesign'] is String &&
         state['savedDesign'] != _overlayDesign) {
       _overlayDesign = state['savedDesign'];
@@ -110,12 +126,15 @@ class LauncherController extends ChangeNotifier {
       if (isGlobalDock &&
           {
             'launch-app',
+            'app-info',
+            'request-uninstall',
             'launch-navigation',
             'launch-player',
             'open-official',
             'official-widget',
             'show-home',
-            'show-desktop-settings'
+            'show-desktop-settings',
+            'show-recents'
           }.contains(action)) {
         await beforeExternalLaunch?.call();
       }

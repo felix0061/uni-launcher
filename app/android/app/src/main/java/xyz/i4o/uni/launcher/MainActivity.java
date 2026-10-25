@@ -46,7 +46,8 @@ public final class MainActivity extends FlutterActivity {
                     initialSettings=false;
                 }
                 else if("saveDesign".equals(call.method))result.success(rt.saveDesign((String)call.arguments));
-                else if("viewport".equals(call.method)){flutterViewport=new JSONObject((String)call.arguments);result.success(null);}
+                else if("viewport".equals(call.method)){flutterViewport=new JSONObject((String)call.arguments);
+                    rt.setDesktopContent(!flutterViewport.optBoolean("settings")&&flutterViewport.optInt("page")==0);result.success(null);}
                 else if("action".equals(call.method)){
                     String raw=(String)call.arguments;
                     if(raw==null||raw.length()>8192){result.error("invalid","Invalid request",null);return;}
@@ -94,6 +95,10 @@ public final class MainActivity extends FlutterActivity {
                 if(!rt.prefs().getBoolean("hideNavigation",false)&&!rt.prefs().getBoolean("systemNavigationHidden",false)
                     &&decor.getHeight()>reservedBottomPx)
                     usable=Math.min(usable,decor.getHeight()-reservedBottomPx);
+                if(rt.prefs().getBoolean("globalDockEnabled",false)){
+                    android.util.DisplayMetrics real=new android.util.DisplayMetrics();getWindowManager().getDefaultDisplay().getRealMetrics(real);
+                    usable=Math.min(usable,real.heightPixels-Math.round(real.widthPixels*96f/1920f));
+                }
                 state.put("contentHeightPx",content.getHeight()).put("viewportHeightPx",usable).put("reservedBottomPx",reservedBottomPx);
             }
             state.put("initialSettings",initialSettings)
@@ -130,7 +135,7 @@ public final class MainActivity extends FlutterActivity {
             // artwork, song text and app icons from this read-only diagnostic.
             try{
                 updateSnapshot();JSONObject full=new JSONObject(cached),report=new JSONObject();
-                for(String key:new String[]{"version","demo","hideNavigation","systemNavigationHidden","systemNavigationGranted","contentReservesSystemBars","contentHeightPx","viewportHeightPx","reservedBottomPx","navigation","vehicle"})report.put(key,full.opt(key));
+                for(String key:new String[]{"version","demo","hideNavigation","systemNavigationHidden","systemNavigationGranted","contentReservesSystemBars","contentHeightPx","viewportHeightPx","reservedBottomPx","desktopSelected","systemStatus","weather","navigation","vehicle"})report.put(key,full.opt(key));
                 JSONObject m=full.optJSONObject("media"),safe=new JSONObject();
                 if(m!=null)for(String key:new String[]{"available","authorized","playing","source","preferredPackage","sessions","reason","canToggle","canNext","canPrevious","canSeek","controlSource","lyricsSource","durationMs","positionMs"})safe.put(key,m.opt(key));
                 if(m!=null)safe.put("lyricsAvailable",!m.optString("lyrics").isEmpty()).put("artworkAvailable",!m.optString("artwork").isEmpty());

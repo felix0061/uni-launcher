@@ -106,7 +106,7 @@ public final class EmbeddedNavigationFactory extends PlatformViewFactory {
                 Class<?> type=Class.forName("android.app.ActivityView");
                 activityView=type.getConstructor(Context.class).newInstance(activity);
                 root.addView((View)activityView,new FrameLayout.LayoutParams(-1,-1));
-                state("loading","正在载入高德地图");handler.postDelayed(this::awaitDisplay,150);
+                state("loading","正在载入导航应用");handler.postDelayed(this::awaitDisplay,150);
             }catch(Throwable e){fail(e);}
         }
         void awaitDisplay(){
