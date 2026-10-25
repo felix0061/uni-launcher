@@ -1,7 +1,7 @@
 {
   "checks": [
     {
-      "name": "one inline dock on home, overlay hidden",
+      "name": "one overlay bar on home, inline dock removed",
       "passed": true
     },
     {
@@ -25,11 +25,11 @@
       "passed": true
     },
     {
-      "name": "Back closes panel and restores bounded overlay",
+      "name": "Barrier tap closes panel and restores bounded overlay",
       "passed": true
     },
     {
-      "name": "external HOME discards the old panel before another app",
+      "name": "dock Home discards the old panel before another app",
       "passed": true
     },
     {

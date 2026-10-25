@@ -44,6 +44,36 @@ class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
   bool? sentVisible;
   Map<String, dynamic> status = {};
   String get package => '${widget.navigation['package'] ?? ''}';
+  List<Map<String, dynamic>> get options => [
+        for (final item in (widget.navigation['options'] as List? ?? const []))
+          if (item is Map) Map<String, dynamic>.from(item),
+      ];
+
+  Future<void> pickApp(BuildContext context) async {
+    final options = this.options;
+    if (options.isEmpty) return;
+    final picked = await showDialog<String>(
+        context: context,
+        builder: (context) => SimpleDialog(
+                title: const Text('选择导航应用'),
+                children: [
+                  for (final option in options)
+                    SimpleDialogOption(
+                        key: ValueKey('nav-option-${option['package']}'),
+                        onPressed: () =>
+                            Navigator.pop(context, '${option['package']}'),
+                        child: Row(children: [
+                          Expanded(
+                              child: Text('${option['label']}',
+                                  style: const TextStyle(fontSize: 16))),
+                          if (option['package'] == package)
+                            const Icon(Icons.check, size: 18),
+                        ])),
+                ]));
+    if (picked != null && picked != package) {
+      await widget.controller.command('select-navigation', value: picked);
+    }
+  }
   @override
   void didUpdateWidget(EmbeddedNavigationCard old) {
     super.didUpdateWidget(old);
@@ -119,9 +149,26 @@ class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
           child: Row(children: [
             UniIcon('nav', color: s.accent, size: Design.px(25)),
             SizedBox(width: Design.px(12)),
-            Text('${widget.navigation['label'] ?? '高德地图'}',
-                style: TextStyle(fontSize: Design.px(23))),
-            const Spacer(),
+            Expanded(
+                child: InkWell(
+                    key: const ValueKey('nav-title-open'),
+                    onTap: () => c.command('launch-navigation'),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Flexible(
+                          child: Text('${widget.navigation['label'] ?? '高德地图'}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: Design.px(23)))),
+                      if (options.length > 1)
+                        Icon(Icons.arrow_drop_down,
+                            size: Design.px(28), color: s.muted),
+                    ]))),
+            if (options.length > 1)
+              IconAction(
+                  icon: Icons.swap_horiz,
+                  label: '切换导航应用',
+                  size: Design.px(38),
+                  onTap: () => pickApp(context)),
             IconAction(
                 icon: Icons.open_in_full,
                 label: '全屏打开导航',

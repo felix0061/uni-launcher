@@ -32,7 +32,30 @@ public final class NavigationApps {
             j.put("label",label).put("package",selected()).put("preferredPackage",prefs.getString("navigationPackage","auto"))
                 .put("installed",intent!=null).put("enabled",enabled).put("injectGranted",permission).put("activityStacksGranted",stacks).put("moveStackGranted",move)
                 .put("canEmbed",api&&permission&&stacks&&move&&intent!=null&&enabled)
+                .put("options",options())
                 .put("reason",intent==null?"请安装或选择高德地图":!enabled?"地图嵌入已关闭":!api?"当前容器适用于 Android 9":!permission||!stacks||!move?"需要车机系统嵌入授权":"等待地图容器就绪");
         }catch(Exception ignored){}return j;
+    }
+    /** Launchable navigation apps for the card title-bar switcher. */
+    private org.json.JSONArray options(){
+        org.json.JSONArray list=new org.json.JSONArray();
+        try{
+            java.util.LinkedHashMap<String,String> seen=new java.util.LinkedHashMap<>();
+            String selected=selected();
+            if(!selected.isEmpty()&&context.getPackageManager().getLaunchIntentForPackage(selected)!=null){
+                seen.put(selected,labelOf(selected));
+            }
+            for(String p:new String[]{"com.autonavi.amapauto","com.autonavi.amapautolite","com.autonavi.amapauto32","com.autonavi.minimap","com.baidu.BaiduMap","com.baidu.navi","com.tencent.map"}){
+                if(seen.containsKey(p))continue;
+                if(context.getPackageManager().getLaunchIntentForPackage(p)!=null)seen.put(p,labelOf(p));
+            }
+            for(java.util.Map.Entry<String,String> e:seen.entrySet()){
+                list.put(new JSONObject().put("package",e.getKey()).put("label",e.getValue()));
+            }
+        }catch(Exception ignored){}
+        return list;
+    }
+    private String labelOf(String pkg){
+        try{return context.getPackageManager().getApplicationLabel(context.getPackageManager().getApplicationInfo(pkg,0)).toString();}catch(Exception e){return pkg;}
     }
 }

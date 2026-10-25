@@ -33,9 +33,11 @@ public final class SystemNavigationPolicy {
     }
     private static String merge(String current){
         StringBuilder result=new StringBuilder();
-        if(current!=null)for(String part:current.split(":"))if(!part.isEmpty()&&!part.startsWith("immersive.navigation=")){
+        // XCSystemUI's CarNavigationBar only reacts to immersive.full;
+        // immersive.navigation clears the inset but keeps drawing the bar.
+        if(current!=null)for(String part:current.split(":"))if(!part.isEmpty()&&!part.startsWith("immersive.")){
             if(result.length()>0)result.append(':');result.append(part);
         }
-        if(result.length()>0)result.append(':');return result.append("immersive.navigation=*,-com.ecarx.parking").toString();
+        if(result.length()>0)result.append(':');return result.append("immersive.full=*,-com.ecarx.parking").toString();
     }
 }

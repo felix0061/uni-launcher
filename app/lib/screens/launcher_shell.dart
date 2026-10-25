@@ -32,6 +32,12 @@ class LauncherShell extends StatelessWidget {
                     final nativeHeight =
                         (controller.native.value['viewportHeightPx'] as num?)
                             ?.toDouble();
+                    // With the global dock enabled the overlay is the only bar
+                    // (home included); the inline dock must not duplicate it.
+                    final globalDock = controller.native.value['globalDock'];
+                    final globalDockActive = globalDock is Map &&
+                        globalDock['enabled'] == true &&
+                        globalDock['running'] == true;
                     final height = nativeHeight != null && nativeHeight > 0
                         ? (nativeHeight /
                                 MediaQuery.devicePixelRatioOf(context))
@@ -76,7 +82,8 @@ class LauncherShell extends StatelessWidget {
                                                     controller: controller)
                                                 : const SizedBox.shrink(),
                                           ])),
-                                      BottomDock(controller: controller),
+                                      if (!globalDockActive)
+                                        BottomDock(controller: controller),
                                     ])))));
                   })),
             )));

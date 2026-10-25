@@ -14,11 +14,13 @@ void main() {
     await c.command('demo-mode', enabled: true);
     c.home();
     await t.pumpAndSettle();
-    final dock = t.getRect(find.byKey(const ValueKey('bottom-dock')));
+    // Inline dock is the only bar until the global overlay is enabled.
+    final inline = t.getRect(find.byKey(const ValueKey('bottom-dock')));
     final size = t.view.physicalSize / t.view.devicePixelRatio;
-    expect(dock.left, 0);
-    expect(dock.right, size.width);
-    expect(dock.bottom,
+    expect(inline.left, 0);
+    expect(inline.right, size.width);
+    expect(
+        inline.bottom,
         (c.native.value['viewportHeightPx'] as num) / t.view.devicePixelRatio);
     final surface = t.widget<GlassSurface>(find
         .descendant(
@@ -50,14 +52,38 @@ void main() {
       await t.pump(const Duration(milliseconds: 100));
       await Future<void>.delayed(const Duration(milliseconds: 100));
     }
-    expect((c.native.value['globalDock'] as Map)['running'], true);
-    expect((c.native.value['globalDock'] as Map)['visible'], false,
-        reason: 'Home keeps one inline dock; global copy is hidden');
+    final dock = c.native.value['globalDock'] as Map;
+    expect(dock['running'], true);
+    expect(dock['visible'], true,
+        reason: 'The overlay is the single bar, home included');
+    expect(dock['y'], 1080 - 96, reason: 'physical bottom strip');
+    expect(find.byKey(const ValueKey('bottom-dock')), findsNothing,
+        reason: 'inline dock must not duplicate the global overlay');
     await binding.takeScreenshot('global-dock-settings');
     c.home();
     await t.pumpAndSettle();
     await binding.takeScreenshot('global-dock-home');
     expect(t.takeException(), null);
+    // Restore the pre-test state: global dock off returns the system bar.
+    c.openSettings();
+    c.tab('sources');
+    await t.pumpAndSettle();
+    await t.scrollUntilVisible(find.byKey(const ValueKey('global-dock')), 250,
+        scrollable: find.byType(Scrollable).first);
+    await t.pumpAndSettle();
+    if ((c.native.value['globalDock'] as Map)['enabled'] == true) {
+      await t.tap(find.byKey(const ValueKey('global-dock')));
+      await t.pumpAndSettle();
+    }
+    for (int i = 0;
+        i < 30 && (c.native.value['globalDock'] as Map)['running'] == true;
+        i++) {
+      await t.pump(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
+    expect((c.native.value['globalDock'] as Map)['running'], false);
+    c.home();
+    await t.pumpAndSettle();
     final screenshots = binding.reportData?['screenshots'];
     binding.reportData = {
       'screenshots': screenshots,

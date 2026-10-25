@@ -44,6 +44,41 @@ Future<T?> showLauncherSheet<T>(
   }
 }
 
+/// Lightweight auto-dismissing toast; never pushes layout like a SnackBar.
+void showLauncherToast(BuildContext context, String message) {
+  final overlay = Overlay.of(context, rootOverlay: true);
+  late final OverlayEntry entry;
+  var fading = false;
+  entry = OverlayEntry(builder: (context) {
+    final s = SurfaceStyle.of(context);
+    return Positioned(
+        left: 0,
+        right: 0,
+        bottom: Design.px(120),
+        child: IgnorePointer(
+            child: Center(
+                child: AnimatedOpacity(
+                    opacity: fading ? 0 : 1,
+                    duration: const Duration(milliseconds: 240),
+                    child: GlassSurface(
+                        tone: SurfaceTone.strong,
+                        padding: EdgeInsets.symmetric(
+                            horizontal: Design.px(30),
+                            vertical: Design.px(14)),
+                        child: Text(message,
+                            style: TextStyle(
+                                fontSize: Design.px(20), color: s.text)))))));
+  });
+  overlay.insert(entry);
+  Future.delayed(const Duration(milliseconds: 2000), () {
+    fading = true;
+    entry.markNeedsBuild();
+    Future.delayed(const Duration(milliseconds: 260), () {
+      if (entry.mounted) entry.remove();
+    });
+  });
+}
+
 class LauncherSheet extends StatelessWidget {
   final String title, closeLabel;
   final String? subtitle;

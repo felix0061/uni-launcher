@@ -27,6 +27,7 @@
     "Edited card layout committed to Android preferences",
     "Real installed application drawer opens",
     "Music card dock and detail share native demo lyrics",
+    "Dock camera opens the OEM 360 directly without a dialog",
     "Native climate simulator confirms command",
     "Seat panel exposes three requested controls",
     "Driver heating selection confirmed by native simulator",
@@ -58,9 +59,9 @@
     "Weather day and night atlases render all icon conditions without exceptions",
     "No Flutter rendering exception"
   ],
-  "passed": 54,
+  "passed": 55,
   "glassDefault": false,
-  "carVerification": "0.5.0 pending; historical 0.4.2 physical evidence stored separately",
+  "carVerification": "pending",
   "performance": "Functional emulator checks; no real-car performance claim",
   "screenshots": [
     "flutter-home-dark.png",
@@ -87,6 +88,5 @@
     "flutter-integration-settings.png",
     "weather-icons-day.png",
     "weather-icons-night.png"
-  ],
-  "version": "0.5.0"
+  ]
 }

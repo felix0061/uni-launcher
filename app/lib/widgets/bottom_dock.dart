@@ -5,7 +5,6 @@ import '../theme/launcher_theme.dart';
 import 'card_content.dart';
 import 'glass_surface.dart';
 import 'launcher_dialog.dart';
-import 'uni_icon.dart';
 import 'lyrics_view.dart';
 import 'media_artwork.dart';
 import '../model/vehicle_data.dart';
@@ -218,7 +217,7 @@ class BottomDock extends StatelessWidget {
                       () => showVehiclePanel(context, c)),
                   gap(),
                   action('camera', Icons.surround_sound_outlined, '360 影像',
-                      () => showCameraPanel(context, c))
+                      () => c.command('open-official', value: 'camera'))
                 ])));
       });
 }
@@ -234,33 +233,3 @@ Future<void> showVehiclePanel(BuildContext context, LauncherController c) =>
             valueListenable: c.native,
             builder: (context, n, _) =>
                 VehicleReadout(controller: c, native: n)));
-Future<void> showCameraPanel(BuildContext context, LauncherController c) =>
-    showLauncherSheet<void>(context,
-        title: '360 影像',
-        subtitle: '原车全景影像入口',
-        closeLabel: '关闭影像面板',
-        width: Design.px(1320), builder: (context) {
-      final s = SurfaceStyle.of(context);
-      return Column(mainAxisSize: MainAxisSize.min, children: [
-        Container(
-            height: Design.px(520),
-            decoration: BoxDecoration(
-                color: const Color(0x6607151D),
-                borderRadius: BorderRadius.circular(s.radius)),
-            alignment: Alignment.center,
-            child:
-                Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              UniIcon('camera', size: Design.px(86), color: s.accent),
-              SizedBox(height: Design.px(28)),
-              Text('等待车辆影像', style: TextStyle(fontSize: Design.px(36))),
-              SizedBox(height: Design.px(18)),
-              Text('车辆连接后，由原车影像服务提供画面',
-                  style: TextStyle(fontSize: Design.px(22), color: s.muted))
-            ])),
-        SizedBox(height: Design.px(20)),
-        OutlinedButton.icon(
-            onPressed: () => c.command('open-official', value: 'camera'),
-            icon: const UniIcon('arrow-right'),
-            label: const Text('打开原车 360'))
-      ]);
-    });

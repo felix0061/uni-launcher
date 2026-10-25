@@ -159,11 +159,7 @@ class _DeleteCardAction extends StatelessWidget {
                         borderRadius: BorderRadius.circular(s.controlRadius),
                         onTap: () {
                           controller.remove(card.id);
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: const Text('卡片已移除'),
-                              action: SnackBarAction(
-                                  label: '撤销',
-                                  onPressed: controller.undoRemove)));
+                          showLauncherToast(context, '卡片已移除');
                         },
                         child: Center(
                             child: UniIcon('trash',

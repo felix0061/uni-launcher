@@ -24,6 +24,13 @@ class BatteryCard extends StatelessWidget {
       builder: (context, readings, compact) {
         final reading = readings.single, s = SurfaceStyle.of(context);
         final now = nowMs?.call();
+        final energyFlow = () {
+          final vehicle = native['vehicle'];
+          final fields = vehicle is Map ? vehicle['fields'] : null;
+          final field = fields is Map ? fields['energyFlow'] : null;
+          if (field is! Map || field['valid'] != true) return null;
+          return '${field['value']}';
+        }();
         return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -41,15 +48,48 @@ class BatteryCard extends StatelessWidget {
               _Footer('剩余电量', reading.status,
                   color: reading.available ? s.accent : s.muted),
               SizedBox(height: Design.px(compact ? 8 : 16)),
+              if (!compact) ...[
+                EnergyFlowDiagram(state: energyFlow),
+                SizedBox(height: Design.px(14)),
+              ],
               Container(height: 1, color: s.edge),
               SizedBox(height: Design.px(compact ? 8 : 16)),
               _Footer(
                   '驾驶模式', vehicleStatusLabel(native, 'driveMode', nowMs: now)),
               SizedBox(height: Design.px(4)),
-              _Footer(
-                  '能量流', vehicleStatusLabel(native, 'energyFlow', nowMs: now)),
-              SizedBox(height: Design.px(4)),
-              const _Footer('外接充电', '待同步'),
+              if (compact)
+                _Footer('能量流',
+                    vehicleStatusLabel(native, 'energyFlow', nowMs: now))
+              else
+                Row(children: [
+                  Text('能量流',
+                      style: TextStyle(
+                          fontSize: Design.px(16), color: s.muted)),
+                  SizedBox(width: Design.px(12)),
+                  Expanded(
+                      child: Text(
+                          vehicleStatusLabel(native, 'energyFlow', nowMs: now),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontSize: Design.px(16),
+                              color: vehicleStatusLabel(
+                                          native, 'energyFlow', nowMs: now) ==
+                                      '未连接'
+                                  ? s.muted
+                                  : s.accent))),
+                  Text('外接充电',
+                      style: TextStyle(
+                          fontSize: Design.px(16), color: s.muted)),
+                  SizedBox(width: Design.px(12)),
+                  Text('待同步',
+                      style: TextStyle(
+                          fontSize: Design.px(16), color: s.muted)),
+                ]),
+              if (compact) ...[
+                SizedBox(height: Design.px(4)),
+                const _Footer('外接充电', '待同步'),
+              ],
             ]);
       });
 }
@@ -82,6 +122,114 @@ class BatteryLevelBar extends StatelessWidget {
                           key: const ValueKey('battery-fill'),
                           color: s.accent)),
                 ]))));
+  }
+}
+
+/// Official-style energy flow: 发动机 — 电池 — 车轮 with per-segment direction.
+/// Only officially decoded states light a path; an invalid/unknown state keeps
+/// everything dim so a stale read can never look like a live flow.
+class EnergyFlowDiagram extends StatelessWidget {
+  final String? state;
+  const EnergyFlowDiagram({super.key, required this.state});
+
+  // (engine→battery right, battery→wheels right, wheels→battery left)
+  (bool, bool, bool, bool engineOn, bool batteryOn, bool wheelsOn) _plan() =>
+      switch (state) {
+        'ELECTRIC_DRIVE' || 'EAWD' => (
+          false,
+          true,
+          false,
+          false,
+          true,
+          true
+        ),
+        'ENGINE_ONLY' => (false, true, false, true, false, true),
+        'ENGINE_ONLY_AND_CHARGE' || 'STANDSTILL_ENGINE_ON_CHARGE' => (
+          true,
+          true,
+          false,
+          true,
+          true,
+          true
+        ),
+        'BOOST' => (true, true, false, true, true, true),
+        'MAIN_CHARGING' => (true, false, false, false, true, false),
+        'ENGINE_OFF_REGEN_BRAKE' || 'ENGINE_ON_REGEN_BRAKE' ||
+        'ENGINE_ON_REGEN_BRAKE_CHARGE' => (
+          false,
+          false,
+          true,
+          state == 'ENGINE_ON_REGEN_BRAKE' ||
+              state == 'ENGINE_ON_REGEN_BRAKE_CHARGE',
+          true,
+          true
+        ),
+        'STANDSTILL_ENGINE_ON' =>
+          (false, false, false, true, false, false),
+        _ => (false, false, false, false, false, false),
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final s = SurfaceStyle.of(context);
+    final (chargeAB, driveBW, regenWB, engineOn, batteryOn, wheelsOn) = _plan();
+    Widget node(IconData icon, bool on, String label) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+              width: Design.px(40),
+              height: Design.px(40),
+              decoration: BoxDecoration(
+                  color: on ? s.accent.withValues(alpha: .16) : s.muted.withValues(alpha: .10),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                      color: on ? s.accent : s.muted.withValues(alpha: .35),
+                      width: 1)),
+              child: Icon(icon,
+                  size: Design.px(22),
+                  color: on ? s.accent : s.muted.withValues(alpha: .7))),
+          SizedBox(height: Design.px(4)),
+          Text(label,
+              style: TextStyle(
+                  fontSize: Design.px(13),
+                  color: on ? s.text : s.muted.withValues(alpha: .8))),
+        ]);
+    Widget link({required bool on, required bool left}) => Expanded(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+              height: Design.px(2),
+              margin: EdgeInsets.symmetric(horizontal: Design.px(6)),
+              color: on ? s.accent : s.muted.withValues(alpha: .3)),
+          SizedBox(height: Design.px(2)),
+          Icon(left ? Icons.arrow_back : Icons.arrow_forward,
+              size: Design.px(18),
+              color: on ? s.accent : s.muted.withValues(alpha: .35)),
+        ]));
+    return Container(
+        padding: EdgeInsets.symmetric(
+            horizontal: Design.px(10), vertical: Design.px(8)),
+        decoration: BoxDecoration(
+            color: s.muted.withValues(alpha: .08),
+            borderRadius: BorderRadius.circular(s.radius * .4)),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          node(Icons.local_gas_station, engineOn, '发动机'),
+          link(on: chargeAB || driveBW, left: false),
+          node(Icons.battery_charging_full, batteryOn, '电池'),
+          link(on: regenWB, left: true),
+          node(Icons.directions_car, wheelsOn, '车轮'),
+          if (regenWB)
+            Padding(
+                padding: EdgeInsets.only(left: Design.px(10)),
+                child: Text('能量回收',
+                    style: TextStyle(
+                        fontSize: Design.px(15), color: s.accent))),
+          if (state == 'MAIN_CHARGING')
+            Padding(
+                padding: EdgeInsets.only(left: Design.px(10)),
+                child: Text('充电中',
+                    style: TextStyle(
+                        fontSize: Design.px(15), color: s.accent))),
+        ]));
   }
 }
 

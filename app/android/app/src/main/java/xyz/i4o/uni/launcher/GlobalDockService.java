@@ -16,6 +16,7 @@ import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.embedding.engine.dart.DartExecutor;
 import io.flutter.plugin.common.*;
 import xyz.i4o.uni.launcher.overlay.SystemNavigationPolicy;
+import xyz.i4o.uni.launcher.overlay.OverscanPolicy;
 
 /** A small, touch-bounded global window; expanded only while a dock panel is open.
  * One service/engine, the original Flutter BottomDock, and one shared native runtime.
@@ -34,6 +35,9 @@ public final class GlobalDockService extends Service {
     private EventChannel.EventSink sink;
     private boolean expanded, visible, cameraSuspended;
     private int bottomInset;
+    private long expandedAt;
+    private final android.os.Handler main=new android.os.Handler(android.os.Looper.getMainLooper());
+    private int appliedX=-1, appliedY=-1, appliedW=-1, appliedH=-1;
 
     public static void ensureStarted(Context c){
         SharedPreferences p=c.getSharedPreferences("launcher",0);
@@ -57,9 +61,12 @@ public final class GlobalDockService extends Service {
         if("global-dock".equals(a)){
             boolean on=r.optBoolean("enabled");p.edit().putBoolean("globalDockEnabled",on).commit();
             if(on){
-                if(!Settings.canDrawOverlays(c))try{c.startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,Uri.parse("package:"+c.getPackageName())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));}catch(RuntimeException e){toast(c,"请在系统设置允许 UNI 显示在其他应用上层");}
+                if(!Settings.canDrawOverlays(c)){try{c.startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,Uri.parse("package:"+c.getPackageName())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));}catch(RuntimeException e){toast(c,"请在系统设置允许 UNI 显示在其他应用上层");}}
                 else ensureStarted(c);
-            }else c.stopService(new Intent(c,GlobalDockService.class));
+            }else{
+                c.stopService(new Intent(c,GlobalDockService.class));
+                disableBarModifications(c,p);
+            }
             rt.publish();return true;
         }
         if("system-navigation-hidden".equals(a)){
@@ -74,6 +81,23 @@ public final class GlobalDockService extends Service {
         if("open-official".equals(a)&&"camera".equals(r.optString("value"))&&active!=null){active.cameraSuspended=true;active.update();}
         return false;
     }
+    /** Global dock requires hiding the OEM bar (immersive.full — XCSystemUI
+     * ignores immersive.navigation) and reserving 96px via display overscan so
+     * external apps end above our dock instead of underneath it. */
+    private static void enableBarModifications(Context c,SharedPreferences p){
+        SystemNavigationPolicy.setHidden(c,p,true);
+        if(!OverscanPolicy.apply(c,p,true))android.util.Log.w("UniDock","wm overscan unavailable; overlay covers external app bottoms");
+    }
+    private static void disableBarModifications(Context c,SharedPreferences p){
+        OverscanPolicy.apply(c,p,false);
+        SystemNavigationPolicy.setHidden(c,p,false);
+    }
+    private static void stopAndRestore(Context c){
+        SharedPreferences p=c.getSharedPreferences("launcher",0);
+        p.edit().putBoolean("globalDockEnabled",false).commit();
+        c.stopService(new Intent(c,GlobalDockService.class));
+        disableBarModifications(c,p);
+    }
     /** A refused camera launch must not leave the dock hidden on the next app. */
     public static void resumeAfterCameraLaunchFailure(){
         GlobalDockService s=active;
@@ -84,7 +108,7 @@ public final class GlobalDockService extends Service {
         super.onCreate();active=this;runtime=LauncherRuntime.get(this);
         if(!Settings.canDrawOverlays(this)||!runtime.prefs().getBoolean("globalDockEnabled",false)){stopSelf();return;}
         startForeground(753,notification());
-        if(runtime.prefs().getBoolean("systemNavigationHidden",false))SystemNavigationPolicy.setHidden(this,runtime.prefs(),true);
+        enableBarModifications(this,runtime.prefs());
         windows=(WindowManager)getSystemService(WINDOW_SERVICE);
         engine=new FlutterEngine(this,null,false);
         methods=new MethodChannel(engine.getDartExecutor().getBinaryMessenger(),"xyz.i4o.uni.launcher/platform");
@@ -120,6 +144,8 @@ public final class GlobalDockService extends Service {
             int inset=insets.getStableInsetBottom();if(inset>0&&inset!=bottomInset){bottomInset=inset;v.post(this::update);}
             return insets;
         });
+        // A launch from anywhere else (OEM voice, notifications, adb) takes
+        // window focus; a focusable expanded panel would otherwise pin that
         view.setOnKeyListener((v,key,event)->{
             if(key==KeyEvent.KEYCODE_BACK&&expanded){if(event.getAction()==KeyEvent.ACTION_UP)engine.getNavigationChannel().popRoute();return true;}return false;
         });
@@ -142,31 +168,66 @@ public final class GlobalDockService extends Service {
     private void configureBounds(){
         if(layout==null)return;
         DisplayMetrics real=new DisplayMetrics();windows.getDefaultDisplay().getRealMetrics(real);
-        android.graphics.Point usable=new android.graphics.Point();windows.getDefaultDisplay().getSize(usable);
-        int inferred=Math.max(0,real.heightPixels-usable.y);if(inferred>0)bottomInset=Math.max(bottomInset,inferred);
-        boolean hidden=runtime.prefs().getBoolean("systemNavigationHidden",false);
-        int bottom=hidden?0:bottomInset;
-        int width=real.widthPixels, usableHeight=real.heightPixels-bottom;
+        int width=real.widthPixels;
         int bar=Math.round(width*96f/1920f);
+        // The dock always owns the physical bottom strip: the OEM bar is hidden
+        // and display overscan keeps external app content above it.
         layout.flags=WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL|WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+            |WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
             |WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED;
         if(!expanded)layout.flags|=WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
         layout.softInputMode=WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE;
-        layout.width=width;layout.height=expanded?usableHeight:bar;
-        layout.x=0;layout.y=expanded?0:usableHeight-bar;
+        layout.width=width;layout.height=expanded?real.heightPixels:bar;
+        layout.x=0;layout.y=expanded?0:real.heightPixels-bar;
     }
     private void setExpanded(boolean value){
         if(expanded==value)return;expanded=value;configureBounds();
+        if(value)expandedAt=android.os.SystemClock.elapsedRealtime();
+        if(value)startForegroundCheck();else main.removeCallbacks(foregroundCheck);
         if(view!=null&&view.getParent()!=null){windows.updateViewLayout(view,layout);if(value)view.requestFocus();}
         publish();
+    }
+    /** Panel must follow the front task: record the top task at expansion and
+     * collapse when a different external task replaces it (REAL_GET_TASKS is a
+     * signature permission granted to this platform-signed package). */
+    private String expandedTopTask;
+    private final Runnable foregroundCheck=this::checkForegroundTask;
+    private void startForegroundCheck(){
+        expandedTopTask=topTaskPackage();
+        main.removeCallbacks(foregroundCheck);
+        main.postDelayed(foregroundCheck,500);
+    }
+    private void checkForegroundTask(){
+        if(!expanded)return;
+        String top=topTaskPackage();
+        if(!top.isEmpty()&&!top.equals(getPackageName())&&!top.equals(expandedTopTask)){
+            setExpanded(false);
+            if(engine!=null)engine.getNavigationChannel().popRoute();
+            return;
+        }
+        main.postDelayed(foregroundCheck,500);
+    }
+    private String topTaskPackage(){
+        try{
+            android.app.ActivityManager am=(android.app.ActivityManager)getSystemService(ACTIVITY_SERVICE);
+            java.util.List<android.app.ActivityManager.RunningTaskInfo> tasks=am.getRunningTasks(1);
+            if(tasks!=null&&!tasks.isEmpty()&&tasks.get(0).topActivity!=null)
+                return tasks.get(0).topActivity.getPackageName();
+        }catch(Exception ignored){}
+        return "";
     }
     private void update(){
         if(view==null)return;
         if(!Settings.canDrawOverlays(this)){stopSelf();return;}
         if(runtime.homeVisible())cameraSuspended=false;
-        boolean show=!runtime.homeVisible()&&!cameraSuspended;
+        boolean show=!cameraSuspended;
         configureBounds();
-        if(view.getParent()!=null)windows.updateViewLayout(view,layout);
+        // Republish storms must not relayout the window (dock jump/flicker).
+        if(view.getParent()!=null&&(layout.width!=appliedW||layout.height!=appliedH
+                ||layout.x!=appliedX||layout.y!=appliedY)){
+            windows.updateViewLayout(view,layout);
+            appliedX=layout.x;appliedY=layout.y;appliedW=layout.width;appliedH=layout.height;
+        }
         if(visible!=show){
             visible=show;view.setVisibility(show?View.VISIBLE:View.GONE);
             if(show)engine.getLifecycleChannel().appIsResumed();else engine.getLifecycleChannel().appIsPaused();
@@ -199,8 +260,7 @@ public final class GlobalDockService extends Service {
     }
     @Override public int onStartCommand(Intent intent,int flags,int id){
         if(view==null)return START_NOT_STICKY;
-        if(intent!=null&&STOP.equals(intent.getAction())){runtime.prefs().edit().putBoolean("globalDockEnabled",false).commit();stopSelf();return START_NOT_STICKY;}
-        if(intent!=null&&RESTORE.equals(intent.getAction())){SystemNavigationPolicy.setHidden(this,runtime.prefs(),false);update();runtime.publish();}
+        if(intent!=null&&(STOP.equals(intent.getAction())||RESTORE.equals(intent.getAction()))){stopAndRestore(this);stopSelf();return START_NOT_STICKY;}
         return START_STICKY;
     }
     @Override public void onConfigurationChanged(android.content.res.Configuration config){super.onConfigurationChanged(config);update();}

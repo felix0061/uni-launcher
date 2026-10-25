@@ -60,10 +60,9 @@ Future<void> showCardLibrary(BuildContext context, LauncherController c) =>
                                           if (c.add(spec.type)) {
                                             Navigator.pop(context);
                                           } else {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(const SnackBar(
-                                                    content: Text(
-                                                        '桌面页已满，请先移除一张卡片')));
+                                            showLauncherToast(
+                                                context,
+                                                '桌面页已满，请先移除一张卡片');
                                           }
                                         }),
                                 ]),

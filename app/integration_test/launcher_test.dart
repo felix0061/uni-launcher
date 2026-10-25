@@ -32,6 +32,7 @@ void main() {
     c.resetLayout();
     c.setAppearance(const Appearance(mode: 'dark'));
     await c.command('demo-mode', enabled: true);
+    await c.command('global-dock', enabled: false);
     await c.command('select-player', value: 'ecarx.xsf.mediacenter');
     await c.command('select-navigation', value: 'auto');
     await c.command('hide-navigation', enabled: false);
@@ -228,8 +229,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('camera')));
     await settle();
     await binding.takeScreenshot('flutter-camera');
-    await tester.tap(find.byTooltip('关闭影像面板'));
-    await settle();
+    verify('Dock camera opens the OEM 360 directly without a dialog',
+        find.byTooltip('关闭影像面板').evaluate().isEmpty);
     await c.command('temp-up', zone: 'left');
     await settle();
     verify('Native climate simulator confirms command',
