@@ -1,0 +1,142 @@
+{
+  "checkedAt": "2026-10-25T01:06:38.416832+00:00",
+  "version": "0.5.0",
+  "versionCode": 2007,
+  "package": "xyz.i4o.uni.launcher",
+  "device": {
+    "product": "dcy11",
+    "android": 9,
+    "soc": "MSM8996 arm64",
+    "fingerprint": "geely/dcy11_a1/dcy11:9/PQ3B.190801.002/vc.integrator08230948"
+  },
+  "connection": {
+    "carHotspot": "192.168.5.1",
+    "wirelessAdb5555": "passed",
+    "usbAdb": "not used (attached USB device was a phone)"
+  },
+  "install": {
+    "from": "0.4.2 (2006)",
+    "to": "0.5.0 (2007)",
+    "method": "adb install -r, same platform certificate, user data preserved",
+    "result": "Success"
+  },
+  "startup": {
+    "coldStart": "2.75s",
+    "fatalOrDartErrors": false,
+    "pid": 10419,
+    "viewport": {
+      "contentHeightPx": 944,
+      "reservedOemBarPx": 136,
+      "historicalWindowFixRetained": true
+    }
+  },
+  "vehicleRead": {
+    "connected": true,
+    "writable": true,
+    "source": "Official Car.create / CarPropertyManager PA",
+    "new050Fields": {
+      "driveMode": {
+        "value": "HYBRID",
+        "raw": 8,
+        "valid": true
+      },
+      "hybridSelected": {
+        "value": true,
+        "raw": 1,
+        "valid": true
+      },
+      "energyFlow": {
+        "value": "STANDSTILL_ENGINE_OFF",
+        "raw": 7,
+        "valid": true
+      },
+      "electricRange": {
+        "raw": 73,
+        "format": "km",
+        "valid": false,
+        "withheld": "RANGE_DOMAIN_UNCONFIRMED (by design)"
+      }
+    },
+    "existingFields": {
+      "batteryPercent": 92,
+      "pm25": 0,
+      "aqi": 0,
+      "speedRaw": 0,
+      "odometerRaw": 86547,
+      "rangeRaw": 450,
+      "maintenanceRaw": 1092,
+      "unitsWithheld": [
+        "speed",
+        "odometer",
+        "range",
+        "maintenanceMileage"
+      ]
+    },
+    "climate": {
+      "left": 20.5,
+      "right": 20.5,
+      "fan": 4,
+      "power": true,
+      "auto": false,
+      "ac": false
+    }
+  },
+  "navigation": {
+    "amapInstalled": true,
+    "canEmbed": true,
+    "embeddedMapCardVisible": true
+  },
+  "media": {
+    "source": "com.netease.cloudmusic.iot",
+    "realPlayback": true,
+    "overlayPauseToggled": true,
+    "canSeek": true,
+    "lyrics": "not exposed by installed player (known pending)"
+  },
+  "globalDock": {
+    "enabledViaUi": true,
+    "bounds": "1920x96",
+    "systemNavHidden": {
+      "policy": "immersive.navigation=*,-com.ecarx.parking",
+      "viewport": "944 -> 1080",
+      "dockY": "848 -> 984 (flush bottom, no gap)"
+    },
+    "overExternalApp": {
+      "visible": true,
+      "rendering": true,
+      "runtimeOwnerMovesToService": true,
+      "mediaToggle": true,
+      "climatePanelExpand": true,
+      "backClosesPanel": true,
+      "homeHoldOpensSettings": true
+    },
+    "homeReturn": {
+      "overlayHidden": true,
+      "noDuplicateDock": true,
+      "ownerBackToTwo": true
+    },
+    "systemNavRestore": {
+      "policy": "null (original)",
+      "viewport": "1080 -> 944"
+    },
+    "leftEnabled": true
+  },
+  "camera": {
+    "component": "com.ecarx.parking/com.ecarx.park2.MainAvmActivity",
+    "entry": "installed but launch silently refused (direct am start also fails)",
+    "interpretation": "OEM gear/state gate, not a launcher defect",
+    "reverseTakeover": "pending (requires moving the car)"
+  },
+  "stability": {
+    "sessionCrashScan": "clean",
+    "nativeHeapKb": 56880
+  },
+  "pending": [
+    "same-time OEM comparison: SOC 92%, drive mode HYBRID, PM2.5 vs original UI",
+    "NetEase seek/progress drag and previous/next on real app",
+    "HVAC/seat write commands and readback (awaiting owner approval)",
+    "reverse-gear camera takeover and dock suspend/resume",
+    "sleep/wake, ignition cycle, boot receiver, long-duration memory",
+    "weather/account/calendar/cleanup unified fields (OEM contracts still missing)"
+  ]
+}
