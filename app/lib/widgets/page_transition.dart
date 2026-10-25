@@ -1,5 +1,61 @@
 import 'package:flutter/material.dart';
 
+/// Keeps every desktop page mounted (including the Android map surface) while
+/// animating the Flutter card layer. This avoids recreating the navigation app
+/// and still gives the familiar launcher fade/slide transitions on car builds.
+class DesktopPageStack extends StatelessWidget {
+  final int page;
+  final String effect;
+  final List<Widget> children;
+  const DesktopPageStack(
+      {super.key,
+      required this.page,
+      required this.effect,
+      required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    final disabled = effect == 'none' ||
+        MediaQuery.disableAnimationsOf(context) ||
+        children.length < 2;
+    if (disabled) return IndexedStack(index: page, children: children);
+    const duration = Duration(milliseconds: 360);
+    final order = <int>[
+      for (var i = 0; i < children.length; i++)
+        if (i != page) i,
+      page,
+    ];
+    return ClipRect(
+        child: Stack(fit: StackFit.expand, children: [
+      for (final i in order)
+        Positioned.fill(
+            key: ValueKey('desktop-motion-page-$i'),
+            child: IgnorePointer(
+                ignoring: i != page,
+                child: ExcludeSemantics(
+                    excluding: i != page,
+                    child: TickerMode(
+                        enabled: i == page,
+                        child: AnimatedSlide(
+                            duration: duration,
+                            curve: Curves.easeOutCubic,
+                            offset: effect == 'slide'
+                                ? Offset(
+                                    i == page ? 0 : (i < page ? -.16 : .16), 0)
+                                : Offset.zero,
+                            child: AnimatedScale(
+                                duration: duration,
+                                curve: Curves.easeOutCubic,
+                                scale: effect == 'fade' && i != page ? .96 : 1,
+                                child: AnimatedOpacity(
+                                    duration: duration,
+                                    curve: Curves.easeOutCubic,
+                                    opacity: i == page ? 1 : 0,
+                                    child: children[i]))))))),
+    ]));
+  }
+}
+
 /// Only the workspace moves; the header and dock remain fixed.
 class DesktopPageTransition extends StatefulWidget {
   final int page;

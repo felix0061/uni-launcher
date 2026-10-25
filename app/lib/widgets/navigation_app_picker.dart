@@ -55,6 +55,9 @@ class _NavigationAppPickerState extends State<NavigationAppPicker> {
                   final app =
                       apps.where((a) => a['package'] == entry.key).firstOrNull;
                   final bytes = app?['iconBytes'];
+                  final displayApp =
+                      Map<String, dynamic>.from(app ?? entry.value)
+                        ..putIfAbsent('package', () => entry.key);
                   return ListTile(
                       key: ValueKey('nav-option-${entry.key}'),
                       leading: SizedBox(
@@ -65,7 +68,7 @@ class _NavigationAppPickerState extends State<NavigationAppPicker> {
                                   errorBuilder: (_, __, ___) =>
                                       const Icon(Icons.navigation_outlined))
                               : const Icon(Icons.navigation_outlined)),
-                      title: Text('${entry.value['label'] ?? entry.key}'),
+                      title: Text(widget.controller.appName(displayApp)),
                       trailing: selected == entry.key
                           ? const Icon(Icons.check)
                           : null,

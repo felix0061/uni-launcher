@@ -337,6 +337,12 @@ void main() {
       'navigation binding entry stays visible with one map and accepts other installed apps',
       (t) async {
     final (c, g) = await setup(t);
+    (g.state['apps'] as List).add({
+      'id': 'only.map/.MainActivity',
+      'package': 'only.map',
+      'label': '唯一地图'
+    });
+    await c.renameApp('only.map', '通勤导航');
     g.state['navigation'] = {
       'package': 'only.map',
       'preferredPackage': 'only.map',
@@ -349,11 +355,15 @@ void main() {
     g.stream.add(Map.of(g.state));
     await t.pumpWidget(LauncherApp(controller: c));
     await t.pumpAndSettle();
+    expect(find.text('通勤导航'), findsWidgets);
+    expect(find.text('唯一地图'), findsNothing);
     await t.tap(find.byKey(const ValueKey('nav-title-open')));
     expect(g.commands.last['action'], 'launch-navigation');
     await t.tap(find.byKey(const ValueKey('nav-app-picker')));
     await t.pumpAndSettle();
     expect(find.text('选择导航应用'), findsOneWidget);
+    expect(find.text('通勤导航'), findsWidgets);
+    expect(find.text('唯一地图'), findsNothing);
     await t.tap(find.byKey(const ValueKey('nav-show-all')));
     await t.pumpAndSettle();
     await t.tap(find.byKey(const ValueKey('nav-option-custom.map')));

@@ -77,7 +77,7 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.byKey(const ValueKey('add-air')));
     await t.pumpAndSettle();
-    expect(c.cards.length, 8);
+    expect(c.cards.length, 9);
     await t.tap(find.byKey(const ValueKey('finish-edit')));
     await t.pumpAndSettle();
     expect(c.editing, false);

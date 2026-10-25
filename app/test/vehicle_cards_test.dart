@@ -64,7 +64,8 @@ void main() {
     expect(label('driveMode'), '未连接');
     expect(label('energyFlow'), '未连接');
   });
-  test('only battery is a new type and defaults and legacy layouts survive',
+  test(
+      'current two-screen vehicle layout is the default and legacy layouts survive',
       () {
     expect(cardSpecs.map((s) => s.type).toSet(), {
       'nav',
@@ -81,8 +82,16 @@ void main() {
       'vehicle',
       'battery'
     });
-    expect(defaultCards().map((c) => c.type),
-        ['nav', 'music', 'weather', 'member', 'cleanup', 'calendar', 'tpms']);
+    expect(defaultCards().map((c) => c.type), [
+      'nav',
+      'music',
+      'weather',
+      'tpms',
+      'battery',
+      'clock',
+      'vehicle',
+      'air'
+    ]);
     for (final type in ['battery', 'air', 'vehicle']) {
       final spec = specFor(type);
       expect((spec.w, spec.h, spec.minW, spec.minH), (4, 3, 3, 2));
@@ -320,7 +329,7 @@ void main() {
     await loaded.initialize();
     expect(
         jsonDecode(loaded.serialize())['cards'], jsonDecode(g.saved!)['cards']);
-    expect(loaded.cards.take(7).map((c) => c.toJson()),
+    expect(loaded.cards.take(8).map((c) => c.toJson()),
         defaultCards().map((c) => c.toJson()));
     expect(g.commands, isEmpty);
     expect(validLayout(loaded.cards), isTrue);

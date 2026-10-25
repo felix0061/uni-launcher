@@ -24,7 +24,7 @@ void main() {
   });
   test('default OEM layout has no overlap', () {
     expect(validLayout(defaultCards()), true);
-    expect(defaultCards().length, 7);
+    expect(defaultCards().length, 8);
   });
   test('rejects collision, bounds, duplicate identifiers and unknown type', () {
     final cards = defaultCards();
@@ -38,9 +38,9 @@ void main() {
     await c.initialize();
     c.beginEdit();
     c.remove('weather-1');
-    expect(c.cards.length, 6);
-    c.cancelEdit();
     expect(c.cards.length, 7);
+    c.cancelEdit();
+    expect(c.cards.length, 8);
     c.dispose();
     await gateway.dispose();
   });

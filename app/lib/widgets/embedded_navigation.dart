@@ -101,6 +101,8 @@ class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
   @override
   Widget build(BuildContext context) {
     final s = SurfaceStyle.of(context), c = widget.controller;
+    final displayName = c.appName(
+        {'package': package, 'label': widget.navigation['label'] ?? '高德地图'});
     final allowed = EmbeddedContentPolicy.allowed(context);
     // Offstage alone does not hide Android 9's independently composited SurfaceView.
     syncVisibility(allowed &&
@@ -126,7 +128,7 @@ class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
                     onTap: () => c.command('launch-navigation'),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Flexible(
-                          child: Text('${widget.navigation['label'] ?? '高德地图'}',
+                          child: Text(displayName,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(fontSize: Design.px(23)))),

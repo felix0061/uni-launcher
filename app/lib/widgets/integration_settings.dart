@@ -23,7 +23,9 @@ class IntegrationSettings extends StatelessWidget {
       final app = map(raw),
           pkg =
               '${app['package'] ?? app['id']?.toString().split('/').first ?? ''}';
-      if (pkg.isNotEmpty) apps.putIfAbsent(pkg, () => '${app['label'] ?? pkg}');
+      if (pkg.isNotEmpty) {
+        apps.putIfAbsent(pkg, () => controller.appName(app));
+      }
     }
     Widget picker(String key, String label, String action, String selected) {
       final entries = {'auto': '自动选择', ...apps};

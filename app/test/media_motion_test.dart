@@ -231,10 +231,21 @@ void main() {
     c.home();
     await t.pumpAndSettle();
     final dockBefore = t.getRect(find.byKey(const ValueKey('bottom-dock')));
+    final indicatorStart =
+        t.getRect(find.byKey(const ValueKey('page-indicator-active'))).left;
     await t.fling(
         find.byKey(const ValueKey('card-grid')), const Offset(-550, 0), 1000);
-    await t.pumpAndSettle();
+    await t.pump();
     expect(c.page, 1);
+    await t.pump(const Duration(milliseconds: 160));
+    final indicatorMid =
+        t.getRect(find.byKey(const ValueKey('page-indicator-active'))).left;
+    expect(indicatorMid, greaterThan(indicatorStart));
+    expect(find.byType(AnimatedSlide), findsWidgets);
+    await t.pumpAndSettle();
+    final indicatorEnd =
+        t.getRect(find.byKey(const ValueKey('page-indicator-active'))).left;
+    expect(indicatorEnd, greaterThan(indicatorMid));
     expect(t.getRect(find.byKey(const ValueKey('bottom-dock'))), dockBefore);
     c.setAppearance(c.appearance.copyWith(pageTransition: 'fade'));
     await t.pumpAndSettle();
@@ -242,11 +253,11 @@ void main() {
     await t.pump();
     expect(
         find.descendant(
-            of: find.byType(DesktopPageTransition),
-            matching: find.byType(FadeTransition)),
+            of: find.byType(DesktopPageStack),
+            matching: find.byType(AnimatedOpacity)),
         findsWidgets);
     expect(find.byKey(const ValueKey('nav-1')), findsOneWidget);
-    expect(find.byKey(const ValueKey('member-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('tpms-1')), findsOneWidget);
     await t.pumpAndSettle();
     c.setAppearance(c.appearance.copyWith(pageTransition: 'none'));
     await t.pumpAndSettle();
@@ -255,8 +266,8 @@ void main() {
     expect(find.byKey(const ValueKey('nav-1')), findsNothing);
     expect(
         find.descendant(
-            of: find.byType(DesktopPageTransition),
-            matching: find.byType(AnimatedSwitcher)),
+            of: find.byType(DesktopPageStack),
+            matching: find.byType(AnimatedOpacity)),
         findsNothing);
     expect(t.takeException(), null);
   });
@@ -264,8 +275,11 @@ void main() {
     await t.pumpWidget(const MaterialApp(
         home: MediaQuery(
             data: MediaQueryData(disableAnimations: true),
-            child: DesktopPageTransition(
-                page: 0, effect: 'slide', child: Text('page')))));
-    expect(find.byType(AnimatedSwitcher), findsNothing);
+            child: DesktopPageStack(
+                page: 0,
+                effect: 'slide',
+                children: [Text('page 1'), Text('page 2')]))));
+    expect(find.byType(AnimatedOpacity), findsNothing);
+    expect(find.byType(IndexedStack), findsOneWidget);
   });
 }

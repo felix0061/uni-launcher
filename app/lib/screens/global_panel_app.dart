@@ -118,7 +118,12 @@ class _GlobalPanelAppState extends State<GlobalPanelApp> {
                   widget.controller.native.value['dark'] == true)),
               color: Colors.transparent,
               home: Scaffold(
-                  backgroundColor: Colors.transparent,
+                  backgroundColor:
+                      mapOf(widget.controller.native.value['globalDock'])[
+                                  'panel'] ==
+                              'recents'
+                          ? Colors.black
+                          : Colors.transparent,
                   resizeToAvoidBottomInset: false,
                   body: mapOf(widget.controller.native.value['globalDock'])[
                               'panel'] ==

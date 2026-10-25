@@ -113,8 +113,6 @@ class Desktop extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = controller, visiblePage = controller.page;
-    final keepNativeMap = c.native.value['demo'] != true &&
-        (c.native.value['navigation'] as Map?)?['canEmbed'] == true;
     // Android 9 surfaces cannot participate in Flutter's outgoing-page
     // animation. Keep page elements mounted and only change their visibility.
     // Other layouts retain the selected Flutter page transition.
@@ -124,6 +122,7 @@ class Desktop extends StatelessWidget {
         visible: page == visiblePage && !c.settings,
         child: _grid(context, page));
     return GestureDetector(
+        key: const ValueKey('card-grid'),
         behavior: HitTestBehavior.translucent,
         onLongPress: c.editing ? null : c.openSettings,
         onHorizontalDragEnd: c.editing
@@ -163,57 +162,14 @@ class Desktop extends StatelessWidget {
                           child: const Text('完成'))
                     ])),
               Expanded(
-                  child: DesktopPageTransition(
+                  child: DesktopPageStack(
                       page: visiblePage,
-                      effect: c.editing || keepNativeMap
-                          ? 'none'
-                          : c.appearance.pageTransition,
-                      child: keepNativeMap
-                          ? IndexedStack(index: visiblePage, children: [
-                              for (int i = 0; i < c.pageCount; i++) grid(i)
-                            ])
-                          : grid(visiblePage))),
-              SizedBox(height: Design.px(16)),
-              SizedBox(
-                  height: Design.px(16),
-                  child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      effect: c.editing ? 'none' : c.appearance.pageTransition,
                       children: [
-                        for (int i = 0; i < c.pageCount; i++)
-                          Semantics(
-                              label: '桌面第${i + 1}页',
-                              button: true,
-                              child: GestureDetector(
-                                  key: ValueKey('page-$i'),
-                                  onTap: () => c.switchPage(i),
-                                  child: Container(
-                                      width: Design.px(38),
-                                      height: Design.px(16),
-                                      color: Colors.transparent,
-                                      alignment: Alignment.center,
-                                      child: Container(
-                                          width: c.page == i
-                                              ? Design.px(24)
-                                              : Design.px(8),
-                                          height: Design.px(8),
-                                          decoration: BoxDecoration(
-                                              color: (c.page == i
-                                                      ? SurfaceStyle.of(context)
-                                                          .accent
-                                                      : SurfaceStyle.of(context)
-                                                          .muted)
-                                                  .withValues(
-                                                      alpha:
-                                                          c.page == i ? 1 : .3),
-                                              borderRadius:
-                                                  BorderRadius.circular(4)))))),
-                        if (c.editing)
-                          IconAction(
-                              icon: Icons.add,
-                              label: '新建桌面页',
-                              size: 32,
-                              onTap: c.newPage)
-                      ])),
+                    for (int i = 0; i < c.pageCount; i++) grid(i)
+                  ])),
+              SizedBox(height: Design.px(16)),
+              _DesktopPageIndicator(controller: c),
             ])));
   }
 
@@ -225,9 +181,13 @@ class Desktop extends StatelessWidget {
           unitY = (box.maxHeight + gap) / 6,
           items = c.cards.where((card) => card.page == page).toList();
       return Stack(
-          key: const ValueKey('card-grid'),
+          key: ValueKey('desktop-grid-$page'),
           clipBehavior: Clip.none,
           children: [
+            if (page == c.page)
+              const Positioned.fill(
+                  child: IgnorePointer(
+                      child: SizedBox.expand(key: ValueKey('grid-bounds')))),
             if (c.editing)
               Positioned.fill(
                   child: IgnorePointer(
@@ -260,6 +220,70 @@ class Desktop extends StatelessWidget {
                           unitY: unitY))),
           ]);
     });
+  }
+}
+
+class _DesktopPageIndicator extends StatelessWidget {
+  final LauncherController controller;
+  const _DesktopPageIndicator({required this.controller});
+  @override
+  Widget build(BuildContext context) {
+    final c = controller,
+        s = SurfaceStyle.of(context),
+        slot = Design.px(38),
+        dot = Design.px(8),
+        pill = Design.px(24),
+        reduced = MediaQuery.disableAnimationsOf(context) ||
+            c.appearance.pageTransition == 'none';
+    return SizedBox(
+        height: Design.px(16),
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          SizedBox(
+              width: slot * c.pageCount,
+              height: Design.px(16),
+              child: Stack(children: [
+                for (int i = 0; i < c.pageCount; i++)
+                  Positioned(
+                      left: slot * i + (slot - dot) / 2,
+                      top: Design.px(4),
+                      width: dot,
+                      height: dot,
+                      child: DecoratedBox(
+                          decoration: BoxDecoration(
+                              color: s.muted.withValues(alpha: .3),
+                              borderRadius: BorderRadius.circular(dot / 2)))),
+                AnimatedPositioned(
+                    key: const ValueKey('page-indicator-active'),
+                    duration: reduced
+                        ? Duration.zero
+                        : const Duration(milliseconds: 320),
+                    curve: Curves.easeOutCubic,
+                    left: slot * c.page + (slot - pill) / 2,
+                    top: Design.px(4),
+                    width: pill,
+                    height: dot,
+                    child: DecoratedBox(
+                        decoration: BoxDecoration(
+                            color: s.accent,
+                            borderRadius: BorderRadius.circular(dot / 2)))),
+                for (int i = 0; i < c.pageCount; i++)
+                  Positioned(
+                      left: slot * i,
+                      width: slot,
+                      top: 0,
+                      bottom: 0,
+                      child: Semantics(
+                          label: '桌面第${i + 1}页',
+                          button: true,
+                          child: GestureDetector(
+                              key: ValueKey('page-$i'),
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => c.switchPage(i))))
+              ])),
+          if (c.editing)
+            IconAction(
+                icon: Icons.add, label: '新建桌面页', size: 32, onTap: c.newPage)
+        ]));
   }
 }
 

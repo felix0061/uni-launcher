@@ -314,11 +314,9 @@ public final class GlobalDockService extends Service {
             if(getPackageManager().resolveActivity(intent,0)==null){xyz.i4o.uni.launcher.overlay.SystemRecents.toggle(this);return;}
             if(recentsWindow==null)recentsWindow=new EmbeddedTaskWindow(this,
                 intent,this::dismissPanel);
-            panel="recents";panelRevision++;recentsWindow.show();startForegroundCheck();update();
-            main.postDelayed(()->{if("recents".equals(panel)&&recentsWindow!=null&&recentsWindow.clearSupported()){
-                try{if(panelWindow==null)panelWindow=new OverlayWindow(true);update();}
-                catch(RuntimeException e){android.util.Log.w("UniDock","Task footer unavailable",e);}
-            }},400);
+            panel="recents";panelRevision++;
+            if(recentsWindow.clearSupported()&&panelWindow==null)panelWindow=new OverlayWindow(true);
+            recentsWindow.show();startForegroundCheck();update();
         }catch(Exception e){android.util.Log.w("UniDock","Bounded system task list unavailable",e);toast(this,"系统任务列表暂不可用");}
     }
     /** Panel must follow the front task: record the top task at expansion and

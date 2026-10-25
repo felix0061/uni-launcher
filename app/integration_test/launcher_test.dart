@@ -185,9 +185,9 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('add-air')));
     await settle();
     verify('Card library allocates page when full',
-        c.page == 2 && c.pageCount == 3 && c.cards.length == 8);
+        c.page == 2 && c.pageCount == 3 && c.cards.length == 9);
     final air = c.cards.last,
-        grid = tester.getSize(find.byKey(const ValueKey('card-grid')));
+        grid = tester.getSize(find.byKey(const ValueKey('grid-bounds')));
     await tester.drag(
         find.byKey(ValueKey('move-${air.id}')), Offset(grid.width / 12 * 2, 0));
     await settle();
@@ -202,7 +202,7 @@ void main() {
     await c.persist();
     final layout = await c.gateway.bootstrap();
     verify('Edited card layout committed to Android preferences',
-        (jsonDecode(layout['savedDesign'])['cards'] as List).length == 8);
+        (jsonDecode(layout['savedDesign'])['cards'] as List).length == 9);
     await binding.takeScreenshot('flutter-card-edited');
     c.home();
     await settle();

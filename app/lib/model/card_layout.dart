@@ -77,10 +77,11 @@ List<LauncherCard> defaultCards() => const [
       LauncherCard('nav-1', 'nav', '导航', 0, 0, 8, 6, 0),
       LauncherCard('music-1', 'music', '正在播放', 8, 0, 4, 4, 0),
       LauncherCard('weather-1', 'weather', '天气', 8, 4, 4, 2, 0),
-      LauncherCard('member-1', 'member', '领克账号', 0, 0, 4, 6, 1),
-      LauncherCard('cleanup-1', 'cleanup', '系统清理', 4, 0, 4, 3, 1),
-      LauncherCard('calendar-1', 'calendar', '日历', 4, 3, 4, 3, 1),
-      LauncherCard('tpms-1', 'tpms', '胎压', 8, 0, 4, 6, 1),
+      LauncherCard('tpms-1', 'tpms', '胎压', 0, 0, 4, 3, 1),
+      LauncherCard('battery-1', 'battery', '动力电池', 4, 0, 4, 3, 1),
+      LauncherCard('clock-1', 'clock', '时钟', 8, 0, 4, 3, 1),
+      LauncherCard('vehicle-1', 'vehicle', '行车信息', 0, 3, 4, 3, 1),
+      LauncherCard('air-1', 'air', '车内空气', 4, 3, 4, 3, 1),
     ].toList();
 bool validLayout(List<LauncherCard> cards) {
   if (cards.length > 200 ||
