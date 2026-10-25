@@ -90,12 +90,40 @@ public final class AppRepository {
         }
         return false;
     }
-    public boolean launchOfficialAvm() {
-        // Exact component in official CarUtils. Never enable it or substitute the PAC camera.
-        ComponentName c=new ComponentName("com.ecarx.parking","com.ecarx.park2.MainAvmActivity");
+    /** Official Launcher3 CarUtils.updateApps flow: the firmware ships both
+     * parking activities component-disabled, so a HOME launcher must enable the
+     * component matching the PAC capability read from 0x23050080 before start.
+     * capability comes from OfficialCarReader.cameraCapability(); -1/none means
+     * this vehicle exposes no manual camera entry. */
+    public boolean launchOfficialCamera(int capability) {
+        PackageManager pm=context.getPackageManager();
+        ComponentName avm=new ComponentName("com.ecarx.parking","com.ecarx.park2.MainAvmActivity");
+        ComponentName pac=new ComponentName("com.ecarx.parking","com.ecarx.park2.MainPacActivity");
         try{
-            android.content.pm.ActivityInfo info=context.getPackageManager().getActivityInfo(c,0);
-            if(!usable(info))return false;
+            if(capability==OfficialCarContract.PAC_CAMERA_360AM){
+                setCameraComponent(pm,avm,true);setCameraComponent(pm,pac,false);
+                return startCameraComponent(avm);
+            }
+            if(capability==OfficialCarContract.PAC_CAMERA_REARONLY){
+                setCameraComponent(pm,pac,true);setCameraComponent(pm,avm,false);
+                return startCameraComponent(pac);
+            }
+            // This IP753 reports 255 for the capability function while the OEM
+            // itself has already enabled MainAvmActivity at power-on. Respect
+            // the current component states: start whichever is enabled.
+            if(startCameraComponent(avm))return true;
+            return startCameraComponent(pac);
+        }catch(Exception e){return false;}
+    }
+    private void setCameraComponent(PackageManager pm,ComponentName c,boolean enabled){
+        try{pm.setComponentEnabledSetting(c,
+                enabled?PackageManager.COMPONENT_ENABLED_STATE_ENABLED:PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                PackageManager.DONT_KILL_APP);}catch(RuntimeException ignored){}
+    }
+    private boolean startCameraComponent(ComponentName c){
+        try{
+            ActivityInfo info=context.getPackageManager().getActivityInfo(c,0);
+            if(info==null||!info.exported)return false;
             context.startActivity(new Intent(Intent.ACTION_MAIN).setComponent(c).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));return true;
         }catch(Exception e){return false;}
     }

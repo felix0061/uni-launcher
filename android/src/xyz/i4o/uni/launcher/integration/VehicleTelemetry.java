@@ -25,6 +25,8 @@ public final class VehicleTelemetry implements VehicleAdapter {
         return result;
     }
     public boolean command(String action,String zone,String mode){OfficialCarReader current=reader;return current!=null&&current.command(action,zone,mode);}
+    /** -1 while disconnected; otherwise the official PAC camera gate value. */
+    public int cameraCapability(){OfficialCarReader current=reader;return current==null?-1:current.cameraCapability();}
     public synchronized void stop(){OfficialCarReader old=reader;reader=null;if(old!=null)old.close();}
     public void close(){stop();}
 }

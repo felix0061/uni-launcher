@@ -123,20 +123,53 @@
   },
   "camera": {
     "component": "com.ecarx.parking/com.ecarx.park2.MainAvmActivity",
-    "entry": "installed but launch silently refused (direct am start also fails)",
-    "interpretation": "OEM gear/state gate, not a launcher defect",
-    "reverseTakeover": "pending (requires moving the car)"
+    "officialFlow": "verified: activity created via our dock entry (am_create_activity logged 3x) then self-finishes ~250ms later with app-request — the OEM app refuses manual open while not in reverse; official launcher faces the same gate",
+    "componentState": "OEM enables MainAvmActivity itself at power-on (enabledComponents); earlier both activities were component-disabled",
+    "capabilityRead": "getFunctionValue(0x23050080) returns 255 (unknown enum) on this unit; launch now falls back to starting whichever camera component is currently enabled",
+    "reverseTakeover": "pending (requires moving the car)",
+    "dockSuspend": "suspends on open-official camera command; resumes on home"
   },
   "stability": {
     "sessionCrashScan": "clean",
-    "nativeHeapKb": 56880
+    "nativeHeapKb": 56880,
+    "secondSessionCrashScan": "clean (0 fatal/AndroidRuntime in pid logs)"
   },
   "pending": [
-    "same-time OEM comparison: SOC 92%, drive mode HYBRID, PM2.5 vs original UI",
-    "NetEase seek/progress drag and previous/next on real app",
-    "HVAC/seat write commands and readback (awaiting owner approval)",
+    "reverse-gear 360 display and takeover (car must be moving)",
     "reverse-gear camera takeover and dock suspend/resume",
     "sleep/wake, ignition cycle, boot receiver, long-duration memory",
-    "weather/account/calendar/cleanup unified fields (OEM contracts still missing)"
-  ]
+    "weather/account/calendar/cleanup unified fields (OEM contracts still missing)",
+    "settings-view bottom-strip hit-testing anomaly: temp taps at dock coordinates did not register while in the settings page (home button did); verify layering"
+  ],
+  "secondSession": "2026-10-25T04:19:45.912402+00:00",
+  "climateWrites": {
+    "tempUp": {
+      "before": 22.5,
+      "after": 23.0,
+      "status": "confirmed 目标状态已读回"
+    },
+    "tempDown": {
+      "after": 22.5,
+      "status": "confirmed"
+    },
+    "driverHeatOn": {
+      "level": 1,
+      "status": "confirmed"
+    },
+    "driverHeatOff": {
+      "level": 0,
+      "status": "confirmed"
+    },
+    "sameTimeComparison": "our temp read 22.5 matched the OEM bar display 22.5"
+  },
+  "mediaWrites": {
+    "next": "position reset to new track",
+    "previous": "position reset",
+    "seek": "drag on music card jumped positionMs to 79338; NetEase canSeek honored on real app",
+    "playPause": "verified earlier session"
+  },
+  "systemNavCarFinding": {
+    "mechanism": "policy_control immersive.navigation=*,-com.ecarx.parking removes the inset (viewport 944->1080) but com.android.systemui CarNavigationBar still draws on top; our dock at y=984 is covered",
+    "conclusion": "visual hiding of the OEM bar needs OEM cooperation; switch kept but car leaves it OFF; restored policy to null and dock to y=848 above the bar"
+  }
 }

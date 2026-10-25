@@ -153,7 +153,12 @@ public final class LauncherRuntime {
             context.startActivity(new Intent(context,OfficialWidgetActivity.class).putExtra("type",value).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));return true;
         }
         if("open-official".equals(action)){
-            if("camera".equals(value)){if(!apps.launchOfficialAvm())toast("原车 360 入口未安装、未启用或不可访问");return true;}
+            if("camera".equals(value)){
+                if(!apps.launchOfficialCamera(vehicle.cameraCapability())){
+                    toast("当前车辆未提供原车全景入口");GlobalDockService.resumeAfterCameraLaunchFailure();
+                }
+                return true;
+            }
             if(!apps.launchPackage(catalog.packageFor(value)))toast("此设备未安装对应原车应用");return true;
         }
         if(CommandPolicy.isClimateAction(action)){

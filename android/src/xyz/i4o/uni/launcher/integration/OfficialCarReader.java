@@ -65,6 +65,7 @@ public final class OfficialCarReader implements VehicleAdapter {
     private boolean subscribed; // worker only
     private volatile boolean writeSignaturesAvailable;
     private volatile String lastCommandJson = "{}";
+    private volatile int cameraCapability = -1;
     private long commandSequence;
     private PendingCommand pending; // worker only; never replayed/retried
 
@@ -114,6 +115,10 @@ public final class OfficialCarReader implements VehicleAdapter {
             return true;
         } catch (Exception e) { if (acquired) commandBusy.set(false); return false; }
     }
+
+    /** Latest official PAC camera gate: -1 disconnected/unknown, otherwise
+     * PAC_CAMERA_NONE / REARONLY / 360AM. Refreshed with every poll. */
+    public int cameraCapability() { return cameraCapability; }
 
     private boolean permitted() {
         return context.checkSelfPermission(OfficialCarContract.PERMISSION) == PackageManager.PERMISSION_GRANTED;
@@ -247,8 +252,18 @@ public final class OfficialCarReader implements VehicleAdapter {
             add(fields, readField("pressureRearLeft", OfficialCarContract.PA_PRESSURE_RL, 0, 0, "pressure"), "pressureRearLeft");
             add(fields, readField("pressureRearRight", OfficialCarContract.PA_PRESSURE_RR, 0, 0, "pressure"), "pressureRearRight");
             add(fields, readField("pressureUnitPreference", OfficialCarContract.PA_PRESSURE_UNIT, 0, 0, "pressureUnit"), "pressureUnitPreference");
-            JSONObject extraSensors=new OfficialVehicleSensors(sdkCar,signals).appendTo(fields);
+            // Owner-confirmed on 2026-10-25: the original UI shows driving range
+            // in km. Speed stays unconfirmed until a moving comparison.
+            JSONObject extraSensors=new OfficialVehicleSensors(sdkCar,signals,
+                    OfficialVehicleSensors.Units.confirmed(null, "km", "owner confirmed original UI range km 2026-10-25")).appendTo(fields);
             new OfficialHybridReader(propertyManager).appendTo(fields);
+            int capability = -1;
+            try {
+                Object value = call(functions, "getFunctionValue", new Class<?>[]{int.class}, OfficialCarContract.PAC_CAMERA_CAPABILITY);
+                if (value instanceof Number) capability = ((Number) value).intValue();
+            } catch (Exception | LinkageError ignored) {}
+            cameraCapability = capability;
+            state.put("cameraCapability", capability);
             JSONArray sensorErrors=extraSensors.optJSONArray("errors");
             if(sensorErrors!=null)for(int i=0;i<sensorErrors.length();i++)errors.put(sensorErrors.get(i));
             int validCount = 0;
@@ -530,7 +545,7 @@ public final class OfficialCarReader implements VehicleAdapter {
 
     private static JSONObject copy(JSONObject value) throws Exception { return new JSONObject(value.toString()); }
     private static void add(JSONObject fields, JSONObject value, String key) throws Exception { fields.put(key, value); }
-    private void publishUnavailable(String reason) { publish(unavailable(reason)); }
+    private void publishUnavailable(String reason) { cameraCapability = -1; publish(unavailable(reason)); }
     private void publish(JSONObject state) {
         if (closed) return;
         stateJson = state.toString();

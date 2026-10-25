@@ -74,6 +74,11 @@ public final class GlobalDockService extends Service {
         if("open-official".equals(a)&&"camera".equals(r.optString("value"))&&active!=null){active.cameraSuspended=true;active.update();}
         return false;
     }
+    /** A refused camera launch must not leave the dock hidden on the next app. */
+    public static void resumeAfterCameraLaunchFailure(){
+        GlobalDockService s=active;
+        if(s!=null&&s.cameraSuspended){s.cameraSuspended=false;s.update();}
+    }
     private static void toast(Context c,String text){android.widget.Toast.makeText(c,text,android.widget.Toast.LENGTH_SHORT).show();}
     @Override public void onCreate(){
         super.onCreate();active=this;runtime=LauncherRuntime.get(this);

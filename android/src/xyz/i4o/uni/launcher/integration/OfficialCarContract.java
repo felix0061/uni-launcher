@@ -76,6 +76,15 @@ public final class OfficialCarContract {
     public static final int CAR_CONFIG = 0x21415114;
     public static final int TIRE_PRESSURE_UNIT = 0x25010500;
 
+    /** Official Launcher3 CarUtils camera gate (bytecode 86965..87470). The
+     * firmware ships both parking activities component-disabled; the HOME
+     * launcher reads this capability, enables exactly one component and starts
+     * it. Values are SDK-mapped function values, not raw PA data. */
+    public static final int PAC_CAMERA_CAPABILITY = 0x23050080;
+    public static final int PAC_CAMERA_NONE = 0;
+    public static final int PAC_CAMERA_REARONLY = 587400449; // 0x23050081
+    public static final int PAC_CAMERA_360AM = 587400450;    // 0x23050082
+
     // Command IDs are evidence for future implementation, never invoked here.
     public static final int CB_LEFT_TEMP = 0x21602106, CB_RIGHT_TEMP = 0x21602107;
     public static final int CB_FAN = 0x21402101, CB_AUTO = 0x2140210c;
