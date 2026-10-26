@@ -1,0 +1,12 @@
+{
+  "tool": "built-in imagegen",
+  "size": [
+    1922,
+    818
+  ],
+  "aspect": 2.349633251833741,
+  "requestedAspect": 2.35,
+  "centerSquareSafe": true,
+  "prompt": "wechat-cover-prompt.txt",
+  "reference": "uni-app-icon-reference.png"
+}
