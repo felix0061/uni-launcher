@@ -1,0 +1,88 @@
+/* V3 proposal: one frame vocabulary for panels, persistent selection and dock.
+   Optional, design-only. Every touch target retains its original dimensions. */
+.screen.unified{--control-selected:color-mix(in srgb,var(--accent) 11%,var(--surface));--control-pressed:color-mix(in srgb,var(--accent) 20%,var(--surface));--control-rest:color-mix(in srgb,var(--surface-high) 65%,var(--dock))}
+.unified .icon-button,.unified .style-option,.unified .segmented,.unified .segmented button{position:relative;border-radius:0;box-shadow:none}
+.unified .frame-mark{position:absolute;inset:0;pointer-events:none;z-index:3;--mark-size:8px;--mark-weight:1.5px;--mark-color:var(--accent);
+ background:
+ linear-gradient(var(--mark-color),var(--mark-color)) left top / var(--mark-size) var(--mark-weight),
+ linear-gradient(var(--mark-color),var(--mark-color)) left top / var(--mark-weight) var(--mark-size),
+ linear-gradient(var(--mark-color),var(--mark-color)) right top / var(--mark-size) var(--mark-weight),
+ linear-gradient(var(--mark-color),var(--mark-color)) right top / var(--mark-weight) var(--mark-size),
+ linear-gradient(var(--mark-color),var(--mark-color)) left bottom / var(--mark-size) var(--mark-weight),
+ linear-gradient(var(--mark-color),var(--mark-color)) left bottom / var(--mark-weight) var(--mark-size),
+ linear-gradient(var(--mark-color),var(--mark-color)) right bottom / var(--mark-size) var(--mark-weight),
+ linear-gradient(var(--mark-color),var(--mark-color)) right bottom / var(--mark-weight) var(--mark-size);
+ background-repeat:no-repeat;
+}
+.unified .selected,.unified .segmented button.active,.unified .style-option.selected{color:var(--accent);background:var(--control-selected);border:1px solid color-mix(in srgb,var(--accent) 24%,var(--frame-line));box-shadow:none}
+.unified .selected .frame-mark,.unified .segmented button.active .frame-mark,.unified .style-option.selected .frame-mark{inset:-1px}
+.unified .style-option.selected>.frame-mark{--mark-size:12px}
+.unified .icon-button:active,.unified .icon-button.is-pressed,.unified .segmented button:active{background:var(--control-pressed);color:var(--accent)}
+.unified .icon-button:disabled,.unified .icon-button.is-disabled{color:var(--quiet);opacity:.38;background:transparent;border-color:transparent;cursor:default}
+.unified .toggle{position:relative;border-radius:2px;background:var(--control-selected);border:1px solid color-mix(in srgb,var(--accent) 24%,var(--frame-line));padding:3px}
+.unified .toggle>.frame-mark{--mark-size:5px;inset:-1px;background-color:transparent;width:auto;height:auto;border-radius:0}
+.unified .toggle>i:not(.frame-mark){border-radius:1px;background:var(--accent)}
+.unified .dock{
+ height:96px;border-radius:0;padding:0 24px;gap:22px;
+ background:linear-gradient(180deg,var(--glass-top),transparent 65%),color-mix(in srgb,var(--surface) 78%,var(--dock));
+ border-top:1px solid var(--frame-line);box-shadow:inset 0 1px 0 color-mix(in srgb,var(--shine) 12%,transparent)
+}
+.unified .dock>.frame-mark{display:none}
+.unified .dock .icon-button{border-radius:0;height:58px;width:58px;box-shadow:none}
+.unified .dock .icon-button.selected{color:var(--accent)}
+.unified .dock .icon-button.selected>.frame-mark{--mark-size:7px}
+.unified .dock .icon-button:hover{background:var(--control-selected)}
+.unified .dock .divider{height:28px;background:var(--frame-line);margin:0}
+.unified .dock .dock-group{gap:8px}
+.unified .dock .climate{
+ position:relative;height:58px;gap:4px;flex:none;
+ background:color-mix(in srgb,var(--soft) 28%,transparent);border:1px solid var(--frame-line)
+}
+.unified .dock .climate>.frame-mark{--mark-size:7px;--mark-weight:1px;--mark-color:var(--corner);inset:-1px}
+.unified .dock .climate .icon-button{width:37px;height:56px}
+.unified .dock .climate .fan{width:40px;margin:0 10px}
+.unified .dock .climate .power{width:50px;margin-left:12px}
+.unified .dock .climate .temp{min-width:86px;font-size:30px}
+.unified .dock .climate .icon-button.fan,.unified .dock .climate .icon-button.power{color:var(--accent)}
+.unified .dock .transport{gap:8px}
+.unified .dock .play{
+ color:var(--text);background:var(--control-rest);border:1px solid var(--frame-line);box-shadow:none
+}
+.unified .dock .play>.frame-mark{--mark-size:7px;--mark-weight:1px;--mark-color:var(--corner);inset:-1px}
+.unified .dock .play:active,.unified .dock .play.is-pressed{color:var(--accent);background:var(--control-pressed)}
+.unified .dock-song{gap:14px;min-width:205px}
+.unified .dock-song img{height:52px;width:52px;border-radius:2px;border-color:var(--frame-line)}
+.unified .dock-song strong{font-size:22px;font-weight:500}
+.unified .dock-song small{font-size:15px}
+.unified .dock-lyric{font-size:23px;line-height:1.3;padding:0 16px;max-height:60px;color:var(--muted)}
+.unified .dock-vehicle{border:1px solid var(--frame-line);background:color-mix(in srgb,var(--soft) 28%,transparent)}
+.unified .mini-dock{background:#102034;border-top-color:#283b4f}
+/* A design review board: the same dock component appears at its real size. */
+.controls-workspace{position:absolute;left:32px;right:32px;top:90px;bottom:150px}
+.controls-title{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:24px}
+.controls-title h1{font-size:30px;font-weight:500;margin:0}.controls-title p{font-size:17px;color:var(--muted);margin:0}
+.dock-study{height:134px;position:relative;margin-bottom:20px}
+.dock-study-caption{height:30px;display:flex;justify-content:space-between;color:var(--muted);font-size:16px}
+.dock-study .dock{bottom:0;border:1px solid var(--frame-line);border-bottom:0}
+.controls-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:26px}
+.controls-panel{height:335px;padding:26px 30px}
+.controls-panel h2{font-size:22px;font-weight:500;margin:0 0 27px}.controls-panel h2 small{color:var(--muted);font-size:15px;font-weight:400;margin-left:18px}
+.state-examples{display:flex;align-items:flex-start;gap:36px}
+.state-example{display:flex;flex-direction:column;align-items:center;gap:14px;font-size:16px;color:var(--muted);min-width:85px}
+.state-example .icon-button{height:58px;width:58px;color:var(--text)}
+.state-example .icon-button.selected,.state-example .icon-button.is-pressed{color:var(--accent)}
+.state-example .icon-button.action-main{background:var(--control-rest);border:1px solid var(--frame-line)}
+.state-example .action-main>.frame-mark{--mark-color:var(--corner);--mark-weight:1px;--mark-size:7px;inset:-1px}
+.controls-note{font-size:16px;color:var(--muted);line-height:1.9;margin:28px 0 0;border-top:1px solid var(--frame-line);padding-top:18px}
+.choice-examples{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px}
+.choice-examples button{position:relative;height:67px;background:transparent;border:1px solid var(--frame-line);text-align:left;padding:0 20px;font-size:20px}
+.choice-examples button.selected{background:var(--control-selected);border-color:color-mix(in srgb,var(--accent) 24%,var(--frame-line));display:flex;justify-content:space-between;align-items:center}
+.choice-examples button>.frame-mark{--mark-size:10px;inset:-1px}
+.controls-panel .segmented{width:fit-content;gap:6px;padding:4px;border-color:var(--frame-line)}
+.controls-panel .segmented button{height:45px;padding:0 22px}
+.controls-title+.dock-study .dock .home-demo{color:var(--accent)}
+.controls-workspace~.preview-mark{right:38px;bottom:113px}
+/* Vehicle is an ordinary entry until its panel is selected. */
+.unified .dock-vehicle:not(.selected){border:0;background:transparent}
+/* Pressed feedback wins over hover, including mouse-driven design review. */
+.unified .dock .icon-button:active,.unified .dock .icon-button.is-pressed{background:var(--control-pressed);color:var(--accent)}

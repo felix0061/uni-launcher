@@ -1,0 +1,305 @@
+{
+  "checks": [
+    {
+      "name": "home-dark-unified: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "home-dark-unified: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "home-dark-unified: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "home-dark-unified: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "home-dark-unified: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "home-dark-unified: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "home-dark-unified: eight static corner segments on square panels",
+      "passed": true
+    },
+    {
+      "name": "home-dark-unified: persistent selections use short square corner frame",
+      "passed": true
+    },
+    {
+      "name": "home-dark-unified: dock main action is neutral, not permanently selected",
+      "passed": true
+    },
+    {
+      "name": "home-dark-unified: all dock controls fit their own bar",
+      "passed": true
+    },
+    {
+      "name": "home-dark-unified: press changes only local fill without moving the button",
+      "passed": true
+    },
+    {
+      "name": "home-dark-unified: examples labelled",
+      "passed": true
+    },
+    {
+      "name": "home-light-unified: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "home-light-unified: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "home-light-unified: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "home-light-unified: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "home-light-unified: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "home-light-unified: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "home-light-unified: eight static corner segments on square panels",
+      "passed": true
+    },
+    {
+      "name": "home-light-unified: persistent selections use short square corner frame",
+      "passed": true
+    },
+    {
+      "name": "home-light-unified: dock main action is neutral, not permanently selected",
+      "passed": true
+    },
+    {
+      "name": "home-light-unified: all dock controls fit their own bar",
+      "passed": true
+    },
+    {
+      "name": "home-light-unified: press changes only local fill without moving the button",
+      "passed": true
+    },
+    {
+      "name": "home-light-unified: examples labelled",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-unified: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-unified: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-unified: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-unified: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-unified: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-unified: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "vehicle: horizontal car and separate tyre labels",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-unified: eight static corner segments on square panels",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-unified: persistent selections use short square corner frame",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-unified: dock main action is neutral, not permanently selected",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-unified: all dock controls fit their own bar",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-unified: press changes only local fill without moving the button",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-unified: examples labelled",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-unified: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-unified: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-unified: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-unified: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-unified: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-unified: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-unified: eight static corner segments on square panels",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-unified: persistent selections use short square corner frame",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-unified: dock main action is neutral, not permanently selected",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-unified: all dock controls fit their own bar",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-unified: press changes only local fill without moving the button",
+      "passed": true
+    },
+    {
+      "name": "settings: preview ratio is 16:9",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-unified: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-unified: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-unified: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-unified: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-unified: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-unified: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-unified: eight static corner segments on square panels",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-unified: persistent selections use short square corner frame",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-unified: dock main action is neutral, not permanently selected",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-unified: all dock controls fit their own bar",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-unified: press changes only local fill without moving the button",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-unified: examples labelled",
+      "passed": true
+    },
+    {
+      "name": "controls-light-unified: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "controls-light-unified: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "controls-light-unified: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "controls-light-unified: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "controls-light-unified: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "controls-light-unified: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "controls-light-unified: eight static corner segments on square panels",
+      "passed": true
+    },
+    {
+      "name": "controls-light-unified: persistent selections use short square corner frame",
+      "passed": true
+    },
+    {
+      "name": "controls-light-unified: dock main action is neutral, not permanently selected",
+      "passed": true
+    },
+    {
+      "name": "controls-light-unified: all dock controls fit their own bar",
+      "passed": true
+    },
+    {
+      "name": "controls-light-unified: press changes only local fill without moving the button",
+      "passed": true
+    },
+    {
+      "name": "controls-light-unified: examples labelled",
+      "passed": true
+    }
+  ],
+  "runtimeErrors": [],
+  "screenshots": [
+    "home-dark-unified.png",
+    "home-light-unified.png",
+    "vehicle-dark-unified.png",
+    "settings-dark-unified.png",
+    "controls-dark-unified.png",
+    "controls-light-unified.png"
+  ]
+}
