@@ -15,71 +15,32 @@ class EditableCard extends StatefulWidget {
   final LauncherCard card;
   final LauncherController controller;
   final double unitX, unitY;
+  final void Function(LauncherCard card, bool resize, Offset globalPosition)?
+      onPlacementStart;
   const EditableCard(
       {super.key,
       required this.card,
       required this.controller,
       required this.unitX,
-      required this.unitY});
+      required this.unitY,
+      this.onPlacementStart});
   @override
   State<EditableCard> createState() => _EditableCardState();
 }
 
 class _EditableCardState extends State<EditableCard> {
-  LauncherCard? origin;
-  Offset delta = Offset.zero;
-  bool rejectionShown = false;
-  void start(DragStartDetails details) {
-    startAtOrigin();
-  }
-
-  void startAtOrigin() {
-    origin = widget.card;
-    delta = Offset.zero;
-    rejectionShown = false;
-  }
-
-  void move(DragUpdateDetails details, bool resize) {
-    if (origin == null) return;
-    delta += details.delta;
-    applyMove(delta, resize, globalPosition: details.globalPosition);
-  }
-
-  void applyMove(Offset offset, bool resize, {Offset? globalPosition}) {
-    if (origin == null) return;
-    final card = origin!,
-        spec = specFor(card.type),
-        dx = (offset.dx / widget.unitX).round(),
-        dy = (offset.dy / widget.unitY).round();
-    if (!resize &&
-        globalPosition != null &&
-        offset.dx.abs() > widget.unitX / 2) {
-      final width = MediaQuery.sizeOf(context).width;
-      final target = globalPosition.dx < Design.px(76)
-          ? widget.controller.page - 1
-          : globalPosition.dx > width - Design.px(76)
-              ? widget.controller.page + 1
-              : widget.controller.page;
-      if (target != widget.controller.page &&
-          widget.controller.moveToPage(card.id, target,
-              preferredX: (card.x + dx).clamp(0, 12 - card.w),
-              preferredY: (card.y + dy).clamp(0, 6 - card.h))) {
-        origin = null;
-        return;
-      }
-    }
-    final accepted = widget.controller.transform(resize
-        ? card.copyWith(
-            w: (card.w + dx).clamp(spec.minW, 12 - card.x),
-            h: (card.h + dy).clamp(spec.minH, 6 - card.y))
-        : card.copyWith(
-            x: (card.x + dx).clamp(0, 12 - card.w),
-            y: (card.y + dy).clamp(0, 6 - card.h)));
-    if (!accepted && !rejectionShown) {
-      rejectionShown = true;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          duration: const Duration(seconds: 2),
-          content: Text(resize ? '此处空间不足，请先移动其他卡片再调整尺寸' : '此处已有卡片，请移动到空白位置')));
+  void start(bool resize, Offset globalPosition) {
+    final c = widget.controller;
+    if (!c.editing) {
+      c.beginEdit();
+      // The edit strip changes the grid's origin and cell height. Measure only
+      // after its first layout, retaining the same physical pointer position.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && c.editing)
+          widget.onPlacementStart?.call(widget.card, resize, globalPosition);
+      });
+    } else {
+      widget.onPlacementStart?.call(widget.card, resize, globalPosition);
     }
   }
 
@@ -89,14 +50,7 @@ class _EditableCardState extends State<EditableCard> {
         s = SurfaceStyle.of(context),
         card = widget.card;
     return GestureDetector(
-        onLongPressStart: (_) {
-          if (!c.editing) c.beginEdit();
-          startAtOrigin();
-        },
-        onLongPressMoveUpdate: (details) => applyMove(
-            details.offsetFromOrigin, false,
-            globalPosition: details.globalPosition),
-        onLongPressEnd: (_) => origin = null,
+        onLongPressStart: (d) => start(false, d.globalPosition),
         child: GlassSurface(
             padding: EdgeInsets.zero,
             borderColor: c.editing ? s.accent : null,
@@ -115,10 +69,8 @@ class _EditableCardState extends State<EditableCard> {
                           child: GestureDetector(
                               key: ValueKey('move-${card.id}'),
                               behavior: HitTestBehavior.opaque,
-                              onPanStart: start,
-                              onPanUpdate: (d) => move(d, false),
-                              onPanEnd: (_) => origin = null,
-                              onPanCancel: () => origin = null,
+                              onPanStart: (d) => start(false, d.globalPosition),
+                              onPanUpdate: (_) {},
                               child: Row(children: [
                                 UniIcon('move',
                                     color: s.accent, size: Design.px(23)),
@@ -152,10 +104,8 @@ class _EditableCardState extends State<EditableCard> {
                     height: Design.px(48),
                     child: GestureDetector(
                         key: ValueKey('resize-${card.id}'),
-                        onPanStart: start,
-                        onPanUpdate: (d) => move(d, true),
-                        onPanEnd: (_) => origin = null,
-                        onPanCancel: () => origin = null,
+                        onPanStart: (d) => start(true, d.globalPosition),
+                        onPanUpdate: (_) {},
                         child: Container(
                             decoration: BoxDecoration(
                                 color: s.accent,

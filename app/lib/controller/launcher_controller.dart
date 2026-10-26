@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import '../model/appearance.dart';
 import '../model/card_layout.dart';
+import '../model/card_reorder.dart';
 import '../platform/native_gateway.dart';
 
 class LauncherController extends ChangeNotifier with WidgetsBindingObserver {
@@ -13,6 +14,50 @@ class LauncherController extends ChangeNotifier with WidgetsBindingObserver {
   Appearance appearance = const Appearance();
   Map<String, String> appNames = {};
   List<LauncherCard> cards = defaultCards();
+  LauncherCard? placementOrigin, placementTarget;
+  List<LauncherCard>? placementPreview;
+  bool placementResizing = false;
+  bool get placementValid => placementPreview != null;
+  bool get placing => placementOrigin != null;
+
+  /// Preview coordinates never enter cards, serialization or edit backups.
+  bool beginPlacement(String id, {bool resizing = false}) {
+    if (!editing || placing) return false;
+    placementOrigin = cards.where((c) => c.id == id).firstOrNull;
+    if (placementOrigin == null) return false;
+    placementResizing = resizing;
+    placementTarget = placementOrigin;
+    placementPreview = List.of(cards);
+    notifyListeners();
+    return true;
+  }
+
+  bool previewPlacement(LauncherCard target) {
+    final origin = placementOrigin;
+    if (origin == null || origin.id != target.id || target.page >= pageCount)
+      return false;
+    final previous = placementTarget;
+    if (previous != null &&
+        (previous.page, previous.x, previous.y, previous.w, previous.h) ==
+            (target.page, target.x, target.y, target.w, target.h))
+      return placementValid;
+    placementTarget = target;
+    placementPreview = reorderCards(cards, target);
+    notifyListeners();
+    return placementValid;
+  }
+
+  LauncherCard? finishPlacement({bool cancel = false}) {
+    if (!placing) return null;
+    final target = !cancel && placementValid ? placementTarget : null;
+    if (target != null) cards = placementPreview!;
+    placementOrigin = placementTarget = null;
+    placementPreview = null;
+    placementResizing = false;
+    notifyListeners();
+    return target;
+  }
+
   int page = 0, pageCount = 2;
   final pageChanged = ValueNotifier<int>(0);
   int _pageRequest = 0;
@@ -360,6 +405,13 @@ class LauncherController extends ChangeNotifier with WidgetsBindingObserver {
     if (request == _pageRequest) _setPage(target);
   }
 
+  void cancelPendingPageSwitch() {
+    _pageRequest++;
+    // A late edge-switch reply must not leave the native page signal ahead of
+    // the committed Flutter workspace. This is a lightweight one-way signal.
+    unawaited(gateway.setDesktopPage(page).catchError((Object _) {}));
+  }
+
   void _setPage(int value) {
     _pageRequest++;
     page = value;
@@ -367,6 +419,7 @@ class LauncherController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void beginEdit() {
+    if (editing) return;
     _backup = List.of(cards);
     _backupPages = pageCount;
     editing = true;
@@ -375,6 +428,7 @@ class LauncherController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void finishEdit() {
+    finishPlacement(cancel: true);
     pageCount = cards.fold<int>(1, (n, c) => max(n, c.page + 1));
     _setPage(page.clamp(0, pageCount - 1));
     editing = false;
@@ -384,6 +438,7 @@ class LauncherController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void cancelEdit() {
+    finishPlacement(cancel: true);
     cards = _backup ?? cards;
     pageCount = _backupPages;
     _setPage(page.clamp(0, pageCount - 1));
@@ -393,6 +448,7 @@ class LauncherController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void remove(String id) {
+    finishPlacement(cancel: true);
     _undo = List.of(cards);
     cards = cards.where((c) => c.id != id).toList();
     notifyListeners();

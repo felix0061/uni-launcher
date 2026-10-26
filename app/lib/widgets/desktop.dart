@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import '../controller/launcher_controller.dart';
 import '../theme/launcher_theme.dart';
 import '../theme/design_tokens.dart';
@@ -11,6 +14,11 @@ import '../model/weather_condition.dart';
 import 'weather_icon.dart';
 import 'desktop_name_dialog.dart';
 import 'system_status_row.dart';
+import '../model/card_layout.dart';
+import 'card_content.dart';
+import 'uni_icon.dart';
+
+part 'desktop_drag.dart';
 
 class Header extends StatefulWidget {
   final LauncherController controller;
@@ -114,7 +122,7 @@ class Desktop extends StatefulWidget {
   State<Desktop> createState() => _DesktopState();
 }
 
-class _DesktopState extends State<Desktop> {
+class _DesktopState extends State<Desktop> with _DesktopDrag {
   LauncherController get controller => widget.controller;
   bool warmed = false;
   @override
@@ -141,17 +149,27 @@ class _DesktopState extends State<Desktop> {
     ];
     // Page changes use a dedicated signal. Header, dock, theme, inactive cards
     // and the MaterialApp no longer rebuild for every swipe.
-    return ValueListenableBuilder<int>(
-        valueListenable: c.pageChanged,
-        builder: (context, page, __) =>
-            _DesktopStaticLayers(controller: c, grids: [
-              for (int i = 0; i < grids.length; i++)
-                EmbeddedContentPolicy(
-                    key: ValueKey('desktop-page-$i'),
-                    enabled: EmbeddedContentPolicy.allowed(context),
-                    visible: i == page && !c.settings,
-                    child: grids[i])
-            ]));
+    _cardBoundaries
+        .removeWhere((id, _) => !c.cards.any((card) => card.id == id));
+    return Listener(
+        onPointerDown: _pointerDown,
+        onPointerMove: _pointerMove,
+        onPointerUp: _pointerUp,
+        onPointerCancel: _pointerCancel,
+        child: Stack(key: _workspaceKey, fit: StackFit.expand, children: [
+          ValueListenableBuilder<int>(
+              valueListenable: c.pageChanged,
+              builder: (context, page, __) =>
+                  _DesktopStaticLayers(controller: c, grids: [
+                    for (int i = 0; i < grids.length; i++)
+                      EmbeddedContentPolicy(
+                          key: ValueKey('desktop-page-$i'),
+                          enabled: EmbeddedContentPolicy.allowed(context),
+                          visible: i == page && !c.settings,
+                          child: grids[i])
+                  ])),
+          _dragFeedback(),
+        ]));
   }
 
   Widget _grid(BuildContext context, int page) {
@@ -160,7 +178,18 @@ class _DesktopState extends State<Desktop> {
       const gap = 20.0;
       final unitX = (box.maxWidth + gap) / 12,
           unitY = (box.maxHeight + gap) / 6,
-          items = c.cards.where((card) => card.page == page).toList();
+          preview = {
+            for (final card in c.placementPreview ?? <LauncherCard>[])
+              card.id: card
+          },
+          items = c.cards
+              .map((card) =>
+                  card.id == c.placementOrigin?.id && !c.placementResizing
+                      ? card
+                      : preview[card.id] ?? card)
+              .where((card) => card.page == page)
+              .toList();
+      final target = c.placementTarget;
       return Stack(
           key: ValueKey('desktop-grid-$page'),
           clipBehavior: Clip.none,
@@ -185,20 +214,64 @@ class _DesktopState extends State<Desktop> {
                           },
                           icon: const Icon(Icons.add),
                           label: const Text('添加一张卡片')))),
-            for (final card in items)
+            if (target != null && target.page == page)
               Positioned(
+                  left: target.x * unitX,
+                  top: target.y * unitY,
+                  width: target.w * unitX - gap,
+                  height: target.h * unitY - gap,
+                  child: IgnorePointer(
+                      child: Container(
+                          key: const ValueKey('card-drop-preview'),
+                          decoration: BoxDecoration(
+                              color: (c.placementValid
+                                      ? SurfaceStyle.of(context).accent
+                                      : Theme.of(context).colorScheme.error)
+                                  .withValues(alpha: .08),
+                              borderRadius: BorderRadius.circular(
+                                  SurfaceStyle.of(context).radius),
+                              border: Border.all(
+                                  width: 2,
+                                  color: c.placementValid
+                                      ? SurfaceStyle.of(context).accent
+                                      : Theme.of(context)
+                                          .colorScheme
+                                          .error))))),
+            for (final card in items)
+              AnimatedPositioned(
                   key: ValueKey('position-${card.id}'),
+                  duration: !c.editing ||
+                          MediaQuery.disableAnimationsOf(context) ||
+                          (c.placementResizing &&
+                              card.id == c.placementOrigin?.id)
+                      ? Duration.zero
+                      : const Duration(milliseconds: 150),
+                  curve: Curves.easeOutCubic,
                   left: card.x * unitX,
                   top: card.y * unitY,
                   width: card.w * unitX - gap,
                   height: card.h * unitY - gap,
-                  child: RepaintBoundary(
-                      child: EditableCard(
-                          key: ValueKey(card.id),
-                          card: card,
-                          controller: c,
-                          unitX: unitX,
-                          unitY: unitY))),
+                  child: Opacity(
+                      opacity: card.id == _feedbackId ? 0 : 1,
+                      child: RepaintBoundary(
+                          key: _cardBoundaries.putIfAbsent(
+                              card.id,
+                              () => GlobalKey(
+                                  debugLabel: 'card-boundary-${card.id}')),
+                          child: EditableCard(
+                              key: ValueKey(card.id),
+                              card: card,
+                              controller: c,
+                              unitX: unitX,
+                              unitY: unitY,
+                              onPlacementStart: (card, resize, position) =>
+                                  _beginGesture(
+                                      card,
+                                      resize,
+                                      position,
+                                      context.findRenderObject()! as RenderBox,
+                                      unitX,
+                                      unitY))))),
           ]);
     });
   }
@@ -233,7 +306,7 @@ class _DesktopStaticLayers extends StatelessWidget {
                         child: Row(children: [
                           const Text('编辑桌面', style: TextStyle(fontSize: 28)),
                           const SizedBox(width: 24),
-                          Text('拖动卡片移动 · 拖到屏幕边缘换页 · 拖动角点缩放',
+                          Text('拖动卡片让位 · 边缘停留换页 · 右下角调整尺寸',
                               style: TextStyle(
                                   color: SurfaceStyle.of(context).muted,
                                   fontSize: 17)),

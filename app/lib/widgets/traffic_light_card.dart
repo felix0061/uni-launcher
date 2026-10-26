@@ -251,9 +251,9 @@ class _SignalReading extends StatelessWidget {
       _ => s.muted,
     };
     final symbol = switch (signal.direction) {
-      'left' => 'arrow-left',
+      'left' => 'signal-left',
       'straight' => 'signal-straight',
-      'right' => 'arrow-right',
+      'right' => 'signal-right',
       'uturn' => 'signal-uturn',
       _ => 'traffic-light',
     };
