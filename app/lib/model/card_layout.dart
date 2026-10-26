@@ -7,6 +7,7 @@ class CardSpec {
 
 const cardSpecs = [
   CardSpec('nav', '导航', '原车导航服务', 8, 6, 6, 3),
+  CardSpec('trafficLight', '红绿灯', '高德路口信号', 4, 3, 4, 2),
   CardSpec('music', '音乐', '原车媒体中心', 4, 4, 3, 2),
   CardSpec('weather', '天气', '原车天气', 4, 2, 3, 2),
   CardSpec('calendar', '日历', '原车日历', 4, 3, 3, 2),

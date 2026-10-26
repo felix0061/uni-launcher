@@ -34,6 +34,7 @@ public final class LauncherRuntime {
     private final MediaAdapter media;
     private final VehicleTelemetry vehicle;
     private final NavigationApps navigation;
+    private final AmapTrafficLightAdapter trafficLights;
     private final OfficialWeatherAdapter weather;
     private final SystemStatusAdapter systemStatus;
     private final SystemCalendarAdapter calendar;
@@ -48,7 +49,7 @@ public final class LauncherRuntime {
     private int demoTrack;
     private long demoPositionMs,demoSampleAt=android.os.SystemClock.elapsedRealtime();
     private final BroadcastReceiver packages=new BroadcastReceiver(){
-        @Override public void onReceive(Context c,Intent i){installed=apps.refresh();systemSettings.refresh();publish();}
+        @Override public void onReceive(Context c,Intent i){installed=apps.refresh();systemSettings.refresh();trafficLights.navigationChanged();publish();}
     };
 
     public static LauncherRuntime get(Context context){
@@ -68,6 +69,7 @@ public final class LauncherRuntime {
         if(!prefs.contains("demo"))prefs.edit().putBoolean("demo",Build.FINGERPRINT.contains("generic")||Build.MODEL.contains("sdk_gphone")||Build.MODEL.contains("Android SDK")).apply();
         apps=new AppRepository(context);catalog=new OfficialCatalog(context);
         vehicle=new VehicleTelemetry(context,this::publish);navigation=new NavigationApps(context,prefs);
+        trafficLights=new AmapTrafficLightAdapter(context,navigation::selected,this::publish);
         media=new MediaAdapter(context,this::publish);weather=new OfficialWeatherAdapter(context,this::publish);systemStatus=new SystemStatusAdapter(context,this::publish);calendar=new SystemCalendarAdapter(context,this::publish);
         systemSettings=new SystemSettingsRepository(context);navigationAudio=new NavigationAudioAdapter(context);
         // setPreferredPackage() starts MediaAdapter; defer it until the first owner.
@@ -109,6 +111,7 @@ public final class LauncherRuntime {
                 .put("dark",(context.getResources().getConfiguration().uiMode&Configuration.UI_MODE_NIGHT_MASK)==Configuration.UI_MODE_NIGHT_YES)
                 .put("apps",installed).put("climate",climate).put("vehicle",telemetry).put("media",media.snapshot().put("preferredPackage",prefs.getString("mediaPackage","auto"))).put("version",xyz.i4o.uni.launcher.BuildConfig.VERSION_NAME+"-flutter");
             state.put("desktopSelected",homeVisible&&desktopContent);
+            state.put("trafficLights",trafficLights.snapshot());
             state.put("savedDesign",prefs.getString("savedDesign", "")).put("appNames",storedAppNames()).put("runtimeOwnerCount",listeners.size());
             if(prefs.getBoolean("demo",false))state.put("media",new JSONObject().put("available",true).put("playing",demoPlaying)
                 .put("title",demoTrack%2==0?"向海而行":"山海之间").put("artist",demoTrack%2==0?"Coastline":"Northbound").put("collection","晨间驾驶歌单").put("source","simulator").put("canNext",true).put("canPrevious",true).put("canToggle",true).put("canSeek",true)
@@ -176,6 +179,7 @@ public final class LauncherRuntime {
             String key="select-player".equals(action)?"mediaPackage":"navigationPackage";
             prefs.edit().putString(key,value).commit();
             if("select-player".equals(action)&&!listeners.isEmpty())media.setPreferredPackage(value);
+            if("select-navigation".equals(action))trafficLights.navigationChanged();
             publish();return true;
         }
         if("embed-navigation".equals(action)){prefs.edit().putBoolean("embedNavigation",request.optBoolean("enabled",true)).commit();publish();return true;}
@@ -234,14 +238,14 @@ public final class LauncherRuntime {
         onMain(()->{
             boolean first=listeners.isEmpty();
             listeners.put(owner,listener);
-            if(first){media.setPreferredPackage(prefs.getString("mediaPackage","auto"));vehicle.start();weather.start();systemStatus.start();calendar.start();}
+            if(first){media.setPreferredPackage(prefs.getString("mediaPackage","auto"));vehicle.start();weather.start();systemStatus.start();calendar.start();trafficLights.start();}
             publish();return null;
         });
     }
 
     public void removeListener(Object owner){
         onMain(()->{
-            if(listeners.remove(owner)!=null&&listeners.isEmpty()){media.stop();vehicle.stop();systemStatus.stop();calendar.stop();}
+            if(listeners.remove(owner)!=null&&listeners.isEmpty()){media.stop();vehicle.stop();systemStatus.stop();calendar.stop();trafficLights.stop();}
             return null;
         });
     }

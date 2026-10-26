@@ -2,6 +2,7 @@ part of 'editable_card.dart';
 
 const _libraryDescriptions = {
   'nav': '原车导航与引导信息',
+  'trafficLight': '方向、灯态与倒计时，支持多方向信号',
   'music': '原车媒体与播放信息',
   'weather': '原车城市与天气信息',
   'calendar': '原车日期与日程',
@@ -15,7 +16,13 @@ const _libraryDescriptions = {
   'shortcuts': '你常用的四个应用',
   'vehicle': '车速、总里程、续航与距保养',
 };
-const _desktopTypes = {'clock', 'clockWeather', 'shortcuts', 'vehicle'};
+const _desktopTypes = {
+  'clock',
+  'clockWeather',
+  'shortcuts',
+  'vehicle',
+  'trafficLight'
+};
 
 Future<void> showCardLibrary(BuildContext context, LauncherController c) =>
     showLauncherSheet<void>(context,
@@ -233,7 +240,10 @@ class _CardEditorState extends State<_CardEditor> {
         const {'battery', 'air', 'vehicle'}.contains(draft.type);
     final sizes = <(int, int)>[
       draft.type == 'weather' ? (4, 2) : (spec.minW, spec.minH),
-      if (vehicleCard)
+      if (draft.type == 'trafficLight') ...[
+        (4, 3),
+        (8, 3)
+      ] else if (vehicleCard)
         (4, 3)
       else
         (spec.minW > 4 ? spec.minW : 4, spec.minH > 4 ? spec.minH : 4),

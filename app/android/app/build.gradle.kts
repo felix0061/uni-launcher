@@ -64,6 +64,11 @@ flutter {
     source = "../.."
 }
 
+dependencies {
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
+}
+
 val syncOfficialCatalog by tasks.registering(Copy::class) {
     from("../../../analysis/official-widgets.json")
     into(layout.buildDirectory.dir("generated/officialCatalog"))

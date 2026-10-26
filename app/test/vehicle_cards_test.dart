@@ -69,6 +69,7 @@ void main() {
       () {
     expect(cardSpecs.map((s) => s.type).toSet(), {
       'nav',
+      'trafficLight',
       'music',
       'weather',
       'calendar',

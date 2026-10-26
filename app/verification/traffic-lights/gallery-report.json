@@ -1,0 +1,14 @@
+{
+  "data": "explicit gallery fixtures, not live AMap broadcasts",
+  "themes": 2,
+  "checks": [
+    "minimum size",
+    "multiple directions",
+    "single direction",
+    "unknown enums",
+    "waiting",
+    "expired",
+    "square corners",
+    "glass setting"
+  ]
+}

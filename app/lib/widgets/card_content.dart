@@ -25,6 +25,8 @@ import 'official_card_entry.dart';
 import 'native_slice_builder.dart';
 import '../model/weather_condition.dart';
 import '../model/vehicle_data.dart';
+import '../model/traffic_light.dart';
+import 'traffic_light_card.dart';
 
 export 'vehicle_visuals.dart' show TireDiagram, VehicleDoorSnapshot;
 
@@ -40,6 +42,7 @@ Map<String, dynamic> mapOf(dynamic value) =>
 IconData cardIcon(String type) =>
     const <String, IconData>{
       'nav': Icons.navigation_outlined,
+      'trafficLight': Icons.traffic_outlined,
       'music': Icons.music_note_outlined,
       'weather': Icons.cloud_outlined,
       'calendar': Icons.calendar_month_outlined,
@@ -58,6 +61,7 @@ IconData cardIcon(String type) =>
 
 String cardSymbol(String type) =>
     const {
+      'trafficLight': 'traffic-light',
       'weather': 'cloud',
       'clockWeather': 'clock',
       'calendar': 'calendar',
@@ -82,6 +86,12 @@ class CardContent extends StatelessWidget {
           native['demo'],
           for (final key in switch (card.type) {
             'nav' => ['navigation', 'apps', 'appNames'],
+            'trafficLight' => [
+                'trafficLights',
+                'navigation',
+                'apps',
+                'appNames'
+              ],
             'music' => ['media', 'apps', 'appNames', 'integrationPreferences'],
             'weather' || 'clockWeather' => ['weather'],
             'calendar' => ['calendar'],
@@ -93,6 +103,17 @@ class CardContent extends StatelessWidget {
             native[key],
         ],
         builder: (context, native) => switch (card.type) {
+          'trafficLight' => TrafficLightCard(
+              snapshot: TrafficLightSnapshot.fromNative(native),
+              title: card.title,
+              editing: controller.editing,
+              sourceLabel: controller.appName({
+                'package': mapOf(native['navigation'])['package'],
+                'label': mapOf(native['navigation'])['label'] ?? '地图导航',
+              }),
+              onOpenMap: mapOf(native['navigation'])['installed'] == true
+                  ? () => controller.command('launch-navigation')
+                  : null),
           'nav' => native['navigation'] is Map
               ? EmbeddedNavigationCard(
                   controller: controller,

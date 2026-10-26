@@ -15,7 +15,7 @@ public final class NavigationApps {
     public String selected(){
         String saved=prefs.getString("navigationPackage","auto");
         if(!"auto".equals(saved))return saved;
-        for(String p:new String[]{"com.autonavi.amapauto","com.autonavi.amapautolite","com.autonavi.amapauto32","com.autonavi.minimap","com.baidu.BaiduMap","com.baidu.navi","com.tencent.map"})
+        for(String p:new String[]{"com.autonavi.amapauto","com.autonavi.amapautp.yh","com.autonavi.amapautolite","com.autonavi.amapauto32","com.autonavi.minimap","com.baidu.BaiduMap","com.baidu.navi","com.tencent.map"})
             if(context.getPackageManager().getLaunchIntentForPackage(p)!=null)return p;
         return "";
     }
@@ -84,7 +84,7 @@ public final class NavigationApps {
             if(!selected.isEmpty()&&context.getPackageManager().getLaunchIntentForPackage(selected)!=null){
                 seen.put(selected,labelOf(selected));
             }
-            for(String p:new String[]{"com.autonavi.amapauto","com.autonavi.amapautolite","com.autonavi.amapauto32","com.autonavi.minimap","com.baidu.BaiduMap","com.baidu.navi","com.tencent.map"}){
+            for(String p:new String[]{"com.autonavi.amapauto","com.autonavi.amapautp.yh","com.autonavi.amapautolite","com.autonavi.amapauto32","com.autonavi.minimap","com.baidu.BaiduMap","com.baidu.navi","com.tencent.map"}){
                 if(seen.containsKey(p))continue;
                 if(context.getPackageManager().getLaunchIntentForPackage(p)!=null)seen.put(p,labelOf(p));
             }
