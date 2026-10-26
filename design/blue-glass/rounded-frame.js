@@ -30,11 +30,18 @@ if(params.has('radius')){
   if(width<=0||height<=0)return;
   const style=getComputedStyle(parent),r=Math.min(parseFloat(style.borderTopLeftRadius)||0,width/2,height/2);
   const weight=parseFloat(getComputedStyle(el).getPropertyValue('--mark-weight'))||1.5,s=weight/2;
-  const bend=Math.max(s,r),arc=Math.max(.01,bend-s);
   const panel=el.classList.contains('rounded-panel-frame');
-  const leg=r===0?(panel?18:7):(panel?8:4);
-  const extent=Math.min(bend+leg,width/2-2,height/2-2);
-  const left=`M${s},${extent}V${bend}A${arc},${arc} 0 0 1 ${bend},${s}H${extent}`;
+  const budget=panel?18:(parseFloat(getComputedStyle(el).getPropertyValue('--mark-size'))||10);
+  const arc=Math.max(.01,r-s);
+  let left;
+  if(r>0){
+   const sweep=Math.min(Math.PI/3,budget/arc),start=Math.PI+(Math.PI/2-sweep)/2,end=start+sweep;
+   left=`M${r+Math.cos(start)*arc},${r+Math.sin(start)*arc}A${arc},${arc} 0 0 1 ${r+Math.cos(end)*arc},${r+Math.sin(end)*arc}`;
+  }else{
+   const extent=Math.min(budget,width/2-2,height/2-2);
+   left=`M${s},${extent}V${s}H${extent}`;
+  }
+  el.dataset.frameBudget=budget;
   const paths=[`<path d="${left}"/>`,`<path d="${left}" transform="translate(${width},0) scale(-1,1)"/>`,`<path d="${left}" transform="translate(0,${height}) scale(1,-1)"/>`,`<path d="${left}" transform="translate(${width},${height}) scale(-1,-1)"/>`];
   el.dataset.frameRadius=r;el.dataset.frameWidth=width;el.dataset.frameHeight=height;
   el.innerHTML=`<svg class="corner-paths" viewBox="0 0 ${width} ${height}" aria-hidden="true">${paths.join('')}</svg>`;

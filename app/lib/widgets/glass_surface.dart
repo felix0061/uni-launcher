@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/launcher_theme.dart';
 import '../theme/design_tokens.dart';
+import '../theme/technical_frame.dart';
 import 'uni_icon.dart';
 
 enum SurfaceTone { normal, strong, soft }
@@ -13,6 +14,7 @@ class GlassSurface extends StatelessWidget {
   final SurfaceTone tone;
   final Color? borderColor;
   final bool shadow;
+  final bool dock;
   const GlassSurface(
       {super.key,
       required this.child,
@@ -20,23 +22,54 @@ class GlassSurface extends StatelessWidget {
       this.radius,
       this.tone = SurfaceTone.normal,
       this.borderColor,
-      this.shadow = true});
+      this.shadow = true,
+      this.dock = false});
   @override
   Widget build(BuildContext context) {
     final s = SurfaceStyle.of(context),
         shape = BorderRadius.circular(radius ?? s.radius);
+    final color = dock && s.technicalFrame
+        ? s.dock
+        : switch (tone) {
+            SurfaceTone.normal => s.surface,
+            SurfaceTone.strong => s.strong,
+            SurfaceTone.soft => s.soft,
+          };
     final content = DecoratedBox(
         decoration: BoxDecoration(
-            color: switch (tone) {
-              SurfaceTone.normal => s.surface,
-              SurfaceTone.strong => s.strong,
-              SurfaceTone.soft => s.soft
-            },
+            color: color,
+            gradient: s.technicalFrame && s.glass
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                        Color.alphaBlend(
+                            Colors.white.withValues(alpha: s.dark ? .035 : .22),
+                            color),
+                        color
+                      ])
+                : null,
             borderRadius: shape,
-            border: Border.all(color: borderColor ?? s.edge)),
+            border: s.technicalFrame
+                ? (dock ? Border(top: BorderSide(color: s.edge)) : null)
+                : Border.all(color: borderColor ?? s.edge)),
         child: Material(
             type: MaterialType.transparency,
             child: Padding(padding: padding, child: child)));
+    final framed = s.technicalFrame && !dock
+        ? DecoratedBox(
+            position: DecorationPosition.foreground,
+            decoration: ShapeDecoration(
+                shape: TechnicalFrameBorder(
+                    radius: radius ?? s.radius,
+                    cornerLength: Design.px(18),
+                    side: BorderSide(
+                        color: borderColor == null
+                            ? s.edge
+                            : Color.lerp(s.edge, borderColor, .24)!),
+                    cornerColor: borderColor ?? s.corner)),
+            child: content)
+        : content;
     return DecoratedBox(
         decoration: BoxDecoration(
             borderRadius: shape,
@@ -44,18 +77,18 @@ class GlassSurface extends StatelessWidget {
                 ? [
                     BoxShadow(
                         color: s.shadow,
-                        offset: Offset(0, Design.px(16)),
-                        blurRadius: Design.px(44))
+                        offset: Offset(0, Design.px(s.technicalFrame ? 6 : 16)),
+                        blurRadius: Design.px(s.technicalFrame ? 18 : 44))
                   ]
                 : null),
         child: ClipRRect(
             borderRadius: shape,
-            child: s.glass
+            child: s.liveBlur
                 ? BackdropFilter.grouped(
                     key: const ValueKey('glass-filter'),
                     filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: content)
-                : content));
+                    child: framed)
+                : framed));
   }
 }
 
@@ -63,7 +96,7 @@ class IconAction extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback? onTap, onLongPress;
-  final bool active, solid, soft;
+  final bool active, solid, soft, framed;
   final double size, iconSize;
   final Color? foregroundColor;
   const IconAction(
@@ -73,6 +106,7 @@ class IconAction extends StatelessWidget {
       this.onTap,
       this.onLongPress,
       this.active = false,
+      this.framed = true,
       this.solid = false,
       this.soft = false,
       this.size = 48,
@@ -84,7 +118,7 @@ class IconAction extends StatelessWidget {
         enabled = onTap != null || onLongPress != null;
     final fg = !enabled
         ? s.muted.withValues(alpha: .35)
-        : solid
+        : solid && !s.technicalFrame
             ? s.accentText
             : active
                 ? s.accent
@@ -100,14 +134,27 @@ class IconAction extends StatelessWidget {
                 width: size,
                 height: size,
                 child: Material(
-                    color: solid
-                        ? (enabled ? s.accent : s.soft)
-                        : (soft ? s.soft : Colors.transparent),
-                    borderRadius: BorderRadius.circular(s.controlRadius),
+                    shape:
+                        s.technicalFrame && framed && (active || solid || soft)
+                            ? s.controlShape(selected: active && enabled)
+                            : null,
+                    color: s.technicalFrame && framed && active && enabled
+                        ? s.accent.withValues(alpha: .11)
+                        : solid && s.technicalFrame
+                            ? s.soft
+                            : solid
+                                ? (enabled ? s.accent : s.soft)
+                                : (soft ? s.soft : Colors.transparent),
+                    borderRadius:
+                        s.technicalFrame && framed && (active || solid || soft)
+                            ? null
+                            : BorderRadius.circular(s.controlRadius),
                     child: InkWell(
                         borderRadius: BorderRadius.circular(s.controlRadius),
                         onTap: onTap,
                         onLongPress: onLongPress,
+                        highlightColor: s.accent.withValues(alpha: .20),
+                        splashColor: s.accent.withValues(alpha: .12),
                         child: Center(
                             child: DesignIcon(icon,
                                 size: iconSize, color: effectiveColor)))))));
@@ -160,11 +207,19 @@ class DesignToggle extends StatelessWidget {
                 width: Design.px(88),
                 height: Design.px(48),
                 padding: EdgeInsets.all(Design.px(6)),
-                decoration: BoxDecoration(
-                    color: value ? s.accent : s.soft,
-                    border:
-                        Border.all(color: value ? Colors.transparent : s.edge),
-                    borderRadius: BorderRadius.circular(s.controlRadius)),
+                decoration: s.technicalFrame
+                    ? ShapeDecoration(
+                        color: value ? s.accent.withValues(alpha: .11) : s.soft,
+                        shape: TechnicalFrameBorder(
+                            radius: (s.radius * .25).clamp(0, Design.px(8)),
+                            cornerLength: Design.px(5),
+                            cornerColor: value ? s.accent : s.corner,
+                            side: BorderSide(color: s.edge)))
+                    : BoxDecoration(
+                        color: value ? s.accent : s.soft,
+                        border: Border.all(
+                            color: value ? Colors.transparent : s.edge),
+                        borderRadius: BorderRadius.circular(s.controlRadius)),
                 child: Align(
                     alignment:
                         value ? Alignment.centerRight : Alignment.centerLeft,
@@ -172,8 +227,50 @@ class DesignToggle extends StatelessWidget {
                         width: Design.px(34),
                         height: Design.px(34),
                         decoration: BoxDecoration(
-                            color: value ? s.accentText : s.muted,
-                            borderRadius:
-                                BorderRadius.circular(s.radius * .42)))))));
+                            color: value
+                                ? (s.technicalFrame ? s.accent : s.accentText)
+                                : s.muted,
+                            borderRadius: BorderRadius.circular(s.technicalFrame
+                                ? (s.radius * .2).clamp(0, Design.px(6))
+                                : s.radius * .42)))))));
+  }
+}
+
+/// One switch layout across settings; classic retains the platform switch.
+class DesignSwitchTile extends StatelessWidget {
+  final Widget title;
+  final Widget? subtitle;
+  final EdgeInsetsGeometry? contentPadding;
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+  const DesignSwitchTile(
+      {super.key,
+      required this.title,
+      this.subtitle,
+      this.contentPadding,
+      required this.value,
+      this.onChanged});
+  @override
+  Widget build(BuildContext context) {
+    if (!SurfaceStyle.of(context).technicalFrame) {
+      return SwitchListTile(
+          title: title,
+          subtitle: subtitle,
+          contentPadding: contentPadding,
+          value: value,
+          onChanged: onChanged);
+    }
+    return ListTile(
+        title: title,
+        subtitle: subtitle,
+        contentPadding: contentPadding,
+        enabled: onChanged != null,
+        onTap: onChanged == null ? null : () => onChanged!(!value),
+        trailing: Opacity(
+            opacity: onChanged == null ? .45 : 1,
+            child: DesignToggle(
+                label: title is Text ? (title as Text).data ?? '' : '',
+                value: value,
+                onChanged: onChanged)));
   }
 }

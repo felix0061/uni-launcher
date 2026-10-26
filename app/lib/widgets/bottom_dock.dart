@@ -35,6 +35,7 @@ class BottomDock extends StatelessWidget {
         Widget action(
                 String key, IconData icon, String label, VoidCallback? tap,
                 {bool active = false,
+                bool framed = true,
                 bool solid = false,
                 bool soft = false,
                 double width = 64}) =>
@@ -46,8 +47,17 @@ class BottomDock extends StatelessWidget {
                 iconSize: Design.px(29),
                 onTap: tap,
                 active: active,
+                framed: framed,
                 solid: solid,
                 soft: soft);
+        Widget climateGroup(Widget child) => s.technicalFrame
+            ? GlassSurface(
+                radius: s.controlRadius,
+                shadow: false,
+                tone: SurfaceTone.soft,
+                padding: EdgeInsets.zero,
+                child: child)
+            : child;
         Widget zone(String id, String label) =>
             Row(mainAxisSize: MainAxisSize.min, children: [
               IconAction(
@@ -84,6 +94,7 @@ class BottomDock extends StatelessWidget {
             key: const ValueKey('bottom-dock'),
             height: Design.px(96),
             child: GlassSurface(
+                dock: true,
                 radius: 0,
                 shadow: false,
                 tone: SurfaceTone.strong,
@@ -136,13 +147,13 @@ class BottomDock extends StatelessWidget {
                   gap(),
                   SizedBox(
                       width: Design.px(480),
-                      child: Row(
+                      child: climateGroup(Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             zone('left', '主驾'),
                             action('climate', Icons.air, '空调与座椅',
                                 () => showClimatePanel(context, c),
-                                active: true, width: 56),
+                                active: !s.technicalFrame, width: 56),
                             zone('right', '副驾'),
                             action(
                                 'climate-power',
@@ -152,8 +163,9 @@ class BottomDock extends StatelessWidget {
                                     ? () => c.command('climate-power')
                                     : null,
                                 active: climate['power'] == true,
+                                framed: !s.technicalFrame,
                                 width: 56)
-                          ])),
+                          ]))),
                   gap(),
                   separator(),
                   gap(),

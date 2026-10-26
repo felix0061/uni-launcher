@@ -414,7 +414,9 @@ void main() {
     await c.command('toggle-play');
     await settle();
     c.openSettings();
-    c.tab('sources');
+    c.tab('system');
+    await settle();
+    await tester.tap(find.byKey(const ValueKey('system-app-controls')));
     await settle();
     await binding.takeScreenshot('flutter-integration-settings');
     await tester.scrollUntilVisible(

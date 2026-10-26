@@ -41,6 +41,10 @@
       "passed": true
     },
     {
+      "name": "radius-comparison-dark: rounded corner marks stay short across all controls",
+      "passed": true
+    },
+    {
       "name": "radius-comparison-dark: four radius choices displayed together",
       "passed": true
     },
@@ -86,6 +90,10 @@
     },
     {
       "name": "radius-comparison-light: cards use selected radius and dock remains square",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-light: rounded corner marks stay short across all controls",
       "passed": true
     },
     {
@@ -137,6 +145,10 @@
       "passed": true
     },
     {
+      "name": "home-dark-r12: rounded corner marks stay short across all controls",
+      "passed": true
+    },
+    {
       "name": "home-dark-r12: examples labelled",
       "passed": true
     },
@@ -178,6 +190,10 @@
     },
     {
       "name": "home-dark-r24: cards use selected radius and dock remains square",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r24: rounded corner marks stay short across all controls",
       "passed": true
     },
     {
@@ -225,6 +241,10 @@
       "passed": true
     },
     {
+      "name": "home-dark-r40: rounded corner marks stay short across all controls",
+      "passed": true
+    },
+    {
       "name": "home-dark-r40: examples labelled",
       "passed": true
     },
@@ -266,6 +286,10 @@
     },
     {
       "name": "home-light-r24: cards use selected radius and dock remains square",
+      "passed": true
+    },
+    {
+      "name": "home-light-r24: rounded corner marks stay short across all controls",
       "passed": true
     },
     {
@@ -317,6 +341,10 @@
       "passed": true
     },
     {
+      "name": "vehicle-dark-r24: rounded corner marks stay short across all controls",
+      "passed": true
+    },
+    {
       "name": "vehicle-dark-r24: examples labelled",
       "passed": true
     },
@@ -361,6 +389,14 @@
       "passed": true
     },
     {
+      "name": "settings-dark-r24: rounded corner marks stay short across all controls",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-r24: blue glass is the first theme choice",
+      "passed": true
+    },
+    {
       "name": "settings: preview ratio is 16:9",
       "passed": true
     },
@@ -402,6 +438,10 @@
     },
     {
       "name": "controls-dark-r24: cards use selected radius and dock remains square",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-r24: rounded corner marks stay short across all controls",
       "passed": true
     },
     {

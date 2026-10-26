@@ -386,9 +386,9 @@ class LauncherController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void tab(String value) {
-    settingsTab = value;
+    settingsTab = value == 'sources' ? 'system' : value;
     notifyListeners();
-    if (value == 'system') command('refresh-system-settings');
+    if (settingsTab == 'system') command('refresh-system-settings');
   }
 
   Future<void> switchPage(int value) async {

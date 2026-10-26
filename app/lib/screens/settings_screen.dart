@@ -6,14 +6,12 @@ import '../model/page_motion.dart';
 import '../theme/design_tokens.dart';
 import '../theme/launcher_theme.dart';
 import '../widgets/glass_surface.dart';
-import '../widgets/card_content.dart';
 import '../widgets/desktop.dart';
 import '../widgets/bottom_dock.dart';
 import '../widgets/scene_background.dart';
 import '../widgets/uni_icon.dart';
 import '../widgets/launcher_dialog.dart';
 import '../widgets/embedded_navigation.dart';
-import '../widgets/integration_settings.dart';
 import '../widgets/system_settings.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -49,7 +47,7 @@ class SettingsScreen extends StatelessWidget {
                                       fontSize: Design.px(36),
                                       fontWeight: FontWeight.w500)),
                               SizedBox(height: Design.px(9)),
-                              Text('外观、配色与功能接入',
+                              Text('外观、配色与系统设置',
                                   style: TextStyle(
                                       fontSize: Design.px(20), color: s.muted))
                             ]),
@@ -69,7 +67,6 @@ class SettingsScreen extends StatelessWidget {
                         for (final tab in [
                           ('appearance', '外观主题'),
                           ('motion', '切换动效'),
-                          ('sources', '功能接入'),
                           ('system', '系统设置')
                         ])
                           _SettingsTab(controller: c, id: tab.$1, label: tab.$2)
@@ -86,7 +83,7 @@ class SettingsScreen extends StatelessWidget {
                                 child: AppearanceSettings(controller: c)))),
                     'motion' => PageMotionSettings(controller: c),
                     'system' => SystemSettingsPanel(controller: c),
-                    _ => SourceSettings(controller: c)
+                    _ => SystemSettingsPanel(controller: c)
                   }),
                 ])));
   }
@@ -173,6 +170,41 @@ class AppearanceSettings extends StatelessWidget {
                   key: const PageStorageKey('appearance-settings-scroll'),
                   child: Column(children: [
                     SettingBlock(
+                        title: '主题样式',
+                        note: '材质与控件外观',
+                        child: Row(children: [
+                          for (final style in [
+                            ('blueGlass', '深蓝玻璃'),
+                            ('classic', '经典')
+                          ])
+                            Expanded(
+                                child: Padding(
+                                    padding: EdgeInsets.only(
+                                        right: style.$1 == 'blueGlass'
+                                            ? Design.px(14)
+                                            : 0),
+                                    child: OutlinedButton(
+                                        key:
+                                            ValueKey('theme-style-${style.$1}'),
+                                        style: OutlinedButton.styleFrom(
+                                            shape: s.controlShape(
+                                                selected:
+                                                    a.themeStyle == style.$1),
+                                            foregroundColor: a.themeStyle == style.$1
+                                                ? s.accent
+                                                : s.text,
+                                            backgroundColor:
+                                                a.themeStyle == style.$1
+                                                    ? s.accent
+                                                        .withValues(alpha: .11)
+                                                    : s.soft,
+                                            side: s.controlSide(
+                                                a.themeStyle == style.$1)),
+                                        onPressed: () => c.setAppearance(a.copyWith(themeStyle: style.$1)),
+                                        child: Text(style.$2))))
+                        ])),
+                    SizedBox(height: Design.px(16)),
+                    SettingBlock(
                         compact: box.maxHeight < Design.px(650),
                         title: '主题风格',
                         note: '智能调色会匹配壁纸明暗',
@@ -196,18 +228,15 @@ class AppearanceSettings extends StatelessWidget {
                                             onPressed: () => c.setAppearance(
                                                 a.copyWith(mode: mode.$1)),
                                             style: OutlinedButton.styleFrom(
-                                                shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            s.controlRadius)),
+                                                shape: s.controlShape(
+                                                    selected:
+                                                        a.mode == mode.$1),
                                                 foregroundColor:
                                                     a.mode == mode.$1
                                                         ? s.accent
                                                         : s.text,
-                                                side: BorderSide(
-                                                    color: a.mode == mode.$1
-                                                        ? s.accent
-                                                        : s.edge)),
+                                                side: s.controlSide(
+                                                    a.mode == mode.$1)),
                                             child:
                                                 Stack(alignment: Alignment.center, children: [
                                               Row(
@@ -259,12 +288,12 @@ class AppearanceSettings extends StatelessWidget {
                                                       vertical: Design.px(17),
                                                       horizontal:
                                                           Design.px(10)),
-                                                  shape: RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              s.controlRadius)),
+                                                  shape: s.controlShape(
+                                                      selected: a.palette ==
+                                                          preset.id),
                                                   foregroundColor: s.text,
-                                                  side: BorderSide(color: a.palette == preset.id ? s.accent : s.edge)),
+                                                  side: s.controlSide(
+                                                      a.palette == preset.id)),
                                               child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                                                 Container(
                                                     width: Design.px(59),
@@ -346,17 +375,20 @@ class AppearanceSettings extends StatelessWidget {
                               child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                Text('毛玻璃',
+                                Text(s.technicalFrame ? '玻璃质感' : '毛玻璃',
                                     style: TextStyle(fontSize: Design.px(23))),
                                 SizedBox(height: Design.px(6)),
-                                Text('关闭后保留半透明材质',
+                                Text(
+                                    s.technicalFrame
+                                        ? '静态反光，无实时模糊'
+                                        : '关闭后保留半透明材质',
                                     style: TextStyle(
                                         fontSize: Design.px(17),
                                         color: s.muted))
                               ])),
                           DesignToggle(
                               key: const ValueKey('glass-switch'),
-                              label: '毛玻璃',
+                              label: s.technicalFrame ? '玻璃质感' : '毛玻璃',
                               value: a.glass,
                               onChanged: (v) =>
                                   c.setAppearance(a.copyWith(glass: v)))
@@ -499,11 +531,12 @@ class _WallpaperTile extends StatelessWidget {
     return Material(
         color: s.soft,
         clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(s.controlRadius),
-            side: BorderSide(
-                color: selected ? s.accent : s.edge,
-                width: selected ? Design.px(2) : 1)),
+        shape: s.controlShape(selected: selected).copyWith(
+            side: s.technicalFrame
+                ? s.controlSide(selected)
+                : BorderSide(
+                    color: selected ? s.accent : s.edge,
+                    width: selected ? Design.px(2) : 1)),
         child: InkWell(
             key: ValueKey('wallpaper-$id'),
             onTap: onTap,
@@ -963,132 +996,6 @@ class _PickerThumbPainter extends CustomPainter {
   bool shouldRepaint(_PickerThumbPainter old) => old.position != position;
 }
 
-class SourceSettings extends StatelessWidget {
-  final LauncherController controller;
-  const SourceSettings({super.key, required this.controller});
-  @override
-  Widget build(BuildContext context) => ValueListenableBuilder<
-          Map<String, dynamic>>(
-      valueListenable: controller.native,
-      builder: (context, n, _) {
-        final c = controller, s = SurfaceStyle.of(context);
-        final sources = [
-          ('nav', 'nav', '导航', '原车导航服务'),
-          ('music', 'music', '音乐', '原车媒体中心'),
-          ('weather', 'cloud', '天气', '原车天气'),
-          ('calendar', 'calendar', '日历', '原车日历'),
-          ('member', 'user', '领克账号', '原车账号中心'),
-          ('cleanup', 'broom', '系统清理', '原车安全中心'),
-          ('tpms', 'tire', '车辆与胎压', '原车车辆信息'),
-          ('air', 'air', '空气质量', '按车型支持')
-        ];
-        return ListView(children: [
-          IntegrationSettings(controller: c, native: n),
-          SizedBox(height: Design.px(16)),
-          GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: sources.length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisExtent: Design.px(132),
-                  crossAxisSpacing: Design.px(16),
-                  mainAxisSpacing: Design.px(16)),
-              itemBuilder: (context, index) {
-                final item = sources[index];
-                return GlassSurface(
-                    padding: EdgeInsets.symmetric(
-                        horizontal: Design.px(24), vertical: Design.px(22)),
-                    child: Row(children: [
-                      UniIcon(item.$2, size: Design.px(40), color: s.accent),
-                      SizedBox(width: Design.px(16)),
-                      Expanded(
-                          child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                            Text(item.$3,
-                                style: TextStyle(fontSize: Design.px(25))),
-                            SizedBox(height: Design.px(14)),
-                            Text(item.$4,
-                                style: TextStyle(
-                                    color: s.muted, fontSize: Design.px(16)))
-                          ])),
-                      Container(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: Design.px(12),
-                              vertical: Design.px(8)),
-                          decoration: BoxDecoration(
-                              color: s.soft,
-                              borderRadius:
-                                  BorderRadius.circular(s.controlRadius)),
-                          child: Text(
-                              item.$1 == 'music' &&
-                                      mapOf(n['media'])['authorized'] == true
-                                  ? '媒体已授权'
-                                  : '待接入',
-                              style: TextStyle(
-                                  color: s.muted, fontSize: Design.px(15))))
-                    ]));
-              }),
-          SizedBox(height: Design.px(16)),
-          GlassSurface(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                Row(children: [
-                  Expanded(
-                      child: Text(
-                          '${mapOf(n['vehicle'])['reason'] ?? '未连接原车服务'}',
-                          style: TextStyle(
-                              fontSize: Design.px(20), color: s.muted))),
-                  TextButton(
-                      onPressed: () => c.command('refresh'),
-                      child: const Text('刷新连接')),
-                  TextButton(
-                      onPressed: () => c.command('media-access'),
-                      child: const Text('授权媒体访问'))
-                ]),
-                SwitchListTile(
-                    key: const ValueKey('demo-switch'),
-                    title: const Text('演示数据'),
-                    subtitle: const Text('关闭后显示真实接入状态'),
-                    value: n['demo'] == true,
-                    onChanged: (v) => c.command('demo-mode', enabled: v)),
-                SwitchListTile(
-                    key: const ValueKey('global-dock'),
-                    title: const Text('全局底栏'),
-                    subtitle: Text(mapOf(n['globalDock'])['allowed'] == true
-                        ? '在其他应用中使用相同的首页、空调和音乐控制'
-                        : '开启后需允许悬浮显示'),
-                    value: mapOf(n['globalDock'])['enabled'] == true,
-                    onChanged: (v) => c.command('global-dock', enabled: v)),
-                SwitchListTile(
-                    key: const ValueKey('system-navigation-hidden'),
-                    title: const Text('隐藏系统原有导航栏'),
-                    subtitle: Text(n['systemNavigationGranted'] == true
-                        ? '关闭后恢复原有显示；与全局底栏分别设置'
-                        : '需要系统授予导航栏管理权限'),
-                    value: n['systemNavigationHidden'] == true,
-                    onChanged: n['systemNavigationGranted'] == true
-                        ? (v) =>
-                            c.command('system-navigation-hidden', enabled: v)
-                        : null),
-                Row(children: [
-                  Text('UNI 0.6.5 · xyz.i4o.uni.launcher',
-                      style:
-                          TextStyle(fontSize: Design.px(18), color: s.muted)),
-                  const Spacer(),
-                  TextButton(
-                      onPressed: () =>
-                          c.command('open-official', value: 'settings'),
-                      child: const Text('打开原车设置'))
-                ])
-              ]))
-        ]);
-      });
-}
-
 class PageMotionSettings extends StatelessWidget {
   final LauncherController controller;
   const PageMotionSettings({super.key, required this.controller});
@@ -1114,9 +1021,11 @@ class PageMotionSettings extends StatelessWidget {
                                           key: ValueKey(
                                               'transition-${option.id}'),
                                           style: OutlinedButton.styleFrom(
+                                              shape: s.controlShape(
+                                                  selected: c.appearance.pageTransition ==
+                                                      option.id),
                                               foregroundColor:
-                                                  c.appearance.pageTransition ==
-                                                          option.id
+                                                  c.appearance.pageTransition == option.id
                                                       ? s.accent
                                                       : s.text,
                                               backgroundColor:
@@ -1124,14 +1033,11 @@ class PageMotionSettings extends StatelessWidget {
                                                           option.id
                                                       ? s.soft
                                                       : null,
-                                              side: BorderSide(
-                                                  color:
-                                                      c.appearance.pageTransition ==
-                                                              option.id
-                                                          ? s.accent
-                                                          : s.edge)),
-                                          onPressed: () => c.setAppearance(
-                                              c.appearance.copyWith(pageTransition: option.id)),
+                                              side: s.controlSide(
+                                                  c.appearance.pageTransition ==
+                                                      option.id)),
+                                          onPressed: () =>
+                                              c.setAppearance(c.appearance.copyWith(pageTransition: option.id)),
                                           child: Padding(
                                               padding: EdgeInsets.symmetric(vertical: Design.px(24)),
                                               child: Column(children: [

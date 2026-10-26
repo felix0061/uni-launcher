@@ -26,3 +26,7 @@ if(technical){
   document.querySelectorAll('.radius-demo').forEach(el=>el.innerHTML='<span class="radius-track"><i style="width:0"></i></span>0');
   document.querySelectorAll('.settings-row').forEach(el=>{const s=el.querySelector('strong');if(s?.textContent==='玻璃质感')el.querySelector('small').textContent='静态透色与上沿反光';});
 }
+
+// Theme order matches the production selector.
+const themeChoices=document.querySelector('.style-options');
+if(themeChoices)themeChoices.prepend(themeChoices.querySelector('.style-option.selected'));

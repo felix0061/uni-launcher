@@ -367,9 +367,9 @@ class _SizeOption extends StatelessWidget {
             height: Design.px(120),
             child: Material(
                 color: s.soft,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(s.controlRadius),
-                    side: BorderSide(color: selected ? s.accent : s.edge)),
+                shape: s
+                    .controlShape(selected: selected)
+                    .copyWith(side: s.controlSide(selected)),
                 child: InkWell(
                     key: ValueKey('card-size-${size.$1}-${size.$2}'),
                     onTap: onTap,

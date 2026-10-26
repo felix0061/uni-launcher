@@ -118,7 +118,7 @@ class LauncherSheet extends StatelessWidget {
                       color: s.dark
                           ? const Color(0x8007151D)
                           : const Color(0x3361716B)))),
-          if (s.glass)
+          if (s.liveBlur)
             Positioned.fill(
                 child: IgnorePointer(
                     child: BackdropFilter(

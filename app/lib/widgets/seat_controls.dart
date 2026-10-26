@@ -75,17 +75,11 @@ class SeatControls extends StatelessWidget {
                           selected: state.level == level,
                           child: OutlinedButton(
                             key: ValueKey('seat-${control.$1}-$level'),
-                            style: OutlinedButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                backgroundColor:
-                                    state.level == level ? s.accent : s.soft,
-                                foregroundColor: state.level == level
-                                    ? s.accentText
-                                    : s.text,
-                                side: BorderSide(
-                                    color: state.level == level
-                                        ? Colors.transparent
-                                        : s.edge)),
+                            style: s
+                                .selectionStyle(state.level == level)
+                                .copyWith(
+                                    padding: const WidgetStatePropertyAll(
+                                        EdgeInsets.zero)),
                             onPressed: state.writable
                                 ? () => controller.command(control.$2,
                                     zone: control.$3, value: '$level')

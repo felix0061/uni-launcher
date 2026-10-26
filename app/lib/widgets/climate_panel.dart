@@ -122,19 +122,13 @@ Future<void> showClimatePanel(
                                           ? () => c.command('climate-mode',
                                               value: mode.$1)
                                           : null,
-                                      style: OutlinedButton.styleFrom(
-                                          padding: EdgeInsets.zero,
-                                          backgroundColor:
-                                              (demo || VehicleField.fromNative(n, mode.$1).valid) &&
-                                                      climate[mode.$1] == true
-                                                  ? s.accent
-                                                  : s.soft,
-                                          foregroundColor:
-                                              (demo || VehicleField.fromNative(n, mode.$1).valid) &&
-                                                      climate[mode.$1] == true
-                                                  ? s.accentText
-                                                  : s.text,
-                                          side: BorderSide(color: (demo || VehicleField.fromNative(n, mode.$1).valid) && climate[mode.$1] == true ? Colors.transparent : s.edge)),
+                                      style: s
+                                          .selectionStyle((demo ||
+                                                  VehicleField.fromNative(n, mode.$1)
+                                                      .valid) &&
+                                              climate[mode.$1] == true)
+                                          .copyWith(
+                                              padding: const WidgetStatePropertyAll(EdgeInsets.zero)),
                                       child: Text(mode.$2, style: TextStyle(fontSize: Design.px(23)))))))
                   ]),
                   SeatControls(controller: c, native: n),

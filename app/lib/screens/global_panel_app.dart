@@ -61,7 +61,7 @@ class _GlobalPanelAppState extends State<GlobalPanelApp> {
         }
         return;
       }
-      if (widget.controller.appearance.glass &&
+      if (widget.controller.appearance.usesBackdropBlur &&
           widget.controller.gateway is AndroidGateway) {
         final bytes = await AndroidGateway.methods
             .invokeMethod<Uint8List>('panel-backdrop');
@@ -124,7 +124,8 @@ class _GlobalPanelAppState extends State<GlobalPanelApp> {
                               'panel'] ==
                           'recents'
                       ? RecentTasksPanel(controller: widget.controller)
-                      : backdrop != null && widget.controller.appearance.glass
+                      : backdrop != null &&
+                              widget.controller.appearance.usesBackdropBlur
                           ? SizedBox.expand(
                               child: Image.memory(backdrop!,
                                   fit: BoxFit.fill, gaplessPlayback: true))

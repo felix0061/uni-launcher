@@ -299,7 +299,7 @@ public final class GlobalDockService extends Service {
         try{
             JSONObject design=new JSONObject(runtime.prefs().getString("savedDesign","{}"));
             JSONObject appearance=design.optJSONObject("preferences");
-            if(appearance==null||!appearance.optBoolean("glass",false))return null;
+            if(appearance==null||!appearance.optBoolean("glass",false)||"blueGlass".equals(appearance.optString("themeStyle")))return null;
             DisplayMetrics real=new DisplayMetrics();windows.getDefaultDisplay().getRealMetrics(real);
             int width=Math.min(960,real.widthPixels),height=Math.max(1,real.heightPixels*width/real.widthPixels);
             bitmap=(android.graphics.Bitmap)Class.forName("android.view.SurfaceControl")

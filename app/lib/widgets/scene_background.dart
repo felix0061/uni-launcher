@@ -19,6 +19,17 @@ class SceneBackground extends StatelessWidget {
     final s = SurfaceStyle.of(context);
     final wallpaper = appearance;
     final hasWallpaper = wallpaper != null && wallpaper.wallpaper != 'gradient';
+    if (s.technicalFrame) {
+      return Stack(fit: StackFit.expand, children: [
+        ColoredBox(color: s.background),
+        if (hasWallpaper)
+          WallpaperImage(
+              appearance: wallpaper, cacheWidth: wallpaperCacheWidth),
+        if (forceOverlay && hasWallpaper)
+          ColoredBox(color: s.background.withValues(alpha: .9)),
+        child,
+      ]);
+    }
     // Old saved wallpaperOverlay values are intentionally ignored. Keep a
     // readable settings backdrop, but display wallpapers without tint at home.
     final showOverlay = !hasWallpaper || forceOverlay;

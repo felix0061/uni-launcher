@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../model/appearance.dart';
 import 'design_tokens.dart';
+import 'technical_frame.dart';
 
 class SurfaceStyle extends ThemeExtension<SurfaceStyle> {
-  final bool dark, glass;
+  final bool dark, glass, technicalFrame;
   final double radius;
   final Color accent,
       accentText,
@@ -17,6 +18,7 @@ class SurfaceStyle extends ThemeExtension<SurfaceStyle> {
       shadow;
   const SurfaceStyle(
       {required this.dark,
+      this.technicalFrame = false,
       required this.glass,
       required this.radius,
       required this.accent,
@@ -34,6 +36,26 @@ class SurfaceStyle extends ThemeExtension<SurfaceStyle> {
     final dark = adaptToWallpaper && a.mode == 'smart'
         ? a.backgroundIsDark(systemDark)
         : a.isDark(systemDark);
+    if (a.themeStyle == 'blueGlass') {
+      final accent = a.palette == 'blue'
+          ? (dark ? const Color(0xFF83B6FF) : const Color(0xFF245BC1))
+          : a.accent(dark);
+      return SurfaceStyle(
+          dark: dark,
+          glass: a.glass,
+          technicalFrame: true,
+          radius: Design.px(a.radius),
+          accent: accent,
+          accentText: dark ? const Color(0xFF07111F) : Colors.white,
+          seed: a.seed(),
+          text: dark ? const Color(0xFFF2F6FC) : const Color(0xFF172B42),
+          muted: dark ? const Color(0xFFA2B3C7) : const Color(0xFF52687F),
+          surface: dark ? const Color(0xF0102034) : const Color(0xF0F6F9FD),
+          strong: dark ? const Color(0xFA172B43) : const Color(0xFAFFFFFF),
+          soft: dark ? const Color(0xFF1B3048) : const Color(0xFFE9EFF7),
+          edge: dark ? const Color(0xFF31475E) : const Color(0xFFCAD6E4),
+          shadow: dark ? const Color(0x18000000) : const Color(0x0C263E58));
+    }
     return SurfaceStyle(
         dark: dark,
         glass: a.glass,
@@ -52,7 +74,35 @@ class SurfaceStyle extends ThemeExtension<SurfaceStyle> {
   }
   static SurfaceStyle of(BuildContext c) =>
       Theme.of(c).extension<SurfaceStyle>()!;
-  double get controlRadius => radius * .64;
+  bool get liveBlur => glass && !technicalFrame;
+  double get controlRadius =>
+      technicalFrame ? (radius * .5).clamp(0, Design.px(16)) : radius * .64;
+  Color get corner => dark ? const Color(0xFF829AB2) : const Color(0xFF738DA8);
+  Color get dock => dark ? const Color(0xFF0C1929) : const Color(0xFFF5F8FC);
+  Color get background => technicalFrame
+      ? (dark ? const Color(0xFF07111F) : const Color(0xFFE8EEF5))
+      : (dark ? const Color(0xFF0E1920) : const Color(0xFFE1ECE7));
+  BorderSide controlSide(bool selected) => BorderSide(
+      color: selected
+          ? (technicalFrame ? Color.lerp(edge, accent, .24)! : accent)
+          : edge);
+  OutlinedBorder controlShape({bool selected = false}) => technicalFrame
+      ? TechnicalFrameBorder(
+          radius: controlRadius,
+          cornerLength: Design.px(10),
+          cornerColor: selected ? accent : corner,
+          side: controlSide(selected))
+      : RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(controlRadius));
+  ButtonStyle selectionStyle(bool selected) => OutlinedButton.styleFrom(
+      shape: controlShape(selected: selected),
+      backgroundColor: selected
+          ? (technicalFrame ? accent.withValues(alpha: .11) : accent)
+          : soft,
+      foregroundColor: selected ? (technicalFrame ? accent : accentText) : text,
+      side: technicalFrame
+          ? controlSide(selected)
+          : BorderSide(color: selected ? Colors.transparent : edge));
   @override
   SurfaceStyle copyWith() => this;
   @override
@@ -60,8 +110,7 @@ class SurfaceStyle extends ThemeExtension<SurfaceStyle> {
 }
 
 ThemeData launcherTheme(SurfaceStyle s) {
-  final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(s.controlRadius));
+  final shape = s.controlShape();
   final button = ButtonStyle(
     shape: WidgetStatePropertyAll(shape),
     textStyle: WidgetStatePropertyAll(TextStyle(
@@ -89,8 +138,7 @@ ThemeData launcherTheme(SurfaceStyle s) {
       useMaterial3: true,
       brightness: colors.brightness,
       colorScheme: colors,
-      scaffoldBackgroundColor:
-          s.dark ? const Color(0xFF0E1920) : const Color(0xFFE1ECE7),
+      scaffoldBackgroundColor: s.background,
       textTheme: Typography.material2021()
           .black
           .apply(bodyColor: s.text, displayColor: s.text)
@@ -110,8 +158,10 @@ ThemeData launcherTheme(SurfaceStyle s) {
               side: WidgetStatePropertyAll(BorderSide(color: s.edge)))),
       filledButtonTheme: FilledButtonThemeData(
           style: button.copyWith(
-              foregroundColor: WidgetStatePropertyAll(s.accentText),
-              backgroundColor: WidgetStatePropertyAll(s.accent))),
+              backgroundColor:
+                  WidgetStatePropertyAll(s.technicalFrame ? s.soft : s.accent),
+              foregroundColor: WidgetStatePropertyAll(
+                  s.technicalFrame ? s.text : s.accentText))),
       inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: s.soft,

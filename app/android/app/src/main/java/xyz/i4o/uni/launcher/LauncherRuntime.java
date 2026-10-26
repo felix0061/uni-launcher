@@ -127,8 +127,10 @@ public final class LauncherRuntime {
                 int version=data.optInt("version");
                 if((version<4||version>6)||!p.optString("custom").matches("#[0-9a-fA-F]{6}"))return false;
                 String mode=p.optString("mode"),palette=p.optString("palette");
+                String themeStyle=p.optString("themeStyle","classic");
+                if(!"classic".equals(themeStyle)&&!"blueGlass".equals(themeStyle))return false;
                 String effect=p.optString("pageTransition","none");
-                if(!"none".equals(effect)&&!"fade".equals(effect)&&!"slide".equals(effect))return false;
+                if(!"none".equals(effect)&&!"fade".equals(effect)&&!"slide".equals(effect)&&!"zoom".equals(effect)&&!"depth".equals(effect))return false;
                 if(!"smart".equals(mode)&&!"system".equals(mode)&&!"dark".equals(mode)&&!"light".equals(mode))return false;
                 String wallpaper=p.optString("wallpaper","gradient");
                 if(!"gradient".equals(wallpaper)&&!"coastal".equals(wallpaper)&&!"graphite".equals(wallpaper)&&!"dawn".equals(wallpaper)&&!"neon".equals(wallpaper)&&!"precision".equals(wallpaper)&&!"terrain".equals(wallpaper)&&!"custom".equals(wallpaper))return false;

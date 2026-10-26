@@ -58,7 +58,7 @@ class IntegrationSettings extends StatelessWidget {
                 children: [
               picker('navigation-source', '导航应用', 'select-navigation',
                   '${nav['preferredPackage'] ?? 'auto'}'),
-              SwitchListTile(
+              DesignSwitchTile(
                   key: const ValueKey('embed-navigation'),
                   contentPadding: EdgeInsets.zero,
                   title: const Text('在地图卡片中显示导航'),
@@ -92,4 +92,82 @@ class IntegrationSettings extends StatelessWidget {
             style: TextStyle(color: s.accent, fontSize: Design.px(18))),
     ]));
   }
+}
+
+/// Operational preferences formerly grouped under the removed 功能接入 tab.
+class RuntimeSettings extends StatelessWidget {
+  final LauncherController controller;
+  const RuntimeSettings({super.key, required this.controller});
+  @override
+  Widget build(BuildContext context) =>
+      ValueListenableBuilder<Map<String, dynamic>>(
+          valueListenable: controller.native,
+          builder: (context, n, _) {
+            final c = controller, s = SurfaceStyle.of(context);
+            Map<String, dynamic> mapOf(Object? v) =>
+                v is Map ? Map<String, dynamic>.from(v) : {};
+            return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  IntegrationSettings(controller: c, native: n),
+                  SizedBox(height: Design.px(16)),
+                  GlassSurface(
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                        Row(children: [
+                          Expanded(
+                              child: Text(
+                                  '${mapOf(n['vehicle'])['reason'] ?? '未连接原车服务'}',
+                                  style: TextStyle(
+                                      fontSize: Design.px(20),
+                                      color: s.muted))),
+                          TextButton(
+                              onPressed: () => c.command('refresh'),
+                              child: const Text('刷新连接')),
+                          TextButton(
+                              onPressed: () => c.command('media-access'),
+                              child: const Text('授权媒体访问'))
+                        ]),
+                        DesignSwitchTile(
+                            key: const ValueKey('demo-switch'),
+                            title: const Text('演示数据'),
+                            subtitle: const Text('关闭后显示真实接入状态'),
+                            value: n['demo'] == true,
+                            onChanged: (v) =>
+                                c.command('demo-mode', enabled: v)),
+                        DesignSwitchTile(
+                            key: const ValueKey('global-dock'),
+                            title: const Text('全局底栏'),
+                            subtitle: Text(
+                                mapOf(n['globalDock'])['allowed'] == true
+                                    ? '在其他应用中使用相同的首页、空调和音乐控制'
+                                    : '开启后需允许悬浮显示'),
+                            value: mapOf(n['globalDock'])['enabled'] == true,
+                            onChanged: (v) =>
+                                c.command('global-dock', enabled: v)),
+                        DesignSwitchTile(
+                            key: const ValueKey('system-navigation-hidden'),
+                            title: const Text('隐藏系统原有导航栏'),
+                            subtitle: Text(n['systemNavigationGranted'] == true
+                                ? '关闭后恢复原有显示；与全局底栏分别设置'
+                                : '需要系统授予导航栏管理权限'),
+                            value: n['systemNavigationHidden'] == true,
+                            onChanged: n['systemNavigationGranted'] == true
+                                ? (v) => c.command('system-navigation-hidden',
+                                    enabled: v)
+                                : null),
+                        Row(children: [
+                          Text('UNI · xyz.i4o.uni.launcher',
+                              style: TextStyle(
+                                  fontSize: Design.px(18), color: s.muted)),
+                          const Spacer(),
+                          TextButton(
+                              onPressed: () =>
+                                  c.command('open-official', value: 'settings'),
+                              child: const Text('打开原车设置'))
+                        ])
+                      ]))
+                ]);
+          });
 }

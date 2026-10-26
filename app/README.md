@@ -1,5 +1,7 @@
 # UNI Launcher · Flutter Android
 
+0.6.12 新增可选“深蓝玻璃”主题：深浅色、四角短框线、静态玻璃、统一选中态和全局底栏；圆角仍支持 0–40。移除“功能接入”分类，其可用选项移入系统设置最上方“应用与底栏”。[实现与验证](../docs/THEME_BLUE_GLASS.md#v50612-实现与验证)。
+
 0.6.11 优化跟手翻屏：平移、淡入淡出、缩放、层叠与无动画，页面与指示条共用进度；隐藏/运动页停止歌词和进度更新，导航应用查询缓存并减少重复媒体同步。[实现与验证边界](../docs/PERFORMANCE_0_6_11.md)。
 
 0.6.10 完善卡片拖放：占位让位、满屏交换、跨屏持续拖动、位置动画与右下角网格缩放；红绿灯箭头加粗。交互和验证见 [0.6.10 记录](../docs/IP753_0_6_10.md)。
@@ -46,7 +48,7 @@
 | --- | --- |
 | `lib/model/` | 外观偏好、卡片规格、网格约束和布局序列化 |
 | `lib/controller/` | 状态订阅、编辑事务、撤销与持久化 |
-| `lib/theme/`、`lib/widgets/glass_surface.dart` | 颜色 token、圆角、可选模糊与复用表面/图标按钮 |
+| `lib/theme/`、`lib/widgets/glass_surface.dart` | 经典/深蓝玻璃 token、公共框线、圆角、玻璃与表面/图标按钮 |
 | `lib/widgets/` | 卡片内容、可编辑容器、底栏和功能面板 |
 | `lib/screens/` | 首页、桌面设置 |
 | `lib/platform/` | `NativeGateway` 接口、MethodChannel / EventChannel |
@@ -55,7 +57,7 @@
 | `../analysis/official-widgets.json` | 共用原厂提供者目录，Gradle 构建时同步到 assets |
 | `test/`、`integration_test/` | 状态/组件测试与 Android 9 真模拟器交互测试 |
 
-正常界面不显示 Binder、权限异常或属性 ID；功能接入页提供来源和可用状态。Flutter 入口不编译旧 WebView MainActivity、离线 HTML 或 JS 界面。
+正常界面不显示 Binder、权限异常或属性 ID；应用关联与底栏选项位于系统设置首项。Flutter 入口不编译旧 WebView MainActivity、离线 HTML 或 JS 界面。
 
 ## 实车接入边界
 

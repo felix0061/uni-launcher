@@ -1,5 +1,7 @@
 # LYNK 05 桌面研究与设计
 
+0.6.12 已实现可选“深蓝玻璃”主题与统一底栏，设置页移除“功能接入”。[说明与实际截图](docs/THEME_BLUE_GLASS.md#v50612-实现与验证)。
+
 针对领克 05 PHEV / IP753 / Android 9 的桌面项目，包含 APK 分析、设计和 Flutter Android 实现。包名 `xyz.i4o.uni.launcher`；源码、测试和报告由本地 Git 管理，先模拟器验证，再配合实车接入。
 
 - [0.5 版本范围与上车清单](docs/IP753_0_5.md)。

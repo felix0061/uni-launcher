@@ -56,7 +56,9 @@ void main() {
   testWidgets('native navigation switch sends platform action', (t) async {
     final (c, g) = await launch(t);
     c.openSettings();
-    c.tab('sources');
+    c.tab('system');
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('system-app-controls')));
     await t.pumpAndSettle();
     await t.scrollUntilVisible(
         find.byKey(const ValueKey('system-navigation-hidden')), 300,

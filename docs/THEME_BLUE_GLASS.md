@@ -1,6 +1,6 @@
 # 新增主题提案：深蓝玻璃 / Blue Glass
 
-本轮为视觉方案；没有修改 Flutter 应用、车机通信或发布 APK。以当前 UNI 卡片、播放器和全局底栏为内容基础，新增一套可选择的材质样式。
+0.6.12 已在 Flutter 中实现，验证范围见下方“V5：实现与验证”。后续章节保留各轮设计过程，历史章节中的“未实现”仅描述当时状态。
 
 ## 两张本地参考的取舍
 
@@ -177,3 +177,38 @@ node tools/render_blue_glass.mjs --radii
 ```
 
 102 项设计检查通过，覆盖九张画板：深浅色四档对照、三种完整首页和其余组件页。检查各卡片使用选择的半径、每个角标四段弧线与父控件半径相符、SVG 覆盖层没有被文字内边距挤偏、底栏保持直角贴底、按下不改变控件大小及无实时滤镜。报告：[radius-report.json](../design/blue-glass/radius-report.json)。0 px 的既有方案回归另通过 73 项检查。
+
+
+## V5：0.6.12 实现与验证
+
+入口为长按底栏首页 → 外观主题 → 主题样式 → 深蓝玻璃（首位）。既有配置缺省为经典样式；切换样式不改写主题配色、壁纸、圆角、桌面布局、应用重命名或播放器/导航关联。冰川配色对应设计稿中的冰蓝，其他预设和自定义色仍可选。
+
+### 实现
+
+- `Appearance.themeStyle` 持久化独立材质标识，`SurfaceStyle` 统一提供深浅色表面、文字、强调色和圆角。
+- `TechnicalFrameBorder` 是公共矢量框线；卡片、选项、按钮和弹窗共用。0 圆角保持 L 线；非零圆角只取居中短弧，扫角不超过 60°，弧长不超过一个直角角标的单边长度（卡片 18 设计像素、常规控件 10 设计像素）。大圆角不再绘制完整四分之一弧加延长线。明暗、配色、壁纸、动效和尺寸选项统一调用弱外框 token；主题色只突出短角标，避免旧的整圈高亮让弧线看起来变长。设计 HTML 与 Flutter 使用相同规则。
+- 全局底栏仍为全宽直角、96 设计像素、底部无装饰间距；空调分组统一框线，组内电源仅以图标颜色表示状态，去掉独立外框与色块。播放键采用中性边框，首页选中使用主题色短角线；按下不改变布局。
+- 新主题的“玻璃质感”沿用旧 `glass` 偏好，但仅启停静态反光渐变。Flutter 卡片/弹窗和独立全局弹窗不插入 `BackdropFilter`，Android 全局弹窗也跳过旧版背景截屏。经典主题保留原开关行为。
+- 移除“功能接入”标签与不准确的“待接入”静态目录；导航/音乐关联、媒体授权、演示、全局底栏和系统导航栏开关并入系统设置首项“应用与底栏”。其后依次为导航混音、系统入口目录。新主题的设置开关复用短角框线控件。
+- 修复 Android 保存校验遗漏 `zoom` / `depth` 的问题；五种既有翻屏动效均可与新主题一同持久化。
+
+### 验证结果
+
+- `flutter analyze --no-pub`：无问题。
+- `flutter test --no-pub`：142 项通过；包含旧配置迁移、样式保存/恢复、布局不丢失、文字对比、圆角边界、固定短弧长度、选中/按下尺寸、空调电源无嵌套框、设置首项和独立全局窗口。
+- Android 9 / 1920×1080 模拟器：25 项断言通过，10 张实际运行截图；覆盖深浅色、0/12/24/40 圆角、换屏固定底栏、音乐/空调弹窗、移除分类与新入口、五种动效保存到 Android 存储。详见[模拟器报告](../app/verification/blue-glass/emulator-report.json)。
+- Release/AOT 模拟器额外 5 项冒烟通过，包括版本、首位主题的实际绘制、进程重启后的样式持久化与系统设置恢复；见 [release 报告](../app/verification/blue-glass/release-smoke-report.json)。
+- 最新圆角设计稿额外通过 112 项检查，验证所有圆角角标弧长上限与主题顺序；见 [设计报告](../design/blue-glass/radius-report.json)。
+- 截图：[深色首页](../app/verification/blue-glass/blue-glass-home-dark-r24.png)、[浅色首页](../app/verification/blue-glass/blue-glass-home-light-r24.png)、[设置](../app/verification/blue-glass/blue-glass-settings-dark.png)、[系统设置首项](../app/verification/blue-glass/blue-glass-system-settings-top.png)、[空调弹窗](../app/verification/blue-glass/blue-glass-climate-dark.png)、[音乐弹窗](../app/verification/blue-glass/blue-glass-music-dark.png)。
+
+模拟器使用演示车辆数据，导航处于缺少系统嵌入授权的回退状态；不能据此认定 820A 帧耗时、真实导航纹理与新主题的组合、原车全局窗口/倒车接管已实测。实车验证留待上车，源码直接由本地 Git 管理。
+
+复现：
+
+```sh
+python3 app/tools/flutter_task.py analyze --no-pub
+python3 app/tools/flutter_task.py test --no-pub
+python3 app/tools/flutter_task.py drive --driver=test_driver/blue_glass_driver.dart --target=integration_test/blue_glass_test.dart --debug -d emulator-5580
+python3 app/tools/flutter_task.py build apk --release --target-platform android-arm64,android-x64 --split-per-abi
+python3 tools/verify_blue_glass_release.py
+```

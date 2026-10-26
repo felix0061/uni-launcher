@@ -42,6 +42,7 @@ const wallpaperPresets = <WallpaperPreset>[
 ];
 
 class Appearance {
+  static const themeStyles = ['classic', 'blueGlass'];
   static const defaultDesktopName = 'LYNK & CO / 05';
   static String normalizeDesktopName(Object? value) {
     final name =
@@ -52,6 +53,7 @@ class Appearance {
   }
 
   final String mode,
+      themeStyle,
       palette,
       custom,
       pageTransition,
@@ -64,6 +66,7 @@ class Appearance {
   const Appearance(
       {this.desktopName = defaultDesktopName,
       this.mode = 'system',
+      this.themeStyle = 'classic',
       this.palette = 'mint',
       this.custom = '#38A4A0',
       this.radius = 28,
@@ -74,6 +77,9 @@ class Appearance {
       this.wallpaperLuminance});
   factory Appearance.fromJson(Map<String, dynamic> json) => Appearance(
         desktopName: normalizeDesktopName(json['desktopName']),
+        themeStyle: themeStyles.contains(json['themeStyle'])
+            ? json['themeStyle']
+            : 'classic',
         mode: ['smart', 'system', 'light', 'dark'].contains(json['mode'])
             ? json['mode']
             : 'system',
@@ -103,6 +109,7 @@ class Appearance {
       );
   Appearance copyWith(
           {String? desktopName,
+          String? themeStyle,
           String? mode,
           String? palette,
           String? custom,
@@ -114,6 +121,7 @@ class Appearance {
           double? wallpaperLuminance}) =>
       Appearance(
           desktopName: normalizeDesktopName(desktopName ?? this.desktopName),
+          themeStyle: themeStyle ?? this.themeStyle,
           mode: mode ?? this.mode,
           palette: palette ?? this.palette,
           custom: custom ?? this.custom,
@@ -125,6 +133,7 @@ class Appearance {
           wallpaperLuminance: wallpaperLuminance ?? this.wallpaperLuminance);
   Map<String, dynamic> toJson() => {
         'desktopName': desktopName,
+        'themeStyle': themeStyle,
         'mode': mode,
         'palette': palette,
         'custom': custom,
@@ -143,6 +152,8 @@ class Appearance {
     }
     return null;
   }
+
+  bool get usesBackdropBlur => glass && themeStyle != 'blueGlass';
 
   bool isDark(bool systemDark) =>
       mode == 'dark' || ({'smart', 'system'}.contains(mode) && systemDark);

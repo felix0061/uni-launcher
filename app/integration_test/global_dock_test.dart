@@ -19,8 +19,7 @@ void main() {
     final size = t.view.physicalSize / t.view.devicePixelRatio;
     expect(inline.left, 0);
     expect(inline.right, size.width);
-    expect(
-        inline.bottom,
+    expect(inline.bottom,
         (c.native.value['viewportHeightPx'] as num) / t.view.devicePixelRatio);
     final surface = t.widget<GlassSurface>(find
         .descendant(
@@ -30,7 +29,9 @@ void main() {
     expect(surface.radius, 0);
     expect(surface.shadow, false);
     c.openSettings();
-    c.tab('sources');
+    c.tab('system');
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('system-app-controls')));
     await t.pumpAndSettle();
     await binding.convertFlutterSurfaceToImage();
     await t.scrollUntilVisible(find.byKey(const ValueKey('global-dock')), 250,
@@ -66,7 +67,9 @@ void main() {
     expect(t.takeException(), null);
     // Restore the pre-test state: global dock off returns the system bar.
     c.openSettings();
-    c.tab('sources');
+    c.tab('system');
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('system-app-controls')));
     await t.pumpAndSettle();
     await t.scrollUntilVisible(find.byKey(const ValueKey('global-dock')), 250,
         scrollable: find.byType(Scrollable).first);
