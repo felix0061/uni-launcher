@@ -41,7 +41,8 @@ public final class MediaAdapter {
     public void setPreferredPackage(String value){preferred=value==null||value.isEmpty()?"auto":value;start();}
     private final MediaController.Callback callback=new MediaController.Callback(){
         public void onMetadataChanged(MediaMetadata m){artworkDirty=true;syncSteeringSession();changed.run();}
-        public void onPlaybackStateChanged(PlaybackState s){choose();syncSteeringSession();changed.run();}
+        // choose() already synchronizes the selected source, including switches.
+        public void onPlaybackStateChanged(PlaybackState s){choose();changed.run();}
         public void onExtrasChanged(Bundle extras){syncSteeringSession();changed.run();}
         public void onSessionDestroyed(){
             try{select(manager.getActiveSessions(listener));}catch(SecurityException e){authorized=false;select(null);}

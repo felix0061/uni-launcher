@@ -31,6 +31,7 @@ class _LyricsViewState extends State<LyricsView> {
   Lyrics lyrics = const Lyrics([]);
   int active = -1;
   String payload = '';
+  bool _tickersEnabled = false;
   double get rowHeight => Design.px(widget.lineHeight ?? 36);
   int get visibleLines => widget.visibleLines ?? (widget.compact ? 1 : 3);
   @override
@@ -40,12 +41,23 @@ class _LyricsViewState extends State<LyricsView> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final enabled = TickerMode.valuesOf(context).enabled;
+    if (enabled == _tickersEnabled) return;
+    _tickersEnabled = enabled;
+    // A hidden page may have missed native samples. Catch up immediately,
+    // without animating through the lyrics that elapsed while it was hidden.
+    refresh(reset: enabled);
+  }
+
+  @override
   void didUpdateWidget(LyricsView old) {
     super.didUpdateWidget(old);
     refresh();
   }
 
-  void refresh() {
+  void refresh({bool reset = false}) {
     final next = widget.media['lyrics'] is String
         ? widget.media['lyrics'] as String
         : '';
@@ -56,7 +68,9 @@ class _LyricsViewState extends State<LyricsView> {
       active = -1;
     }
     timer?.cancel();
-    updateLine(reset: changed);
+    timer = null;
+    if (!_tickersEnabled) return;
+    updateLine(reset: changed || reset);
     if (lyrics.timed &&
         widget.media['playing'] == true &&
         widget.media['positionKnown'] == true)
@@ -72,7 +86,7 @@ class _LyricsViewState extends State<LyricsView> {
     if (next == active && !reset) return;
     if (mounted) setState(() => active = next);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !scroll.hasClients) return;
+      if (!mounted || !_tickersEnabled || !scroll.hasClients) return;
       final target = ((next < 0 ? 0 : next) * rowHeight)
           .clamp(0.0, scroll.position.maxScrollExtent);
       if (reset || MediaQuery.disableAnimationsOf(context)) {

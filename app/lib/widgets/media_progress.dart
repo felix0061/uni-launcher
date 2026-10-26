@@ -15,9 +15,14 @@ class MediaProgress extends StatefulWidget {
 class _MediaProgressState extends State<MediaProgress> {
   Timer? timer;
   double? dragging;
+  bool _tickersEnabled = false;
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final enabled = TickerMode.valuesOf(context).enabled;
+    if (enabled == _tickersEnabled) return;
+    _tickersEnabled = enabled;
+    // Dependency changes already rebuild the timeline at the current time.
     refresh();
   }
 
@@ -29,7 +34,9 @@ class _MediaProgressState extends State<MediaProgress> {
 
   void refresh() {
     timer?.cancel();
-    if (widget.media['playing'] == true &&
+    timer = null;
+    if (_tickersEnabled &&
+        widget.media['playing'] == true &&
         widget.media['positionKnown'] == true)
       timer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (mounted) setState(() {});

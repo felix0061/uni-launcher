@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'page_motion.dart';
 
 class AccentPreset {
   final String id, name;
@@ -67,7 +68,7 @@ class Appearance {
       this.custom = '#38A4A0',
       this.radius = 28,
       this.glass = false,
-      this.pageTransition = 'none',
+      this.pageTransition = 'slide',
       this.wallpaper = 'gradient',
       this.wallpaperPath = '',
       this.wallpaperLuminance});
@@ -87,10 +88,7 @@ class Appearance {
             ? (json['radius'] as num).toDouble().clamp(0, 40)
             : 28,
         glass: json['glass'] == true,
-        pageTransition:
-            ['none', 'fade', 'slide'].contains(json['pageTransition'])
-                ? json['pageTransition']
-                : 'none',
+        pageTransition: normalizePageEffect(json['pageTransition']),
         wallpaper: [...wallpaperPresets.map((item) => item.id), 'custom']
                 .contains(json['wallpaper'])
             ? json['wallpaper']

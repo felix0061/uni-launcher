@@ -9,6 +9,7 @@
 - [0.4.2 底栏、地图、网易云与官方车控](docs/IP753_0_4_2.md)：固定窗口几何、复用地图容器、专用媒体兼容、官方 HVAC/座椅与传感器。
 - [官方车辆接口](docs/OFFICIAL_CAR_API.md)、[网易云专用接口](docs/NETEASE_MEDIA.md)。
 - [高德红绿灯接口与卡片设计](docs/AMAP_TRAFFIC_LIGHT_CARD.md)：官方单方向广播、修改版巡航多方向广播、深浅色卡片与待实测边界。
+- [0.6.11 性能与翻屏](docs/PERFORMANCE_0_6_11.md)：跟手滑动、四种动效、统一指示条、隐藏页停止更新，以及导航查询和媒体同步降载。
 - [0.6.10 卡片拖放与缩放](docs/IP753_0_6_10.md)：临时让位布局、位置动画、跨屏拖放和右下角网格尺寸调整。
 - [0.4.0 官方能力对照与上车准备](docs/OEM_PARITY_0_4.md)：真导航容器、播放器关联、候选车辆读取及 38 类天气图标。
 - [0.4.1 首轮实车测试与启动修复](docs/IP753_FIRST_CAR_TEST.md)：异步权限崩溃、独立实车签名包、地图任务迁移与车机窗口适配。
@@ -17,7 +18,7 @@
 - [Flutter 深色首页](app/verification/flutter-home-dark.png)、[浅色直角首页](app/verification/flutter-home-light-square.png)、[毛玻璃设置](app/verification/flutter-settings-blur-on.png)、[未连接状态](app/verification/flutter-live-unavailable.png)。
 - [早期 WebView 基线与原生适配器](android/README.md)、[基线验证报告](android/verification/emulator-report.json)。保留供对照；当前 APK 入口已使用 Flutter。
 
-- [歌词与切换动效](docs/MEDIA_LYRICS_AND_MOTION.md)：音乐卡片/底栏/详情的同步歌词、官方宿主证据与三种翻屏设置。
+- [歌词与切换动效](docs/MEDIA_LYRICS_AND_MOTION.md)：音乐卡片/底栏/详情的同步歌词、官方宿主证据与早期翻屏设置；最新实现见 0.6.11。
 - [设计与实现一致性审计](docs/UI_FIDELITY_AUDIT.md)：样式偏差修正、座椅控制和验证边界。
 - [APK 能力分析](docs/APK_ANALYSIS.md)：系统身份、Widget、ECARX 车辆接口、导航、媒体、界面结构与证据边界。
 - [产品与界面设计](docs/PRODUCT_DESIGN.md)：布局、主题、组件、操作和异常状态。

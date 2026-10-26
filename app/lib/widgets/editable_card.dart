@@ -57,7 +57,10 @@ class _EditableCardState extends State<EditableCard> {
             child: Stack(children: [
               Positioned.fill(
                   top: c.editing ? Design.px(64) : 0,
-                  child: CardContent(card: card, controller: c)),
+                  // Lyrics, gauges and map textures update independently from
+                  // the large rounded surface, border and blurred shadow.
+                  child: RepaintBoundary(
+                      child: CardContent(card: card, controller: c))),
               if (c.editing) ...[
                 Positioned(
                     top: Design.px(8),

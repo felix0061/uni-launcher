@@ -17,6 +17,7 @@ import 'system_status_row.dart';
 import '../model/card_layout.dart';
 import 'card_content.dart';
 import 'uni_icon.dart';
+import 'native_slice_builder.dart';
 
 part 'desktop_drag.dart';
 
@@ -70,9 +71,14 @@ class _HeaderState extends State<Header> {
                               fontSize: 15,
                               letterSpacing: 2)))),
               const Spacer(),
-              ValueListenableBuilder<Map<String, dynamic>>(
+              NativeSliceBuilder(
                   valueListenable: widget.controller.native,
-                  builder: (context, native, _) =>
+                  select: (native) => [
+                        native['demo'],
+                        native['weather'],
+                        native['systemStatus']
+                      ],
+                  builder: (context, native) =>
                       Row(mainAxisSize: MainAxisSize.min, children: [
                         if (native['demo'] == true) ...[
                           Text('演示',
@@ -124,7 +130,15 @@ class Desktop extends StatefulWidget {
 
 class _DesktopState extends State<Desktop> with _DesktopDrag {
   LauncherController get controller => widget.controller;
+  final _pagerKey = GlobalKey<DesktopPageStackState>();
+  late final _pagePosition = ValueNotifier(controller.page.toDouble());
   bool warmed = false;
+  @override
+  void dispose() {
+    _pagePosition.dispose();
+    super.dispose();
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -159,15 +173,18 @@ class _DesktopState extends State<Desktop> with _DesktopDrag {
         child: Stack(key: _workspaceKey, fit: StackFit.expand, children: [
           ValueListenableBuilder<int>(
               valueListenable: c.pageChanged,
-              builder: (context, page, __) =>
-                  _DesktopStaticLayers(controller: c, grids: [
-                    for (int i = 0; i < grids.length; i++)
-                      EmbeddedContentPolicy(
-                          key: ValueKey('desktop-page-$i'),
-                          enabled: EmbeddedContentPolicy.allowed(context),
-                          visible: i == page && !c.settings,
-                          child: grids[i])
-                  ])),
+              builder: (context, page, __) => _DesktopStaticLayers(
+                      controller: c,
+                      pagerKey: _pagerKey,
+                      position: _pagePosition,
+                      grids: [
+                        for (int i = 0; i < grids.length; i++)
+                          EmbeddedContentPolicy(
+                              key: ValueKey('desktop-page-$i'),
+                              enabled: EmbeddedContentPolicy.allowed(context),
+                              visible: i == page && !c.settings,
+                              child: grids[i])
+                      ])),
           _dragFeedback(),
         ]));
   }
@@ -280,7 +297,13 @@ class _DesktopState extends State<Desktop> with _DesktopDrag {
 class _DesktopStaticLayers extends StatelessWidget {
   final LauncherController controller;
   final List<Widget> grids;
-  const _DesktopStaticLayers({required this.controller, required this.grids});
+  final GlobalKey<DesktopPageStackState> pagerKey;
+  final ValueNotifier<double> position;
+  const _DesktopStaticLayers(
+      {required this.controller,
+      required this.grids,
+      required this.pagerKey,
+      required this.position});
   @override
   Widget build(BuildContext context) {
     final c = controller;
@@ -289,13 +312,16 @@ class _DesktopStaticLayers extends StatelessWidget {
             key: const ValueKey('card-grid'),
             behavior: HitTestBehavior.translucent,
             onLongPress: c.editing ? null : c.beginEdit,
+            onHorizontalDragStart:
+                c.editing ? null : (_) => pagerKey.currentState?.dragStart(),
+            onHorizontalDragUpdate: c.editing
+                ? null
+                : (d) => pagerKey.currentState?.dragUpdate(d.primaryDelta ?? 0),
             onHorizontalDragEnd: c.editing
                 ? null
-                : (details) {
-                    final velocity = details.primaryVelocity ?? 0;
-                    if (velocity.abs() > 180)
-                      c.switchPage(c.page + (velocity < 0 ? 1 : -1));
-                  },
+                : (d) => pagerKey.currentState?.dragEnd(d.primaryVelocity ?? 0),
+            onHorizontalDragCancel:
+                c.editing ? null : () => pagerKey.currentState?.dragCancel(),
             child: Padding(
                 padding: EdgeInsets.fromLTRB(
                     Design.px(32), Design.px(16), Design.px(32), Design.px(24)),
@@ -327,28 +353,32 @@ class _DesktopStaticLayers extends StatelessWidget {
                         ])),
                   Expanded(
                       child: DesktopPageStack(
+                          key: pagerKey,
                           page: c.page,
+                          position: position,
+                          onPageRequested: (page) =>
+                              unawaited(c.switchPage(page)),
                           effect:
                               c.editing ? 'none' : c.appearance.pageTransition,
                           children: grids)),
                   SizedBox(height: Design.px(16)),
-                  _DesktopPageIndicator(controller: c),
+                  _DesktopPageIndicator(controller: c, position: position),
                 ]))));
   }
 }
 
 class _DesktopPageIndicator extends StatelessWidget {
   final LauncherController controller;
-  const _DesktopPageIndicator({required this.controller});
+  final ValueNotifier<double> position;
+  const _DesktopPageIndicator(
+      {required this.controller, required this.position});
   @override
   Widget build(BuildContext context) {
     final c = controller,
         s = SurfaceStyle.of(context),
         slot = Design.px(38),
         dot = Design.px(8),
-        pill = Design.px(24),
-        reduced = MediaQuery.disableAnimationsOf(context) ||
-            c.appearance.pageTransition == 'none';
+        pill = Design.px(24);
     return SizedBox(
         height: Design.px(16),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -372,12 +402,8 @@ class _DesktopPageIndicator extends StatelessWidget {
                     width: pill,
                     height: dot,
                     child: RepaintBoundary(
-                        child: TweenAnimationBuilder<double>(
-                            tween: Tween(end: c.page.toDouble()),
-                            duration: reduced
-                                ? Duration.zero
-                                : const Duration(milliseconds: 150),
-                            curve: Curves.easeOutCubic,
+                        child: ValueListenableBuilder<double>(
+                            valueListenable: position,
                             builder: (context, value, child) =>
                                 Transform.translate(
                                     offset: Offset(slot * value, 0),

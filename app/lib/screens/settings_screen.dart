@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../controller/launcher_controller.dart';
 import '../model/appearance.dart';
+import '../model/page_motion.dart';
 import '../theme/design_tokens.dart';
 import '../theme/launcher_theme.dart';
 import '../widgets/glass_surface.dart';
@@ -1097,64 +1098,69 @@ class PageMotionSettings extends StatelessWidget {
     return SingleChildScrollView(
         child: SettingBlock(
             title: '桌面翻屏',
-            note: '仅桌面卡片切换，底栏保持固定',
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(children: [
-                    for (final option in [
-                      ('none', '无动画', '直接切换，画面不滑动'),
-                      ('fade', '淡入淡出', '柔和交替显示'),
-                      ('slide', '横向滑动', '跟随翻页方向滑入')
-                    ])
-                      Expanded(
-                          child: Padding(
-                              padding: EdgeInsets.only(
-                                  right:
-                                      option.$1 == 'slide' ? 0 : Design.px(18)),
-                              child: OutlinedButton(
-                                  key: ValueKey('transition-${option.$1}'),
-                                  style: OutlinedButton.styleFrom(
-                                      foregroundColor:
-                                          c.appearance.pageTransition == option.$1
-                                              ? s.accent
-                                              : s.text,
-                                      backgroundColor:
-                                          c.appearance.pageTransition == option.$1
-                                              ? s.soft
-                                              : null,
-                                      side: BorderSide(
-                                          color: c.appearance.pageTransition ==
-                                                  option.$1
-                                              ? s.accent
-                                              : s.edge)),
-                                  onPressed: () => c.setAppearance(c.appearance
-                                      .copyWith(pageTransition: option.$1)),
-                                  child: Padding(
-                                      padding: EdgeInsets.symmetric(vertical: Design.px(36)),
-                                      child: Column(children: [
-                                        Text(option.$2,
-                                            style: TextStyle(
-                                                fontSize: Design.px(28))),
-                                        SizedBox(height: Design.px(16)),
-                                        Text(option.$3,
-                                            style: TextStyle(
-                                                fontSize: Design.px(20),
-                                                color: s.muted)),
-                                        SizedBox(height: Design.px(22)),
-                                        UniIcon('check',
-                                            size: Design.px(26),
-                                            color:
-                                                c.appearance.pageTransition ==
-                                                        option.$1
-                                                    ? s.accent
-                                                    : Colors.transparent)
-                                      ]))))),
-                  ]),
-                  SizedBox(height: Design.px(26)),
-                  Text('点击页码或左右轻扫切换桌面。编辑布局时暂停动效；系统要求减少动态效果时使用无动画。',
-                      style: TextStyle(
-                          fontSize: Design.px(21), color: s.muted, height: 1.6))
-                ])));
+            note: '页面与指示条跟随手势，底栏保持固定',
+            child: LayoutBuilder(
+                builder: (context, box) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Wrap(
+                              spacing: Design.px(18),
+                              runSpacing: Design.px(18),
+                              children: [
+                                for (final option in pageEffects)
+                                  SizedBox(
+                                      width: (box.maxWidth - Design.px(36)) / 3,
+                                      child: OutlinedButton(
+                                          key: ValueKey(
+                                              'transition-${option.id}'),
+                                          style: OutlinedButton.styleFrom(
+                                              foregroundColor:
+                                                  c.appearance.pageTransition ==
+                                                          option.id
+                                                      ? s.accent
+                                                      : s.text,
+                                              backgroundColor:
+                                                  c.appearance.pageTransition ==
+                                                          option.id
+                                                      ? s.soft
+                                                      : null,
+                                              side: BorderSide(
+                                                  color:
+                                                      c.appearance.pageTransition ==
+                                                              option.id
+                                                          ? s.accent
+                                                          : s.edge)),
+                                          onPressed: () => c.setAppearance(
+                                              c.appearance.copyWith(pageTransition: option.id)),
+                                          child: Padding(
+                                              padding: EdgeInsets.symmetric(vertical: Design.px(24)),
+                                              child: Column(children: [
+                                                Text(option.name,
+                                                    style: TextStyle(
+                                                        fontSize:
+                                                            Design.px(26))),
+                                                SizedBox(height: Design.px(10)),
+                                                Text(option.detail,
+                                                    style: TextStyle(
+                                                        fontSize: Design.px(18),
+                                                        color: s.muted)),
+                                                SizedBox(height: Design.px(12)),
+                                                UniIcon('check',
+                                                    size: Design.px(24),
+                                                    color: c.appearance
+                                                                .pageTransition ==
+                                                            option.id
+                                                        ? s.accent
+                                                        : Colors.transparent)
+                                              ])))),
+                              ]),
+                          SizedBox(height: Design.px(26)),
+                          Text(
+                              '左右拖动桌面，松手后自动吸附；也可点击页码切换。平移只移动页面图层，适合车机使用。编辑桌面或系统要求减少动态效果时暂停动画。',
+                              style: TextStyle(
+                                  fontSize: Design.px(21),
+                                  color: s.muted,
+                                  height: 1.6)),
+                        ]))));
   }
 }

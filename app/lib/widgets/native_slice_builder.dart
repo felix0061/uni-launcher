@@ -20,6 +20,7 @@ class NativeSliceBuilder extends StatefulWidget {
 class _NativeSliceBuilderState extends State<NativeSliceBuilder> {
   Object? _selection;
   bool _enabled = true;
+  ValueListenable<TickerModeData>? _mode;
 
   @override
   void initState() {
@@ -30,7 +31,30 @@ class _NativeSliceBuilderState extends State<NativeSliceBuilder> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _enabled = TickerMode.valuesOf(context).enabled;
+    _bindMode();
+  }
+
+  @override
+  void activate() {
+    super.activate();
+    _bindMode();
+  }
+
+  void _bindMode() {
+    final next = TickerMode.getValuesNotifier(context);
+    if (identical(next, _mode)) return;
+    _mode?.removeListener(_modeChanged);
+    _mode = next;
+    next.addListener(_modeChanged);
+    _modeChanged();
+  }
+
+  void _modeChanged() {
+    final wasEnabled = _enabled;
+    _enabled = _mode?.value.enabled ?? true;
+    // Muting a page does not change its rendered data. Only a resumed page
+    // with a genuinely new selected value needs to rebuild.
+    if (_enabled && !wasEnabled) _changed();
   }
 
   @override
@@ -76,6 +100,7 @@ class _NativeSliceBuilderState extends State<NativeSliceBuilder> {
 
   @override
   void dispose() {
+    _mode?.removeListener(_modeChanged);
     widget.valueListenable.removeListener(_changed);
     super.dispose();
   }

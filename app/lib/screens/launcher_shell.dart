@@ -78,7 +78,10 @@ class LauncherShell extends StatelessWidget {
                                               index:
                                                   controller.settings ? 1 : 0,
                                               children: [
-                                            Desktop(controller: controller),
+                                            TickerMode(
+                                                enabled: !controller.settings,
+                                                child: Desktop(
+                                                    controller: controller)),
                                             controller.settings
                                                 ? SettingsScreen(
                                                     controller: controller)

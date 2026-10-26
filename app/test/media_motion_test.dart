@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:uni_launcher/controller/launcher_controller.dart';
 import 'package:uni_launcher/launcher_app.dart';
 import 'package:uni_launcher/model/appearance.dart';
+import 'package:uni_launcher/model/page_motion.dart';
 import 'package:uni_launcher/model/lyrics.dart';
 import 'package:uni_launcher/widgets/lyrics_view.dart';
 import 'package:uni_launcher/widgets/media_progress.dart';
@@ -195,10 +196,10 @@ void main() {
     expect(positions.length, 1);
   });
   test('Transition preference has a safe default and round trips', () {
-    expect(Appearance.fromJson({}).pageTransition, 'none');
+    expect(Appearance.fromJson({}).pageTransition, 'slide');
     expect(Appearance.fromJson({'pageTransition': 'unknown'}).pageTransition,
-        'none');
-    for (final effect in ['none', 'slide', 'fade']) {
+        'slide');
+    for (final effect in pageEffects.map((e) => e.id)) {
       expect(
           Appearance.fromJson(
                   const Appearance().copyWith(pageTransition: effect).toJson())
@@ -206,8 +207,7 @@ void main() {
           effect);
     }
   });
-  testWidgets(
-      'Motion setting persists and fast page changes paint only incoming workspace',
+  testWidgets('Motion setting persists; real pages move while dock stays fixed',
       (t) async {
     t.view.physicalSize = const Size(1920, 1080);
     t.view.devicePixelRatio = 1;
@@ -231,78 +231,61 @@ void main() {
     c.home();
     await t.pumpAndSettle();
     final dockBefore = t.getRect(find.byKey(const ValueKey('bottom-dock')));
-    final indicatorStart =
-        t.getRect(find.byKey(const ValueKey('page-indicator-active'))).left;
-    await t.fling(
-        find.byKey(const ValueKey('card-grid')), const Offset(-550, 0), 1000);
+    final indicator = find.byKey(const ValueKey('page-indicator-active'));
+    final start = t.getRect(indicator).left;
+    final nav = find.byKey(const ValueKey('nav-1'));
+    final navStart = t.getRect(nav).left;
+    // A slow drag, not a fling. It must move before release, even at zero velocity.
+    final gesture = await t.startGesture(const Offset(1810, 770));
+    await gesture.moveBy(const Offset(-30, 0));
     await t.pump();
-    expect(c.page, 1);
-    await t.pump(const Duration(milliseconds: 70));
-    final indicatorMid =
-        t.getRect(find.byKey(const ValueKey('page-indicator-active'))).left;
-    expect(indicatorMid, greaterThan(indicatorStart));
-    expect(
-        find.descendant(
-            of: find.byType(DesktopPageStack),
-            matching: find.byType(FractionalTranslation)),
-        findsOneWidget);
-    expect(find.byKey(const ValueKey('nav-1')), findsNothing,
-        reason: 'the outgoing card-heavy page is not painted');
+    await gesture.moveBy(const Offset(-550, 0));
+    await t.pump();
+    expect(c.page, 0);
+    expect(t.getRect(indicator).left, greaterThan(start));
+    expect(t.getRect(nav).left, lessThan(navStart - 300));
     expect(find.byKey(const ValueKey('tpms-1')), findsOneWidget);
-    await t.pumpAndSettle();
-    final indicatorEnd =
-        t.getRect(find.byKey(const ValueKey('page-indicator-active'))).left;
-    expect(indicatorEnd, greaterThan(indicatorMid));
     expect(t.getRect(find.byKey(const ValueKey('bottom-dock'))), dockBefore);
+    await gesture.up();
+    await t.pumpAndSettle();
+    expect(c.page, 1);
     expect(find.byKey(const ValueKey('nav-1')), findsNothing);
-    expect(find.byKey(const ValueKey('tpms-1')), findsOneWidget);
-    c.setAppearance(c.appearance.copyWith(pageTransition: 'fade'));
-    await t.pumpAndSettle();
-    await c.switchPage(0);
-    await t.pump();
-    expect(
-        find.descendant(
-            of: find.byType(DesktopPageStack),
-            matching: find.byType(FadeTransition)),
-        findsOneWidget);
-    expect(find.byKey(const ValueKey('nav-1')), findsOneWidget);
-    expect(find.byKey(const ValueKey('tpms-1')), findsNothing);
-    await t.pumpAndSettle();
-    expect(find.byKey(const ValueKey('nav-1')), findsOneWidget);
-    expect(find.byKey(const ValueKey('tpms-1')), findsNothing);
-    c.setAppearance(c.appearance.copyWith(pageTransition: 'none'));
-    await t.pumpAndSettle();
-    await c.switchPage(1);
-    await t.pump();
-    expect(find.byKey(const ValueKey('nav-1')), findsNothing);
-    expect(
-        t
-            .widget<FadeTransition>(find.descendant(
-                of: find.byType(DesktopPageStack),
-                matching: find.byType(FadeTransition)))
-            .opacity
-            .value,
-        1);
-    expect(t.takeException(), null);
+    expect(t.getRect(indicator).left, greaterThan(start));
+    for (final effect in ['fade', 'zoom', 'depth', 'none']) {
+      c.setAppearance(c.appearance.copyWith(pageTransition: effect));
+      await t.pumpAndSettle();
+      await c.switchPage(0);
+      await t.pump();
+      if (effect != 'none') {
+        await t.pump(const Duration(milliseconds: 90));
+        expect(find.byKey(const ValueKey('tpms-1')), findsOneWidget);
+      }
+      await t.pumpAndSettle();
+      expect(find.byKey(const ValueKey('nav-1')), findsOneWidget);
+      expect(find.byKey(const ValueKey('tpms-1')), findsNothing);
+      await c.switchPage(1);
+      await t.pumpAndSettle();
+    }
+    expect(t.takeException(), isNull);
   });
   testWidgets('System reduced motion disables workspace animation', (t) async {
-    await t.pumpWidget(const MaterialApp(
+    Future<void> show(int page) => t.pumpWidget(MaterialApp(
         home: MediaQuery(
-            data: MediaQueryData(disableAnimations: true),
+            data: const MediaQueryData(disableAnimations: true),
             child: DesktopPageStack(
-                page: 0,
+                page: page,
                 effect: 'slide',
-                children: [Text('page 1'), Text('page 2')]))));
-    expect(
-        t
-            .widget<SlideTransition>(find.descendant(
-                of: find.byType(DesktopPageStack),
-                matching: find.byType(SlideTransition)))
-            .position
-            .value,
-        Offset.zero);
-    expect(find.text('page 1'), findsOneWidget);
-    expect(find.text('page 2'), findsNothing);
+                children: const [Text('page 1'), Text('page 2')]))));
+    await show(0);
+    await show(1);
+    await t.pump();
+    expect(find.text('page 1'), findsNothing);
+    expect(find.text('page 2'), findsOneWidget);
+    final transform = t.widget<FractionalTranslation>(find.descendant(
+        of: find.byType(DesktopPageStack),
+        matching: find.byType(FractionalTranslation)));
+    expect(transform.translation, Offset.zero);
+    expect(t.binding.transientCallbackCount, 0);
   });
 
   testWidgets('workspace animations retain mounted native-card state',
