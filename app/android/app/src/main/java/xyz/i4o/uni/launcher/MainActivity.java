@@ -42,6 +42,21 @@ public final class MainActivity extends FlutterActivity {
     private MethodChannel.Result wallpaperResult;
     private static final int PICK_WALLPAPER=4206;
 
+    @Override public FlutterEngine provideFlutterEngine(android.content.Context context){
+        return LauncherEngines.create(context,"main",true);
+    }
+    @Override public boolean shouldDestroyEngineWithHost(){return true;}
+
+    @Override public void onTrimMemory(int level){
+        super.onTrimMemory(level);
+        if(mapFactory!=null)mapFactory.trimMemory(level);
+    }
+
+    @Override public void onLowMemory(){
+        super.onLowMemory();
+        if(mapFactory!=null)mapFactory.trimMemory(android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL);
+    }
+
     @Override public void configureFlutterEngine(FlutterEngine engine){
         super.configureFlutterEngine(engine);
         if(rt==null)rt=LauncherRuntime.get(this);

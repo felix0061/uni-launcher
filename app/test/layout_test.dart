@@ -8,6 +8,7 @@ import 'package:uni_launcher/theme/launcher_theme.dart';
 import 'fake_gateway.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   test('glass defaults off and migrates missing old preference', () {
     expect(const Appearance().glass, false);
     expect(Appearance.fromJson({'radius': 0}).glass, false);

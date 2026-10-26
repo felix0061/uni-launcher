@@ -2,11 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import '../model/appearance.dart';
 import '../model/card_layout.dart';
 import '../platform/native_gateway.dart';
 
-class LauncherController extends ChangeNotifier {
+class LauncherController extends ChangeNotifier with WidgetsBindingObserver {
   final NativeGateway gateway;
   final native = ValueNotifier<Map<String, dynamic>>({});
   Appearance appearance = const Appearance();
@@ -40,15 +41,48 @@ class LauncherController extends ChangeNotifier {
   int _backupPages = 2;
   StreamSubscription<Map<String, dynamic>>? _subscription;
   Future<void> _saveTail = Future.value();
-  final Map<String, Uint8List> _icons = {};
-  final Map<String, Uint8List> _recentImages = {};
+  // Budgets include both the UTF-16 source key and compressed image bytes.
+  final _icons = _SnapshotImages(256, 4 * 1024 * 1024);
+  final _recentImages = _SnapshotImages(48, 12 * 1024 * 1024);
+  bool _observingMemory = false;
+  bool _disposed = false;
+
+  @visibleForTesting
+  Map<String, int> get imageCacheStats => {
+        'iconCount': _icons.count,
+        'iconBytes': _icons.retainedBytes,
+        'recentCount': _recentImages.count,
+        'recentBytes': _recentImages.retainedBytes,
+      };
+
+  /// Releases reusable buffers without removing images from the visible state.
+  /// Also safe for an entrypoint/native memory-pressure callback to invoke.
+  void trimMemory() {
+    if (_disposed) return;
+    _icons.clear();
+    _recentImages.clear();
+    PaintingBinding.instance.imageCache.clear();
+  }
+
+  @override
+  void didHaveMemoryPressure() => trimMemory();
   LauncherController(this.gateway);
   Future<void> initialize() async {
+    // Every engine (launcher, dock and panel) initializes its own controller.
+    if (_disposed) return;
+    if (!_observingMemory) {
+      final imageCache = PaintingBinding.instance.imageCache;
+      imageCache.maximumSize = 128;
+      imageCache.maximumSizeBytes = 24 * 1024 * 1024;
+      WidgetsBinding.instance.addObserver(this);
+      _observingMemory = true;
+    }
     gateway.onHome(home);
     if (gateway is AndroidGateway)
       (gateway as AndroidGateway).onOpenSettings(openSettings);
     try {
       final state = await gateway.bootstrap();
+      if (_disposed) return;
       final raw = state['savedDesign'];
       if (raw is String && raw.isNotEmpty) {
         try {
@@ -80,6 +114,7 @@ class LauncherController extends ChangeNotifier {
     } catch (_) {
       message = '等待 Android 接入';
     }
+    if (_disposed) return;
     ready = true;
     notifyListeners();
   }
@@ -91,32 +126,42 @@ class LauncherController extends ChangeNotifier {
         native.value.containsKey('systemSettings')) {
       state = {...state, 'systemSettings': native.value['systemSettings']};
     }
+    if (_disposed) return;
+    _icons.begin(native.value['apps'], const ['icon']);
+    _recentImages
+        .begin(native.value['recentTasks'], const ['icon', 'snapshot']);
     final apps = state['apps'];
     if (apps is List) {
-      for (final app in apps) {
-        if (app is Map && app['icon'] is String) {
-          final raw = app['icon'] as String;
-          try {
-            app['iconBytes'] = _icons.putIfAbsent(
-                raw, () => base64Decode(raw.split(',').last));
-          } catch (_) {}
-        }
-      }
+      state = {
+        ...state,
+        'apps': [
+          for (final app in apps)
+            if (app is Map) _decodeImages(app, const ['icon'], _icons) else app,
+        ]
+      };
     }
     final recentTasks = state['recentTasks'];
+    final dock = state['globalDock'];
+    // An explicit non-recents panel means its stale task payload is hidden.
+    final recentsClosed =
+        dock is Map && dock.containsKey('panel') && dock['panel'] != 'recents';
     if (recentTasks is List) {
-      for (final task in recentTasks) {
-        if (task is! Map) continue;
-        for (final field in const ['icon', 'snapshot']) {
-          final raw = task[field];
-          if (raw is! String || raw.isEmpty) continue;
-          try {
-            task['${field}Bytes'] = _recentImages.putIfAbsent(
-                raw, () => base64Decode(raw.split(',').last));
-          } catch (_) {}
-        }
-      }
+      state = {
+        ...state,
+        'recentTasks': recentsClosed
+            ? <dynamic>[]
+            : [
+                for (final task in recentTasks)
+                  if (task is Map)
+                    _decodeImages(
+                        task, const ['icon', 'snapshot'], _recentImages)
+                  else
+                    task,
+              ]
+      };
     }
+    _icons.finish();
+    _recentImages.finish();
     bool overlayThemeChanged = false;
     if ({'global-dock', 'global-panel'}.contains(state['hostMode']) &&
         state['savedDesign'] is String &&
@@ -153,6 +198,20 @@ class LauncherController extends ChangeNotifier {
         oldHeight != state['viewportHeightPx'] ||
         oldEmbed != (state['navigation'] as Map?)?['canEmbed'])
       notifyListeners();
+  }
+
+  Map<String, dynamic> _decodeImages(
+      Map source, List<String> fields, _SnapshotImages cache) {
+    final result = Map<String, dynamic>.from(source);
+    for (final field in fields) {
+      result.remove('${field}Bytes');
+      final raw = source[field];
+      if (raw is String && raw.isNotEmpty) {
+        final bytes = cache.decode(raw);
+        if (bytes != null) result['${field}Bytes'] = bytes;
+      }
+    }
+    return result;
   }
 
   Future<void> command(String action,
@@ -433,10 +492,98 @@ class LauncherController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
+    if (_observingMemory) WidgetsBinding.instance.removeObserver(this);
+    _icons.clear();
+    _recentImages.clear();
+    native.value = {};
     _pageRequest++;
     _subscription?.cancel();
     pageChanged.dispose();
     native.dispose();
     super.dispose();
+  }
+}
+
+/// Retains only admitted images from the latest snapshot. Never decodes an
+/// oversized source, and never evicts a current entry to admit a later one.
+class _SnapshotImages {
+  final int maxEntries, maxBytes;
+  Map<String, Uint8List> _current = {}, _previous = {};
+  int retainedBytes = 0;
+  _SnapshotImages(this.maxEntries, this.maxBytes);
+  int get count => _current.length;
+
+  void begin(Object? visible, List<String> fields) {
+    // trimMemory drops cache ownership, but the visible snapshot still owns
+    // its buffers. Borrow those references on the next event to avoid decoding
+    // unchanged images into new MemoryImage identities after memory pressure.
+    if (_current.isEmpty && visible is List) {
+      var restoredBytes = 0;
+      for (final item in visible) {
+        if (item is! Map) continue;
+        for (final field in fields) {
+          final raw = item[field], bytes = item['${field}Bytes'];
+          if (raw is! String ||
+              bytes is! Uint8List ||
+              _current.containsKey(raw)) {
+            continue;
+          }
+          final cost = raw.length * 2 + bytes.lengthInBytes;
+          if (_current.length < maxEntries &&
+              restoredBytes + cost <= maxBytes) {
+            _current[raw] = bytes;
+            restoredBytes += cost;
+          }
+        }
+      }
+    }
+    _previous = _current;
+    _current = {};
+    retainedBytes = 0;
+  }
+
+  Uint8List? decode(String raw) {
+    final existing = _current[raw];
+    if (existing != null) return existing;
+    final remaining = maxBytes - retainedBytes;
+    if (count >= maxEntries || raw.length * 2 > remaining) return null;
+    try {
+      final payload = raw.substring(raw.lastIndexOf(',') + 1);
+      // Upper bound on decoded size; check before allocating the buffer.
+      if (raw.length * 2 + ((payload.length + 3) ~/ 4) * 3 > remaining) {
+        return null;
+      }
+      final bytes = _previous[raw] ?? base64Decode(payload);
+      if (bytes.isEmpty) return null;
+      _current[raw] = bytes;
+      retainedBytes += raw.length * 2 + bytes.lengthInBytes;
+      return bytes;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void finish() {
+    for (final entry in _previous.entries) {
+      if (!_current.containsKey(entry.key)) _evict(entry.value);
+    }
+    _previous = {};
+  }
+
+  void clear() {
+    for (final bytes in {..._previous, ..._current}.values) {
+      _evict(bytes);
+    }
+    _previous = {};
+    _current = {};
+    retainedBytes = 0;
+  }
+
+  void _evict(Uint8List bytes) {
+    // Keep an on-screen ImageStream alive, but remove pending/keepAlive cache
+    // retention. These widgets use unresized MemoryImage providers.
+    PaintingBinding.instance.imageCache
+        .evict(MemoryImage(bytes), includeLive: false);
   }
 }

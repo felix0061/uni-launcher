@@ -46,6 +46,8 @@ class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
   bool? sentVisible;
   bool visibilityScheduled = false;
   Map<String, dynamic> status = {};
+  MemoryImage? preview;
+  int? previewRevision;
   String get package => '${widget.navigation['package'] ?? ''}';
   @override
   void didUpdateWidget(EmbeddedNavigationCard old) {
@@ -55,6 +57,7 @@ class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
       channel?.setMethodCallHandler(null);
       channel = null;
       sentVisible = null;
+      clearPreview();
       status = {};
     }
   }
@@ -62,6 +65,7 @@ class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
   @override
   void dispose() {
     channel?.setMethodCallHandler(null);
+    clearPreview();
     super.dispose();
   }
 
@@ -81,12 +85,37 @@ class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
       if (mounted && channel == current && value != null) updateStatus(value);
     }).catchError((Object error) {
       if (mounted && channel == current)
-        setState(() => status = {'phase': 'failed', 'reason': '地图连接已断开'});
+        updateStatus({'phase': 'failed', 'reason': '地图连接已断开'});
     });
   }
 
+  void clearPreview() {
+    final retired = preview;
+    preview = null;
+    previewRevision = null;
+    retired?.evict();
+  }
+
   void updateStatus(Map<String, dynamic> value) {
-    if (!mapEquals(status, value)) setState(() => status = value);
+    final bytes = value['previewBytes'];
+    final revision = value['previewRevision'];
+    final valid = bytes is Uint8List && bytes.isNotEmpty && revision is int;
+    final changed = valid
+        ? preview == null || previewRevision != revision
+        : preview != null;
+    // The provider owns the bytes; status only retains lightweight metadata.
+    final next = Map<String, dynamic>.of(value)..remove('previewBytes');
+    if (!changed && mapEquals(status, next)) return;
+    setState(() {
+      if (changed) {
+        clearPreview();
+        if (valid) {
+          preview = MemoryImage(bytes);
+          previewRevision = revision;
+        }
+      }
+      status = next;
+    });
   }
 
   void syncVisibility(bool visible) {
@@ -163,14 +192,6 @@ class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
       Expanded(
           child: canEmbed && !failed
               ? Stack(children: [
-                  // Consume the cached texture while live native content covers
-                  // it, so its producer cannot fill an unread buffer queue.
-                  if (status['previewTextureId'] is num)
-                    Positioned.fill(
-                        key: const ValueKey('map-preview-background'),
-                        child: Texture(
-                            textureId:
-                                (status['previewTextureId'] as num).toInt())),
                   Positioned.fill(
                       key: const ValueKey('map-native-surface'),
                       child: PlatformViewLink(
@@ -205,10 +226,11 @@ class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
                   if (status['ready'] != true || moving)
                     Positioned.fill(
                         key: const ValueKey('map-restoring-preview'),
-                        child: status['previewTextureId'] is num
-                            ? Texture(
-                                textureId:
-                                    (status['previewTextureId'] as num).toInt())
+                        child: preview != null
+                            ? Image(
+                                image: preview!,
+                                fit: BoxFit.fill,
+                                gaplessPlayback: true)
                             : ColoredBox(
                                 color: s.strong.withValues(alpha: 1),
                                 child: const Center(

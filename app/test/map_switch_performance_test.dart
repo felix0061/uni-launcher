@@ -26,7 +26,7 @@ void main() {
             MethodChannel('xyz.i4o.uni.launcher/map/$id'), (call) async {
           if (call.method == 'visible') visibility.add(call.arguments as bool);
           return call.method == 'status'
-              ? {'phase': 'ready', 'ready': true, 'previewTextureId': 7}
+              ? {'phase': 'ready', 'ready': true}
               : null;
         });
       } else if (call.method == 'dispose') {
@@ -93,7 +93,6 @@ void main() {
             .encodeMethodCall(const MethodCall('status', {
           'phase': 'loading',
           'ready': false,
-          'previewTextureId': 7,
         })),
         (_) {});
     await t.pump();
@@ -107,17 +106,16 @@ void main() {
               .encodeMethodCall(const MethodCall('status', {
             'phase': 'loading',
             'ready': false,
-            'previewTextureId': 7,
           })),
           (_) {});
       expect(cardElement.dirty, false,
           reason: 'identical native status must not schedule a card rebuild');
     }
     await show(0, settings: true);
-    await t.pumpAndSettle();
+    await t.pump(const Duration(milliseconds: 500));
     expect(visibility.last, false);
     await show(0, effect: 'none');
-    await t.pumpAndSettle();
+    await t.pump(const Duration(milliseconds: 500));
     expect(visibility.last, true);
     expect(created, [id]);
     expect(disposed, isEmpty);

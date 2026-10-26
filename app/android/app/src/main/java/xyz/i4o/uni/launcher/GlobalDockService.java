@@ -10,11 +10,9 @@ import android.util.DisplayMetrics;
 import android.view.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import io.flutter.FlutterInjector;
 import io.flutter.embedding.android.FlutterTextureView;
 import io.flutter.embedding.android.FlutterView;
 import io.flutter.embedding.engine.FlutterEngine;
-import io.flutter.embedding.engine.dart.DartExecutor;
 import io.flutter.plugin.common.*;
 import xyz.i4o.uni.launcher.overlay.SystemNavigationPolicy;
 import xyz.i4o.uni.launcher.overlay.OverscanPolicy;
@@ -23,7 +21,7 @@ import xyz.i4o.uni.launcher.overlay.NavigationInsets;
 import xyz.i4o.uni.launcher.overlay.RecentTasksRepository;
 
 /** A small, touch-bounded global window; expanded only while a dock panel is open.
- * One persistent dock engine, one lazy reusable panel engine, one native runtime.
+ * One persistent dock engine, one short-lived panel engine, one native runtime.
  * A separate panel window never changes the dock surface. No Accessibility service required.
  */
 public final class GlobalDockService extends Service {
@@ -42,6 +40,11 @@ public final class GlobalDockService extends Service {
     private int panelRevision;
     private byte[] panelBackdrop;
     private boolean panelReady;
+    private static final long PANEL_IDLE_MS=5000;
+    private final Runnable releaseIdlePanel=()->{
+        if(!panel.isEmpty()||panelWindow==null)return;
+        OverlayWindow old=panelWindow;panelWindow=null;old.close();
+    };
     private final Handler main=new Handler(Looper.getMainLooper());
 
     public static void ensureStarted(Context c){
@@ -60,6 +63,9 @@ public final class GlobalDockService extends Service {
              .put("workspaceReserved",s!=null&&(s.nativeInsets||s.workspace!=null&&s.workspace.available()))
              .put("workspaceResizes",s==null||s.workspace==null?0:s.workspace.resized())
              .put("panelReady",s!=null&&s.panelReady)
+             .put("liveFlutterEngines",LauncherEngines.liveCount())
+             .put("panelEngineAlive",s!=null&&s.panelWindow!=null)
+             .put("recentSnapshotCount",s==null?0:s.recentTaskItems.length())
              .put("recentsReady",s!=null&&s.recentTasksReady)
              .put("recentsDisplayId",-1)
              .put("recentsClearSupported",s!=null&&s.recentTasks!=null&&s.recentTasks.canRemove())
@@ -195,7 +201,7 @@ public final class GlobalDockService extends Service {
         int relayouts;
         OverlayWindow(boolean isPanel){
             this.isPanel=isPanel;
-            engine=new FlutterEngine(GlobalDockService.this,null,false);
+            engine=LauncherEngines.create(GlobalDockService.this,isPanel?"globalPanelMain":"globalDockMain",false);
             methods=new MethodChannel(engine.getDartExecutor().getBinaryMessenger(),"xyz.i4o.uni.launcher/platform");
             methods.setMethodCallHandler((call,result)->{
                 try{
@@ -241,8 +247,6 @@ public final class GlobalDockService extends Service {
             bounds.softInputMode=WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING;
             setBounds();windows.addView(view,bounds);
             view.attachToFlutterEngine(engine);
-            String bundle=FlutterInjector.instance().flutterLoader().findAppBundlePath();
-            engine.getDartExecutor().executeDartEntrypoint(new DartExecutor.DartEntrypoint(bundle,"package:uni_launcher/main.dart",isPanel?"globalPanelMain":"globalDockMain"));
         }
         private boolean setBounds(){
             DisplayMetrics real=new DisplayMetrics();windows.getDefaultDisplay().getRealMetrics(real);
@@ -278,6 +282,8 @@ public final class GlobalDockService extends Service {
         if(!java.util.Arrays.asList("apps","climate","media","vehicle","navigation").contains(kind))return;
         // Tapping the same button again closes it; different buttons replace it.
         if(kind.equals(panel)){dismissPanel();return;}
+        main.removeCallbacks(releaseIdlePanel);
+        if("recents".equals(panel))resetRecentItems();
         if(panel.isEmpty()||"recents".equals(panel))panelBackdrop=captureBackdrop();
         panel=kind;panelReady=false;panelRevision++;
         try{if(panelWindow==null)panelWindow=new OverlayWindow(true);}
@@ -295,24 +301,30 @@ public final class GlobalDockService extends Service {
             JSONObject appearance=design.optJSONObject("preferences");
             if(appearance==null||!appearance.optBoolean("glass",false))return null;
             DisplayMetrics real=new DisplayMetrics();windows.getDefaultDisplay().getRealMetrics(real);
+            int width=Math.min(960,real.widthPixels),height=Math.max(1,real.heightPixels*width/real.widthPixels);
             bitmap=(android.graphics.Bitmap)Class.forName("android.view.SurfaceControl")
                 .getDeclaredMethod("screenshot",android.graphics.Rect.class,int.class,int.class,int.class)
-                .invoke(null,new android.graphics.Rect(),real.widthPixels,real.heightPixels,windows.getDefaultDisplay().getRotation());
+                .invoke(null,new android.graphics.Rect(),width,height,windows.getDefaultDisplay().getRotation());
             if(bitmap==null)return null;
-            int h=real.heightPixels-Math.round(real.widthPixels*96f/1920f);
+            int h=bitmap.getHeight()-Math.round(bitmap.getWidth()*96f/1920f);
             crop=android.graphics.Bitmap.createBitmap(bitmap,0,0,bitmap.getWidth(),Math.min(h,bitmap.getHeight()));
             java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream();
-            crop.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);return out.toByteArray();
+            crop.compress(android.graphics.Bitmap.CompressFormat.JPEG,80,out);return out.toByteArray();
         }catch(Exception e){android.util.Log.w("UniDock","Glass backdrop unavailable",e);return null;}
         finally{if(crop!=null&&crop!=bitmap)crop.recycle();if(bitmap!=null)bitmap.recycle();}
     }
     private void dismissPanel(){
         if(panel.isEmpty())return;
         panel="";panelReady=false;panelBackdrop=null;panelRevision++;main.removeCallbacks(foregroundCheck);update();
+        resetRecentItems();
+        if(panelWindow!=null)panelWindow.publish();
+        main.removeCallbacks(releaseIdlePanel);main.postDelayed(releaseIdlePanel,PANEL_IDLE_MS);
     }
+    private void resetRecentItems(){recentTaskItems=new JSONArray();recentTasksReady=false;recentTasksRevision++;}
     private void toggleRecents(){
         if("recents".equals(panel)){dismissPanel();return;}
         dismissPanel();
+        main.removeCallbacks(releaseIdlePanel);
         try{
             panel="recents";panelRevision++;recentTaskItems=new JSONArray();recentTasksReady=false;
             if(panelWindow==null)panelWindow=new OverlayWindow(true);
@@ -372,7 +384,16 @@ public final class GlobalDockService extends Service {
         if(panelWindow!=null){panelWindow.updateBounds();panelWindow.show(visible&&!panel.isEmpty());}
         publish();
     }
-    private void publish(){if(dockWindow!=null)dockWindow.publish();if(panelWindow!=null)panelWindow.publish();}
+    private void publish(){if(dockWindow!=null)dockWindow.publish();if(panelWindow!=null&&!panel.isEmpty())panelWindow.publish();}
+    @Override public void onTrimMemory(int level){
+        super.onTrimMemory(level);
+        if(dockWindow!=null){dockWindow.engine.getSystemChannel().sendMemoryPressureWarning();dockWindow.engine.getRenderer().onTrimMemory(level);}
+        if(panelWindow!=null){panelWindow.engine.getSystemChannel().sendMemoryPressureWarning();panelWindow.engine.getRenderer().onTrimMemory(level);}
+        if(level>=android.content.ComponentCallbacks2.TRIM_MEMORY_BACKGROUND||level==android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW||level==android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL){
+            if(panel.isEmpty()){main.removeCallbacks(releaseIdlePanel);resetRecentItems();releaseIdlePanel.run();}
+        }
+    }
+    @Override public void onLowMemory(){super.onLowMemory();onTrimMemory(android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL);}
     private Notification notification(){
         NotificationManager n=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
         if(Build.VERSION.SDK_INT>=26)n.createNotificationChannel(new NotificationChannel("uni_global_dock","全局底栏",NotificationManager.IMPORTANCE_LOW));

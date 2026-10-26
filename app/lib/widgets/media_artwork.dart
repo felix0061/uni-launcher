@@ -21,12 +21,30 @@ class MediaArtwork extends StatefulWidget {
 class _MediaArtworkState extends State<MediaArtwork> {
   String encoded = '';
   Uint8List? bytes;
+
+  void evictArtwork() {
+    final previous = bytes;
+    if (previous != null) {
+      PaintingBinding.instance.imageCache
+          .evict(MemoryImage(previous), includeLive: false);
+    }
+  }
+
+  @override
+  void dispose() {
+    evictArtwork();
+    bytes = null;
+    encoded = '';
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final value = widget.media['artwork'] is String
+    final value = !widget.demo && widget.media['artwork'] is String
         ? widget.media['artwork'] as String
         : '';
     if (value != encoded) {
+      evictArtwork();
       encoded = value;
       try {
         bytes = value.length < 1000000 ? base64Decode(value) : null;

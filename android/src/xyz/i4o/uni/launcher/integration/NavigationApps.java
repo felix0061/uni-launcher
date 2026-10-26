@@ -20,11 +20,26 @@ public final class NavigationApps {
         return "";
     }
     public Intent launchIntent(){String pkg=selected();return pkg.isEmpty()?null:context.getPackageManager().getLaunchIntentForPackage(pkg);}
+    /** Prefer the declared map entry instead of an OEM USB/import splash proxy.
+     * Resolve and authorize the installed activity; no component name is guessed.
+     * AMap's no-op launch keeps the existing route intact. */
+    public Intent displayIntent(){
+        String pkg=selected();
+        if(pkg.startsWith("com.autonavi."))try{
+            Intent direct=new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("androidauto://launch_do_nothing")).setPackage(pkg);
+            android.content.pm.ResolveInfo resolved=context.getPackageManager().resolveActivity(direct,PackageManager.MATCH_DEFAULT_ONLY);
+            android.content.pm.ActivityInfo info=resolved==null?null:resolved.activityInfo;
+            if(info!=null&&pkg.equals(info.packageName)&&info.exported&&info.enabled&&info.applicationInfo.enabled
+                    &&(info.permission==null||context.checkSelfPermission(info.permission)==PackageManager.PERMISSION_GRANTED))
+                return direct.setComponent(new android.content.ComponentName(info.packageName,info.name));
+        }catch(Exception|LinkageError ignored){}
+        return launchIntent();
+    }
     /** Return an embedded single-task navigation stack to the physical display
      * before launching it. Starting the package alone leaves AMap focused on
      * ActivityView's virtual display and appears to do nothing on the panel. */
     public boolean launchFullscreen(){
-        String pkg=selected();Intent intent=launchIntent();if(pkg.isEmpty()||intent==null)return false;
+        String pkg=selected();Intent intent=displayIntent();if(pkg.isEmpty()||intent==null)return false;
         try{moveOwnSingleTaskToDisplay(pkg);}
         catch(Exception|LinkageError e){android.util.Log.i("UniNavigation","No embedded navigation stack to restore",e);}
         try{
