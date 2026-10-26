@@ -85,6 +85,12 @@ class LauncherController extends ChangeNotifier {
   }
 
   void _receive(Map<String, dynamic> state) {
+    // The settings catalog can contain hundreds of entries. Android sends it
+    // on bootstrap/explicit refresh, rather than with every telemetry event.
+    if (!state.containsKey('systemSettings') &&
+        native.value.containsKey('systemSettings')) {
+      state = {...state, 'systemSettings': native.value['systemSettings']};
+    }
     final apps = state['apps'];
     if (apps is List) {
       for (final app in apps) {
@@ -161,6 +167,7 @@ class LauncherController extends ChangeNotifier {
             'launch-player',
             'open-official',
             'official-widget',
+            'open-system-setting',
             'show-home',
             'show-desktop-settings',
             'show-recents'
@@ -277,6 +284,7 @@ class LauncherController extends ChangeNotifier {
   void tab(String value) {
     settingsTab = value;
     notifyListeners();
+    if (value == 'system') command('refresh-system-settings');
   }
 
   Future<void> switchPage(int value) async {

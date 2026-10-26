@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 /// A native Android Surface must stay still while Flutter animates its cached
 /// preview. Showing it only after motion settles avoids hybrid-composition
@@ -110,10 +111,9 @@ class _DesktopPageStackState extends State<DesktopPageStack>
       for (var i = 0; i < widget.children.length; i++)
         Positioned.fill(
             key: ValueKey('desktop-motion-page-$i'),
-            child: Offstage(
-                // Painting and laying out both card-heavy pages made
-                // Android 9 miss frames. The incoming workspace alone
-                // carries the short transition over the stable scene.
+            child: _RetainedPage(
+                // Only the incoming page paints and receives new constraints.
+                // Inactive pages retain their last layout and native view.
                 offstage: i != _toPage,
                 child: IgnorePointer(
                     ignoring: i != _toPage,
@@ -150,6 +150,30 @@ class _DesktopPageStackState extends State<DesktopPageStack>
                 ? Tween<double>(begin: .85, end: 1).animate(_curve)
                 : const AlwaysStoppedAnimation(1),
             child: framed));
+  }
+}
+
+/// Warm each page once, then defer parent-driven hidden layout until reveal.
+/// Unlike removing a child, this preserves Elements and platform view identity.
+/// RenderOffstage still supplies paint, hit-test and semantics isolation.
+class _RetainedPage extends Offstage {
+  const _RetainedPage({required super.offstage, required super.child});
+
+  @override
+  RenderOffstage createRenderObject(BuildContext context) =>
+      _RenderRetainedPage(offstage: offstage);
+}
+
+class _RenderRetainedPage extends RenderOffstage {
+  _RenderRetainedPage({required super.offstage});
+  bool _laidOut = false;
+
+  @override
+  void performLayout() {
+    if (!offstage || !_laidOut) {
+      super.performLayout();
+      _laidOut = true;
+    }
   }
 }
 

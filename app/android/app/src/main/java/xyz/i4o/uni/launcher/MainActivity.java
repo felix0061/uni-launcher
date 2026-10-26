@@ -51,7 +51,7 @@ public final class MainActivity extends FlutterActivity {
         channel.setMethodCallHandler((call,result)->{
             try{
                 if("snapshot".equals(call.method)){
-                    updateSnapshot();result.success(cached);
+                    updateSnapshot(true);result.success(cached);
                     // Bootstrap consumes the fallback once. Events must not consume
                     // it before Dart has installed its method handler.
                     initialSettings=false;
@@ -102,8 +102,9 @@ public final class MainActivity extends FlutterActivity {
         dispatchIntent(getIntent());publish();
     }
 
-    private void updateSnapshot(){
-        JSONObject state=rt.snapshot();
+    private void updateSnapshot(){updateSnapshot(false);}
+    private void updateSnapshot(boolean includeSettings){
+        JSONObject state=includeSettings?rt.snapshotWithSettings():rt.snapshot();
         try{
             View content=findViewById(android.R.id.content),decor=getWindow().getDecorView();
             WindowInsets insets=decor.getRootWindowInsets();
@@ -156,6 +157,9 @@ public final class MainActivity extends FlutterActivity {
             chrome.apply();rt.publish();return;
         }
         rt.handle(request);
+        if("refresh-system-settings".equals(action)||"navigation-audio-mode".equals(action)){
+            updateSnapshot(true);if(sink!=null)sink.success(cached);
+        }
     }
 
     private void publish(){if(rt==null)return;updateSnapshot();if(sink!=null)sink.success(cached);}
@@ -165,12 +169,12 @@ public final class MainActivity extends FlutterActivity {
             // dumpsys is already restricted to Android DUMP callers. Exclude
             // artwork, song text and app icons from this read-only diagnostic.
             try{
-                updateSnapshot();JSONObject full=new JSONObject(cached),report=new JSONObject();
+                updateSnapshot(true);JSONObject full=new JSONObject(cached),report=new JSONObject();
                 for(String key:new String[]{"version","demo","hideNavigation","systemNavigationHidden","systemNavigationGranted","contentReservesSystemBars","contentHeightPx","viewportHeightPx","reservedBottomPx","desktopSelected","systemStatus","weather","calendar","navigation","vehicle"})report.put(key,full.opt(key));
                 JSONObject m=full.optJSONObject("media"),safe=new JSONObject();
                 if(m!=null)for(String key:new String[]{"available","authorized","playing","source","preferredPackage","sessions","reason","canToggle","canNext","canPrevious","canSeek","controlSource","lyricsSource","durationMs","positionMs","steeringControlReady","instrumentMetadataReady"})safe.put(key,m.opt(key));
                 if(m!=null)safe.put("lyricsAvailable",!m.optString("lyrics").isEmpty()).put("artworkAvailable",!m.optString("artwork").isEmpty()).put("officialMedia",m.optJSONObject("officialMedia"));
-                report.put("media",safe).put("flutterViewport",flutterViewport).put("globalDock",GlobalDockService.snapshot(this));
+                report.put("media",safe).put("flutterViewport",flutterViewport).put("globalDock",GlobalDockService.snapshot(this)).put("systemSettings",full.opt("systemSettings"));
                 if(mapFactory!=null)report.put("mapViews",mapFactory.snapshot());
                 writer.println("UNI_STATE="+report.toString());
             }catch(Exception e){writer.println("UNI_STATE_UNAVAILABLE");}return;

@@ -22,6 +22,7 @@ import 'weather_details_sheet.dart';
 import 'vehicle_cards.dart';
 import 'vehicle_visuals.dart';
 import 'official_card_entry.dart';
+import 'native_slice_builder.dart';
 import '../model/weather_condition.dart';
 import '../model/vehicle_data.dart';
 
@@ -75,10 +76,23 @@ class CardContent extends StatelessWidget {
   final LauncherController controller;
   const CardContent({super.key, required this.card, required this.controller});
   @override
-  Widget build(BuildContext context) =>
-      ValueListenableBuilder<Map<String, dynamic>>(
+  Widget build(BuildContext context) => NativeSliceBuilder(
         valueListenable: controller.native,
-        builder: (context, native, _) => switch (card.type) {
+        select: (native) => [
+          native['demo'],
+          for (final key in switch (card.type) {
+            'nav' => ['navigation', 'apps', 'appNames'],
+            'music' => ['media', 'apps', 'appNames', 'integrationPreferences'],
+            'weather' || 'clockWeather' => ['weather'],
+            'calendar' => ['calendar'],
+            'member' => ['systemStatus'],
+            'battery' || 'air' || 'vehicle' || 'tpms' || 'ride' => ['vehicle'],
+            'shortcuts' => ['apps', 'appNames'],
+            _ => <String>[],
+          })
+            native[key],
+        ],
+        builder: (context, native) => switch (card.type) {
           'nav' => native['navigation'] is Map
               ? EmbeddedNavigationCard(
                   controller: controller,

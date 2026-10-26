@@ -44,6 +44,7 @@ class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
   MethodChannel? channel;
   bool desiredVisible = true;
   bool? sentVisible;
+  bool visibilityScheduled = false;
   Map<String, dynamic> status = {};
   String get package => '${widget.navigation['package'] ?? ''}';
   @override
@@ -74,30 +75,39 @@ class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
           channel == current &&
           call.method == 'status' &&
           call.arguments is Map)
-        setState(() => status = Map<String, dynamic>.from(call.arguments));
+        updateStatus(Map<String, dynamic>.from(call.arguments));
     });
     channel!.invokeMapMethod<String, dynamic>('status').then((value) {
-      if (mounted && channel == current && value != null)
-        setState(() => status = value);
+      if (mounted && channel == current && value != null) updateStatus(value);
     }).catchError((Object error) {
       if (mounted && channel == current)
         setState(() => status = {'phase': 'failed', 'reason': '地图连接已断开'});
     });
   }
 
+  void updateStatus(Map<String, dynamic> value) {
+    if (!mapEquals(status, value)) setState(() => status = value);
+  }
+
   void syncVisibility(bool visible) {
     desiredVisible = visible;
-    final current = channel;
-    if (current == null ||
-        (sentVisible == visible && !(visible && status['phase'] == 'paused')))
+    if (channel == null || visibilityScheduled) return;
+    if (sentVisible == visible && !(visible && status['phase'] == 'paused')) {
       return;
-    sentVisible = visible;
+    }
+    visibilityScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && channel == current && desiredVisible == visible) {
-        current
-            .invokeMethod<void>('visible', visible)
-            .catchError((Object _) {});
-      }
+      visibilityScheduled = false;
+      final current = channel;
+      if (!mounted || current == null) return;
+      final next = desiredVisible;
+      if (sentVisible == next && !(next && status['phase'] == 'paused')) return;
+      sentVisible = next;
+      current.invokeMethod<void>('visible', next).catchError((Object _) {
+        if (mounted && channel == current && sentVisible == next) {
+          sentVisible = null;
+        }
+      });
     });
   }
 

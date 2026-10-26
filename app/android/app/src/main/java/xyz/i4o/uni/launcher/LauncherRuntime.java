@@ -37,6 +37,8 @@ public final class LauncherRuntime {
     private final OfficialWeatherAdapter weather;
     private final SystemStatusAdapter systemStatus;
     private final SystemCalendarAdapter calendar;
+    private final SystemSettingsRepository systemSettings;
+    private final NavigationAudioAdapter navigationAudio;
     private final ClimateState simulator=new ClimateState();
     private final Map<Object,Runnable> listeners=new IdentityHashMap<>();
     private JSONArray installed;
@@ -46,7 +48,7 @@ public final class LauncherRuntime {
     private int demoTrack;
     private long demoPositionMs,demoSampleAt=android.os.SystemClock.elapsedRealtime();
     private final BroadcastReceiver packages=new BroadcastReceiver(){
-        @Override public void onReceive(Context c,Intent i){installed=apps.refresh();publish();}
+        @Override public void onReceive(Context c,Intent i){installed=apps.refresh();systemSettings.refresh();publish();}
     };
 
     public static LauncherRuntime get(Context context){
@@ -67,6 +69,7 @@ public final class LauncherRuntime {
         apps=new AppRepository(context);catalog=new OfficialCatalog(context);
         vehicle=new VehicleTelemetry(context,this::publish);navigation=new NavigationApps(context,prefs);
         media=new MediaAdapter(context,this::publish);weather=new OfficialWeatherAdapter(context,this::publish);systemStatus=new SystemStatusAdapter(context,this::publish);calendar=new SystemCalendarAdapter(context,this::publish);
+        systemSettings=new SystemSettingsRepository(context);navigationAudio=new NavigationAudioAdapter(context);
         // setPreferredPackage() starts MediaAdapter; defer it until the first owner.
         installed=apps.refresh();
         IntentFilter filter=new IntentFilter();
@@ -79,8 +82,11 @@ public final class LauncherRuntime {
 
     public JSONObject snapshot(){
         // Detach nested JSON so window geometry cannot mutate shared state.
-        return onMain(()->new JSONObject(buildSnapshot().toString()));
+        return onMain(()->new JSONObject(buildSnapshot(false).toString()));
     }
+
+    /** Large settings catalogs are requested explicitly, never polled with telemetry. */
+    public JSONObject snapshotWithSettings(){return onMain(()->new JSONObject(buildSnapshot(true).toString()));}
 
     public boolean saveDesign(String raw){return onMain(()->saveDesignOnMain(raw));}
 
@@ -88,12 +94,13 @@ public final class LauncherRuntime {
     public boolean handle(JSONObject request)throws Exception{return callOnMain(()->handleOnMain(request));}
 
     private long demoPosition(){return demoPositionMs+(demoPlaying?Math.max(0,android.os.SystemClock.elapsedRealtime()-demoSampleAt):0);}
-    private JSONObject buildSnapshot(){
+    private JSONObject buildSnapshot(boolean includeSettings){
         JSONObject state=new JSONObject();try{
             JSONObject climate=new JSONObject().put("left",simulator.left).put("right",simulator.right).put("fan",simulator.fan).put("power",simulator.power)
                 .put("auto",simulator.auto).put("ac",simulator.ac).put("sync",simulator.sync).put("recirc",simulator.recirc)
                 .put("driverHeat",simulator.driverHeat).put("driverVent",simulator.driverVent).put("passengerHeat",simulator.passengerHeat);
             JSONObject telemetry=vehicle.snapshot();
+            if(includeSettings)state.put("systemSettings",new JSONObject().put("entries",systemSettings.snapshot()).put("navigationAudio",navigationAudio.snapshot()));
             if(!prefs.getBoolean("demo",false))climate=telemetry.optJSONObject("climate")==null?new JSONObject():telemetry.getJSONObject("climate");
             state.put("systemStatus",systemStatus.snapshot()).put("weather",weather.snapshot()).put("calendar",calendar.snapshot()).put("navigation",navigation.snapshot()).put("integrationPreferences",new JSONObject().put("mediaPackage",prefs.getString("mediaPackage","auto"))) ;
             state.put("demo",prefs.getBoolean("demo",false)).put("hideNavigation",prefs.getBoolean("hideNavigation",false))
@@ -172,6 +179,9 @@ public final class LauncherRuntime {
             publish();return true;
         }
         if("embed-navigation".equals(action)){prefs.edit().putBoolean("embedNavigation",request.optBoolean("enabled",true)).commit();publish();return true;}
+        if("refresh-system-settings".equals(action)){systemSettings.refresh();navigationAudio.refresh();publish();return true;}
+        if("open-system-setting".equals(action)){if(!systemSettings.open(value))toast("系统设置入口不可用或权限不足");return true;}
+        if("navigation-audio-mode".equals(action)){if(!navigationAudio.setMode(value))toast("导航混音模式不可用或原车未确认变更");publish();return true;}
         if("calendar-refresh".equals(action)){calendar.refresh();publish();return true;}
         if("weather-forecast-refresh".equals(action)){weather.refreshForecast();return true;}
         if("launch-navigation".equals(action)){if(!navigation.launchFullscreen())toast("请选择已安装的导航应用");return true;}

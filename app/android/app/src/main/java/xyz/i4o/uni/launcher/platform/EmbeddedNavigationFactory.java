@@ -99,19 +99,31 @@ public final class EmbeddedNavigationFactory extends PlatformViewFactory {
             root.setVisibility(View.INVISIBLE);
             if(visible()){
                 state("loading","正在恢复地图画面");
-                // Let the incoming Flutter workspace reach the compositor before
-                // revealing Android's independent Surface at its final bounds.
-                handler.postDelayed(()->{
-                    if(!visible())return;
+                // Flutter sends visible only after workspace motion settles.
+                // Wait for the next traversal, not another fixed 180ms. Fence
+                // callbacks because postOnAnimation is not on our Handler.
+                final int generation=visibilityGeneration;
+                root.postOnAnimation(()->{
+                    if(generation!=visibilityGeneration||!visible())return;
                     root.setVisibility(View.VISIBLE);
                     if(activityView==null)start();
-                    else {surfaceVisibility((View)activityView,true);attempts=0;placementAttempts=0;frameAttempts=0;handler.postDelayed(this::awaitDisplay,80);}
-                },180);
+                    else {
+                        surfaceVisibility((View)activityView,true);
+                        attempts=0;placementAttempts=0;frameAttempts=0;
+                        // Surface visibility takes effect during traversal. Check
+                        // on the following frame so we cannot accept its old Surface.
+                        root.postOnAnimation(()->{
+                            if(generation==visibilityGeneration&&visible())awaitDisplay();
+                        });
+                    }
+                });
             }else state("paused","地图已隐藏");
         }
         void state(String phase,String reason){
-            status=new HashMap<>();status.put("phase",phase);status.put("reason",reason);status.put("ready","ready".equals(phase));
-            if(hasPreview&&preview!=null)status.put("previewTextureId",preview.id());
+            Map<String,Object> next=new HashMap<>();next.put("phase",phase);next.put("reason",reason);next.put("ready","ready".equals(phase));
+            if(hasPreview&&preview!=null)next.put("previewTextureId",preview.id());
+            if(next.equals(status))return;
+            status=next;
             if(!disposed)channel.invokeMethod("status",status);
         }
         void start(){
@@ -146,7 +158,7 @@ public final class EmbeddedNavigationFactory extends PlatformViewFactory {
                 int actualId=display.getDisplay().getDisplayId();
                 if(started&&boundDisplay==display&&displayId==actualId){
                     activityView.getClass().getMethod("onLocationChanged").invoke(activityView);
-                    handler.postDelayed(this::verifyPlacement,150);return;
+                    verifyPlacement();return;
                 }
                 started=false;boundDisplay=display;displayId=actualId;
                 Intent intent=new NavigationApps(activity,activity.getSharedPreferences("launcher",0)).launchIntent();
