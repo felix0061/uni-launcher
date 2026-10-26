@@ -8,6 +8,7 @@
 - [官方能力逐项迁移记录](docs/OEM_PARITY_0_5.md)：已接通、原厂兼容入口与缺失字段分开验收。
 - [0.4.2 底栏、地图、网易云与官方车控](docs/IP753_0_4_2.md)：固定窗口几何、复用地图容器、专用媒体兼容、官方 HVAC/座椅与传感器。
 - [官方车辆接口](docs/OFFICIAL_CAR_API.md)、[网易云专用接口](docs/NETEASE_MEDIA.md)。
+- [高德红绿灯接口与卡片设计](docs/AMAP_TRAFFIC_LIGHT_CARD.md)：官方单方向广播、修改版巡航多方向广播、深浅色卡片与待实测边界。
 - [0.4.0 官方能力对照与上车准备](docs/OEM_PARITY_0_4.md)：真导航容器、播放器关联、候选车辆读取及 38 类天气图标。
 - [0.4.1 首轮实车测试与启动修复](docs/IP753_FIRST_CAR_TEST.md)：异步权限崩溃、独立实车签名包、地图任务迁移与车机窗口适配。
 - [天气图标日间总览](app/verification/weather-icons-day.png)、[夜间总览](app/verification/weather-icons-night.png)、[导航与播放器接入设置](app/verification/flutter-integration-settings.png)。

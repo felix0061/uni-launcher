@@ -1,0 +1,71 @@
+{
+  "date": "2026-10-26",
+  "scope": "local APK static analysis; no live signal verified",
+  "inputs": {
+    "official": {
+      "file": "Auto_9.5.0.600013_release_signed.apk",
+      "package": "com.autonavi.amapauto",
+      "version": "9.5.0.600013",
+      "versionCode": "26000001",
+      "sha256": "f2855369c11b346756ff828fa453447c812563b0cda678fcc6a36326d385fa00"
+    },
+    "modified": {
+      "file": "9.5高德-完美自动投屏3D彩虹.apk",
+      "package": "com.autonavi.amapautp.yh",
+      "version": "9.5.0.600013",
+      "versionCode": "26000001",
+      "sha256": "d86d485b0195dcfe4cc62526a28be608e42249659e29ce50f09e81763fd86747"
+    }
+  },
+  "standard": {
+    "action": "AUTONAVI_STANDARD_BROADCAST_SEND",
+    "KEY_TYPE": 60073,
+    "model": "com.autonavi.amapauto.protocol.model.service.RspTrafficLightsCountdownInfoModel",
+    "intentBuilder": "wh0.c()",
+    "broadcastDispatch": "fd.m(Intent) -> se.sendBroadcast(Intent)",
+    "fields": [
+      "trafficLightStatus",
+      "dir",
+      "redLightCountDownSeconds",
+      "waitRound"
+    ],
+    "conditionalField": {
+      "name": "greenLightLastSecond",
+      "condition": "ib.t()"
+    },
+    "multiLightArrayInIntentBuilder": false,
+    "intentBuilderIdenticalInBothApks": true
+  },
+  "modifiedCruise": {
+    "class": "floatapp.CruiseTrafficLightBroadcaster",
+    "entry": "CameraLightInteract.notifyCameraLightInfosImpl -> onCameraLightInfo",
+    "action": "NAVITOOL_CRUISE_TRAFFIC_LIGHTS",
+    "extra": "data",
+    "jsonKeys": [
+      "ts",
+      "lights"
+    ],
+    "lightKeys": [
+      "direction",
+      "status",
+      "countdown",
+      "waitNum",
+      "showType"
+    ],
+    "send": "Context.sendBroadcast(Intent)"
+  },
+  "unverified": [
+    "direction and lamp enum mappings",
+    "real broadcast reception",
+    "channel/account/road coverage",
+    "greenLightLastSecond semantics and availability",
+    "update cadence and invalidation signals"
+  ],
+  "rawEvidenceFiles": [
+    "official/traffic-bytecode.txt",
+    "official/dispatch-bytecode.txt",
+    "modified/traffic-bytecode.txt",
+    "modified/dispatch-bytecode.txt",
+    "zip-difference.json"
+  ]
+}

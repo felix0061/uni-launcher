@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UNI 桌面 · 红绿灯卡片设计</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#e9edeb;color:#182d29;font-family:Inter,"Noto Sans CJK SC",sans-serif;-webkit-font-smoothing:antialiased}
+.board{width:1920px;height:1080px;padding:48px 64px;overflow:hidden}.top{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:30px}.eyebrow{font-size:16px;letter-spacing:3px;color:#546c65}.top h1{font-size:38px;line-height:1.3;font-weight:500;margin:12px 0 0}.note{font-size:18px;color:#546c65;line-height:1.8;text-align:right}.columns{display:grid;grid-template-columns:1fr 1fr;gap:32px}
+.scene{--text:#f2f6f5;--muted:#adbdc4;--surface:#192730d9;--edge:#e0fffc29;--soft:#b3d9d914;--accent:#71e4ce;--red:#ff8c7f;--green:#71e4b4;--amber:#ffd17d;--radius:24px;background:radial-gradient(ellipse at 100% 100%,#265c5b 0,transparent 65%),#101a22;color:var(--text);padding:28px;border-radius:28px;height:790px}
+.scene.light{--text:#182d29;--muted:#546c65;--surface:#ffffffd6;--edge:#ffffffc2;--soft:#0875680a;--accent:#087568;--red:#ba392d;--green:#087550;--amber:#8c6209;background:radial-gradient(ellipse at 100% 100%,#b8d6cb,transparent 65%),#e1ece7}
+.mode{display:flex;align-items:center;justify-content:space-between;font-size:20px;margin-bottom:20px}.mode small{font-size:14px;color:var(--muted)}.spec{font-size:14px;letter-spacing:.4px;color:var(--muted);margin:16px 2px 10px}
+.card{background:var(--surface);border:1px solid var(--edge);border-radius:var(--radius);padding:24px 28px;box-shadow:0 8px 24px #00151a0a}.heading{display:flex;align-items:center;justify-content:space-between;gap:20px;font-size:25px;font-weight:400}.heading>span{display:flex;gap:12px;align-items:center}.heading svg{width:25px;height:25px;color:var(--accent)}.heading small{font-size:17px;color:var(--muted);font-weight:400}.icon{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.signals{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:30px 0 24px}.signal{display:flex;align-items:center;gap:22px;padding:0 22px}.signal:first-child{padding-left:0;border-right:1px solid var(--edge)}.signal:last-child{padding-right:0}.signal.red{--signal:var(--red)}.signal.green{--signal:var(--green)}.signal.amber{--signal:var(--amber)}
+.arrow{display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--signal) 12%,transparent);color:var(--signal);border:1px solid color-mix(in srgb,var(--signal) 25%,transparent);width:76px;height:76px;border-radius:50%;flex:none}.arrow svg{width:42px;height:42px;stroke-width:2.4}.reading{font-size:74px;font-weight:400;line-height:1.05;letter-spacing:-2px;color:var(--signal);font-variant-numeric:tabular-nums;white-space:nowrap}.reading small{font-size:21px;letter-spacing:0;margin-left:8px;color:var(--muted)}.label{font-size:17px;color:var(--muted);margin-top:10px;display:flex;gap:12px}.label b{font-weight:400;color:var(--signal)}
+.foot{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--edge);padding-top:17px;color:var(--muted);font-size:16px}.foot>span{display:flex;gap:8px;align-items:center}.dot{display:inline-block;width:5px;height:5px;background:var(--accent);border-radius:50%}.compact{display:flex;align-items:center;justify-content:space-between;height:156px}.compact .heading{font-size:22px;display:block}.compact .heading small{display:block;font-size:16px;margin-top:12px}.compact .signal{padding:0;border:0;gap:18px}.compact .reading{font-size:62px}.compact .arrow{height:64px;width:64px}.compact .label{font-size:16px;margin-top:5px}
+.states{display:grid;grid-template-columns:1fr 1fr;gap:16px}.state{height:138px;padding:20px 24px;display:flex;align-items:center;gap:18px}.state>svg{width:34px;height:34px;flex:none;color:var(--muted)}.state h3{font-size:20px;font-weight:400;margin:0 0 10px}.state p{font-size:15px;color:var(--muted);margin:0}.footer{margin-top:23px;display:flex;justify-content:space-between;gap:30px;color:#546c65;font-size:17px}.symbols{position:absolute;width:0;height:0;overflow:hidden}
+</style>
+<svg class="symbols" xmlns="http://www.w3.org/2000/svg"><defs>
+<symbol id="light" viewBox="0 0 32 32"><rect x="9" y="2" width="14" height="28" rx="6"/><circle cx="16" cy="9" r="2"/><circle cx="16" cy="16" r="2"/><circle cx="16" cy="23" r="2"/></symbol>
+<symbol id="left" viewBox="0 0 32 32"><path d="M27 16H5m9-9-9 9 9 9"/></symbol>
+<symbol id="straight" viewBox="0 0 32 32"><path d="M16 27V5M7 14l9-9 9 9"/></symbol>
+<symbol id="clock" viewBox="0 0 32 32"><circle cx="16" cy="16" r="12"/><path d="M16 8v9l5 3"/></symbol>
+<symbol id="nav" viewBox="0 0 32 32"><path d="m26 5-8 22-4-10L4 13Z"/></symbol>
+</defs></svg>
+<main class="board">
+ <header class="top"><div><div class="eyebrow">UNI DESKTOP / SIGNAL CARD</div><h1>看清方向，读懂下一次通行。</h1></div><div class="note">红绿灯卡片 · 深浅色设计<br>以下全部为设计示例数据，非实时路况</div></header>
+ <div class="columns" id="columns"></div>
+ <footer class="footer"><span>沿用桌面圆角与半透明表面 · 灯色独立于主题色 · 秒数等宽排版</span><span>单方向 / 多方向自适应 · 数据失效即清空 · 不推断下一次灯态</span></footer>
+</main>
+<script>
+const icon=id=>`<svg class="icon" aria-hidden="true"><use href="#${id}"/></svg>`;
+function signal(direction,seconds,state,label){return `<div class="signal ${state}"><span class="arrow">${icon(direction)}</span><div><div class="reading">${seconds}<small>秒</small></div><div class="label">${direction==='left'?'左转':'直行'}<b>${label}</b></div></div></div>`}
+function scene(light){return `<section class="scene ${light?'light':''}"><div class="mode">${light?'浅色 · 清透白':'深色 · 夜航青'}<small>与桌面外观设置同步</small></div><div class="spec">多方向布局 / 收到完整多方向数据时显示</div><article class="card"><header class="heading"><span>${icon('light')}红绿灯</span><small>高德地图</small></header><div class="signals">${signal('left','60','red','红灯')}${signal('straight','24','green','绿灯')}</div><footer class="foot"><span><i class="dot"></i>信号更新中</span><span>以路口实际信号为准</span></footer></article><div class="spec">单方向紧凑布局 / 官方标准协议</div><article class="card compact"><header class="heading"><span>${icon('light')}红绿灯</span><small>高德地图</small></header>${signal('straight','38','red','红灯')}</article><div class="spec">无数据与失效状态 / 及时停止倒计时</div><div class="states"><article class="card state">${icon('nav')}<div><h3>等待路口信号</h3><p>有可用信号时自动显示</p></div></article><article class="card state">${icon('clock')}<div><h3>信号暂未更新</h3><p>倒计时已隐藏</p></div></article></div></section>`}
+document.querySelector('#columns').innerHTML=scene(false)+scene(true);
+</script>
+</html>

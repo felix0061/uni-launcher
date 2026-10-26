@@ -1,0 +1,21 @@
+{
+  "checks": [
+    {
+      "name": "1920x1080 canvas fits",
+      "passed": true
+    },
+    {
+      "name": "card content is contained",
+      "passed": true
+    },
+    {
+      "name": "scenes contain every card",
+      "passed": true
+    },
+    {
+      "name": "examples marked as examples",
+      "passed": true
+    }
+  ],
+  "runtimeErrors": []
+}
