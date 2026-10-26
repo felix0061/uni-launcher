@@ -57,19 +57,20 @@ try {
   };
   await send('Page.enable');await send('Runtime.enable');
   await send('Emulation.setDeviceMetricsOverride',{width:1920,height:1080,deviceScaleFactor:1,mobile:false});
-  const unified=process.argv.includes('--unified');
+  const radii=process.argv.includes('--radii');
+  const unified=radii||process.argv.includes('--unified');
   const technical=unified||process.argv.includes('--technical');
-  const variants=[['home','dark'],['home','light'],['vehicle','dark'],['settings','dark'],...(unified?[['controls','dark'],['controls','light']]:[])];
-  for(const [view,mode] of variants){
+  const variants=radii? [['radius','dark',24],['radius','light',24],['home','dark',12],['home','dark',24],['home','dark',40],['home','light',24],['vehicle','dark',24],['settings','dark',24],['controls','dark',24]] : [['home','dark'],['home','light'],['vehicle','dark'],['settings','dark'],...(unified?[['controls','dark'],['controls','light']]:[])];
+  for(const [view,mode,radius] of variants){
     const url=new URL(pathToFileURL(path.join(root,'design/blue-glass/index.html')));
-    url.search=new URLSearchParams({view,mode,export:'1',...(technical?{frame:'technical'}:{}),...(unified?{controls:'unified'}:{})}).toString();
+    url.search=new URLSearchParams({view,mode,export:'1',...(technical?{frame:'technical'}:{}),...(unified?{controls:'unified'}:{}),...(radii?{radius:String(radius)}:{})}).toString();
     await send('Page.navigate',{url:url.href});
     for(let i=0;i<100;i++){
       if(await evaluate(`location.href===${JSON.stringify(url.href)}&&document.readyState==='complete'`))break;
       await delay(50);
     }
     await evaluate('(async()=>{await document.fonts.ready;await Promise.all([...document.images].map(i=>i.decode().catch(()=>{})));await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));})()');
-    const prefix=view+'-'+mode+(unified?'-unified':technical?'-technical':'');
+    const prefix=radii ? (view==='radius'?'radius-comparison-'+mode:view+'-'+mode+'-r'+radius) : view+'-'+mode+(unified?'-unified':technical?'-technical':'');
     await check(prefix+': canvas 1920x1080',"document.querySelector('.screen').clientWidth===1920&&document.querySelector('.screen').clientHeight===1080");
     await check(prefix+': dock is full width and flush with bottom',`(()=>{const r=document.querySelector('.screen>.dock').getBoundingClientRect();return r.left===0&&r.right===1920&&r.bottom===1080&&r.height===96&&getComputedStyle(document.querySelector('.screen>.dock')).borderRadius==='0px'})()`);
     await check(prefix+': all panel children fit',`[...document.querySelectorAll('.card')].every(el=>{const b=el.getBoundingClientRect();return [...el.querySelectorAll('h1,h2,p,.card-heading,.micro-footer,.reading,.traffic-light,.temperature,.time-labels,.lyrics,.settings-row')].every(c=>{const r=c.getBoundingClientRect();return r.left>=b.left-1&&r.right<=b.right+1&&r.top>=b.top-1&&r.bottom<=b.bottom+1})})`);
@@ -77,9 +78,9 @@ try {
     await check(prefix+': no live blur or animated visual filters',`[...document.querySelectorAll('.screen *')].every(el=>{const s=getComputedStyle(el);return s.backdropFilter==='none'&&s.filter==='none'&&s.animationName==='none'})`);
     await check(prefix+': assets decoded',`[...document.images].every(i=>i.complete&&i.naturalWidth>0)`);
     if(view==='vehicle')await check('vehicle: horizontal car and separate tyre labels',`(()=>{const car=document.querySelector('.tire-stage>img').getBoundingClientRect();return car.width>car.height*2&&[...document.querySelectorAll('.tire-reading')].every(el=>{const r=el.getBoundingClientRect();return r.right<=car.left||r.left>=car.right||r.bottom<=car.top||r.top>=car.bottom})})()`);
-    if(technical)await check(prefix+': eight static corner segments on square panels',`[...document.querySelectorAll('.card')].every(el=>{const s=getComputedStyle(el),p=getComputedStyle(el,'::after');return s.borderRadius==='0px'&&p.backgroundImage.split('linear-gradient').length===9&&p.pointerEvents==='none'&&p.animationName==='none'})`);
-    if(unified)await check(prefix+': persistent selections use short square corner frame',`[...document.querySelectorAll('.selected,.segmented button.active')].every(el=>{const frame=[...el.children].find(c=>c.classList.contains('frame-mark'));return getComputedStyle(el).borderRadius==='0px'&&frame&&getComputedStyle(frame).backgroundImage.split('linear-gradient').length===9})`);
-    if(unified)await check(prefix+': dock main action is neutral, not permanently selected',`[...document.querySelectorAll('.dock .play')].every(el=>!el.classList.contains('selected')&&getComputedStyle(el).borderRadius==='0px'&&el.querySelector('.frame-mark'))`);
+    if(technical&&!radii)await check(prefix+': eight static corner segments on square panels',`[...document.querySelectorAll('.card')].every(el=>{const s=getComputedStyle(el),p=getComputedStyle(el,'::after');return s.borderRadius==='0px'&&p.backgroundImage.split('linear-gradient').length===9&&p.pointerEvents==='none'&&p.animationName==='none'})`);
+    if(unified&&!radii)await check(prefix+': persistent selections use short square corner frame',`[...document.querySelectorAll('.selected,.segmented button.active')].every(el=>{const frame=[...el.children].find(c=>c.classList.contains('frame-mark'));return getComputedStyle(el).borderRadius==='0px'&&frame&&getComputedStyle(frame).backgroundImage.split('linear-gradient').length===9})`);
+    if(unified&&!radii)await check(prefix+': dock main action is neutral, not permanently selected',`[...document.querySelectorAll('.dock .play')].every(el=>!el.classList.contains('selected')&&getComputedStyle(el).borderRadius==='0px'&&el.querySelector('.frame-mark'))`);
     if(unified)await check(prefix+': all dock controls fit their own bar',`[...document.querySelectorAll('.dock')].every(bar=>{const b=bar.getBoundingClientRect();return [...bar.querySelectorAll('.icon-button,.temp,.dock-song,.dock-lyric')].every(el=>{const r=el.getBoundingClientRect();return r.left>=b.left&&r.right<=b.right&&r.top>=b.top&&r.bottom<=b.bottom})})`);
     if(unified){
       const selector='.screen>.dock [title="首页"]';
@@ -89,6 +90,11 @@ try {
       await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',buttons:0,clickCount:1,x:initial.x,y:initial.y});
       await send('Input.dispatchMouseEvent',{type:'mouseMoved',x:10,y:10});
     }
+    if(radii){
+      await check(prefix+': all corner arcs match their rounded host',`window.roundedFrameReady&&[...document.querySelectorAll('.rounded-panel-frame,.frame-mark')].every(el=>{const parent=el.parentElement,r=parent.getBoundingClientRect(),style=getComputedStyle(parent),radius=Math.min(parseFloat(style.borderTopLeftRadius)||0,r.width/2,r.height/2);const frame=el.getBoundingClientRect(),svg=el.querySelector('svg.corner-paths')?.getBoundingClientRect();return el.querySelectorAll('svg.corner-paths>path').length===4&&Math.abs(Number(el.dataset.frameRadius)-radius)<1&&svg&&Math.abs(svg.left-frame.left)<1&&Math.abs(svg.top-frame.top)<1&&Math.abs(svg.width-frame.width)<1&&Math.abs(svg.height-frame.height)<1&&getComputedStyle(el).pointerEvents==='none'})`);
+      await check(prefix+': cards use selected radius and dock remains square',`[...document.querySelectorAll('.card')].every(el=>parseFloat(getComputedStyle(el).borderTopLeftRadius)===Number((el.closest('[data-sample-radius]')||document.querySelector('.screen')).dataset.sampleRadius??${radius}))&&getComputedStyle(document.querySelector('.screen>.dock')).borderRadius==='0px'`);
+      if(view==='radius')await check(prefix+': four radius choices displayed together',`JSON.stringify([...document.querySelectorAll('.radius-sample')].map(el=>Number(el.dataset.sampleRadius)))==='[0,12,24,40]'`);
+    }
     if(view==='settings')await check('settings: preview ratio is 16:9',`(()=>{const r=document.querySelector('.mini-preview').getBoundingClientRect();return Math.abs(r.width/r.height-16/9)<.01})()`);
     if(view!=='settings')await check(prefix+': examples labelled',"document.querySelector('.preview-mark').textContent.includes('示例')");
     if(errors.length)throw Error(JSON.stringify(errors));
@@ -96,7 +102,7 @@ try {
     await writeFile(path.join(root,'design/blue-glass/'+prefix+'.png'),Buffer.from(shot.data,'base64'));
     shots.push(prefix+'.png');
   }
-  await writeFile(path.join(root,'design/blue-glass/'+(unified?'unified-controls-report.json':technical?'technical-frame-report.json':'review-report.json')),JSON.stringify({checks,runtimeErrors:errors,screenshots:shots},null,2)+'\n');
+  await writeFile(path.join(root,'design/blue-glass/'+(radii?'radius-report.json':unified?'unified-controls-report.json':technical?'technical-frame-report.json':'review-report.json')),JSON.stringify({checks,runtimeErrors:errors,screenshots:shots},null,2)+'\n');
   console.log('Blue glass design: '+checks.length+' layout checks passed');
 
 } finally {

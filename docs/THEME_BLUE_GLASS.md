@@ -142,3 +142,38 @@ node tools/render_blue_glass.mjs --unified
 ```
 
 73 项设计检查通过。报告：[unified-controls-report.json](../design/blue-glass/unified-controls-report.json)。除画板、内容包含、资源、无滤镜、底栏贴底等检查外，额外检查选中框八段角线、播放主操作未标记为持续选中、所有底栏控件位于各自栏内，以及真实鼠标按下改变局部颜色而不改变控件尺寸。
+
+## V4：设置圆角后的效果
+
+补充 0 / 12 / 24 / 40 px 的并排对照，以及完整桌面、车辆页、设置与控件效果。此处展示用户调整圆角后的样式；仍为设计稿，未修改 Flutter 配置。
+
+- [深色圆角对照](../design/blue-glass/radius-comparison-dark.png)
+- [浅色圆角对照](../design/blue-glass/radius-comparison-light.png)
+- 完整深色首页：[12 px](../design/blue-glass/home-dark-r12.png) / [24 px](../design/blue-glass/home-dark-r24.png) / [40 px](../design/blue-glass/home-dark-r40.png)
+- [24 px 浅色首页](../design/blue-glass/home-light-r24.png)
+- [24 px 车辆页](../design/blue-glass/vehicle-dark-r24.png)
+- [24 px 设置页](../design/blue-glass/settings-dark-r24.png)
+- [24 px 控件与全局底栏](../design/blue-glass/controls-dark-r24.png)
+
+| 用户圆角值 | 主体卡片 | 图标按钮 / 空调分组 | 视觉取向 |
+| --- | --- | --- | --- |
+| 0 | 0 px | 0 px | 直角框线，结构最明确 |
+| 12 | 12 px | 6 px | 轻圆角，保留利落边缘 |
+| 24 | 24 px | 12 px | 弧线与科技感相对均衡，作为本稿推荐参考 |
+| 40 | 40 px | 16 px | 卡片更柔和；小控件设上限，保持图标周围空间 |
+
+图标按钮的建议映射为 `min(16, r × 0.5)`，大选项 `min(20, r × 0.55)`，小标签/开关 `min(8, r × 0.25)`，封面 `min(14, r × 0.45)`。这是新样式的组件比例建议，不会把所有小控件直接设成 40 px，也不改变触控尺寸。全局底栏外框始终 0 px；只有栏内选中图标、空调区和播放主操作随设置变化。
+
+### 角标沿曲线绘制
+
+非零圆角下，四个角标由“L 形直线”改为沿实际圆角的四段短弧及两端少量直线；保持原本 1–1.5 px 线宽、语义颜色和普通/选中层级。角标不能悬空在面板内部，也不能继续用直角线切过圆角。
+
+网页稿使用组件本身尺寸生成原生 SVG 圆弧，覆盖层与实际控件边框重合，设置选项上的文字 padding 不得影响覆盖层几何；主面板的内容剪裁也使用同一圆角。没有生成位图边框或使用实时滤镜。后续 Flutter 可按对应 RRect 路径绘制四段角标，并与现有描边/裁剪共用半径。
+
+### 复现与检查
+
+```sh
+node tools/render_blue_glass.mjs --radii
+```
+
+102 项设计检查通过，覆盖九张画板：深浅色四档对照、三种完整首页和其余组件页。检查各卡片使用选择的半径、每个角标四段弧线与父控件半径相符、SVG 覆盖层没有被文字内边距挤偏、底栏保持直角贴底、按下不改变控件大小及无实时滤镜。报告：[radius-report.json](../design/blue-glass/radius-report.json)。0 px 的既有方案回归另通过 73 项检查。

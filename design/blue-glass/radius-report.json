@@ -1,0 +1,424 @@
+{
+  "checks": [
+    {
+      "name": "radius-comparison-dark: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-dark: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-dark: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-dark: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-dark: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-dark: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-dark: all dock controls fit their own bar",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-dark: press changes only local fill without moving the button",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-dark: all corner arcs match their rounded host",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-dark: cards use selected radius and dock remains square",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-dark: four radius choices displayed together",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-dark: examples labelled",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-light: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-light: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-light: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-light: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-light: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-light: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-light: all dock controls fit their own bar",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-light: press changes only local fill without moving the button",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-light: all corner arcs match their rounded host",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-light: cards use selected radius and dock remains square",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-light: four radius choices displayed together",
+      "passed": true
+    },
+    {
+      "name": "radius-comparison-light: examples labelled",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r12: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r12: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r12: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r12: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r12: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r12: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r12: all dock controls fit their own bar",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r12: press changes only local fill without moving the button",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r12: all corner arcs match their rounded host",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r12: cards use selected radius and dock remains square",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r12: examples labelled",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r24: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r24: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r24: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r24: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r24: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r24: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r24: all dock controls fit their own bar",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r24: press changes only local fill without moving the button",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r24: all corner arcs match their rounded host",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r24: cards use selected radius and dock remains square",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r24: examples labelled",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r40: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r40: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r40: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r40: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r40: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r40: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r40: all dock controls fit their own bar",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r40: press changes only local fill without moving the button",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r40: all corner arcs match their rounded host",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r40: cards use selected radius and dock remains square",
+      "passed": true
+    },
+    {
+      "name": "home-dark-r40: examples labelled",
+      "passed": true
+    },
+    {
+      "name": "home-light-r24: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "home-light-r24: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "home-light-r24: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "home-light-r24: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "home-light-r24: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "home-light-r24: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "home-light-r24: all dock controls fit their own bar",
+      "passed": true
+    },
+    {
+      "name": "home-light-r24: press changes only local fill without moving the button",
+      "passed": true
+    },
+    {
+      "name": "home-light-r24: all corner arcs match their rounded host",
+      "passed": true
+    },
+    {
+      "name": "home-light-r24: cards use selected radius and dock remains square",
+      "passed": true
+    },
+    {
+      "name": "home-light-r24: examples labelled",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-r24: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-r24: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-r24: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-r24: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-r24: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-r24: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "vehicle: horizontal car and separate tyre labels",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-r24: all dock controls fit their own bar",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-r24: press changes only local fill without moving the button",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-r24: all corner arcs match their rounded host",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-r24: cards use selected radius and dock remains square",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-r24: examples labelled",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-r24: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-r24: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-r24: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-r24: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-r24: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-r24: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-r24: all dock controls fit their own bar",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-r24: press changes only local fill without moving the button",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-r24: all corner arcs match their rounded host",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-r24: cards use selected radius and dock remains square",
+      "passed": true
+    },
+    {
+      "name": "settings: preview ratio is 16:9",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-r24: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-r24: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-r24: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-r24: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-r24: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-r24: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-r24: all dock controls fit their own bar",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-r24: press changes only local fill without moving the button",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-r24: all corner arcs match their rounded host",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-r24: cards use selected radius and dock remains square",
+      "passed": true
+    },
+    {
+      "name": "controls-dark-r24: examples labelled",
+      "passed": true
+    }
+  ],
+  "runtimeErrors": [],
+  "screenshots": [
+    "radius-comparison-dark.png",
+    "radius-comparison-light.png",
+    "home-dark-r12.png",
+    "home-dark-r24.png",
+    "home-dark-r40.png",
+    "home-light-r24.png",
+    "vehicle-dark-r24.png",
+    "settings-dark-r24.png",
+    "controls-dark-r24.png"
+  ]
+}

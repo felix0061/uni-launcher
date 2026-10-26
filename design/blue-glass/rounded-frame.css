@@ -1,0 +1,38 @@
+/* Design-only radius variants. Frame paths follow the actual rounded outline. */
+.screen.rounded-theme{--panel-radius:24px;--control-radius:12px;--option-radius:13.2px;--small-radius:6px;--cover-radius:10.8px}
+.rounded-theme .card{border-radius:var(--panel-radius)}
+.rounded-theme .card::after{display:none}
+.rounded-theme .card::before{left:calc(var(--panel-radius) + 12px);right:calc(var(--panel-radius) + 12px)}
+.rounded-theme .icon-button,.rounded-theme .dock .icon-button,.rounded-theme .dock .climate,.rounded-theme .segmented,.rounded-theme .segmented button,.rounded-theme .turn-banner,.rounded-theme .route-footer,.rounded-theme .turn-icon,.rounded-theme .energy{border-radius:var(--control-radius)}
+.rounded-theme .style-option,.rounded-theme .choice-examples button{border-radius:var(--option-radius)}
+.rounded-theme .toggle,.rounded-theme .toggle>i:not(.frame-mark),.rounded-theme .pill{border-radius:var(--small-radius)}
+.rounded-theme .cover,.rounded-theme .dock-song img{border-radius:var(--cover-radius)}
+.rounded-theme .style-thumb:not(.old) i{border-radius:var(--control-radius)}
+.rounded-theme .dock{border-radius:0}
+.rounded-theme .frame-mark,.rounded-theme .rounded-panel-frame{position:absolute;inset:-1px;z-index:5;pointer-events:none;display:block;background:none;overflow:visible;border-radius:inherit}
+.rounded-theme .rounded-panel-frame{--mark-color:var(--corner);--mark-weight:1.5px}
+.rounded-theme .corner-paths{display:block;width:100%;height:100%;overflow:visible;fill:none;stroke:var(--mark-color,var(--corner));stroke-width:var(--mark-weight,1.5px);stroke-linecap:butt;stroke-linejoin:round}
+.rounded-theme .mini-preview,.rounded-theme .mini-cards>div{border-radius:calc(var(--panel-radius) * .28)}
+.radius-workspace{position:absolute;left:32px;right:32px;top:90px;bottom:150px}
+.radius-title{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 34px}
+.radius-title h1{font-size:32px;font-weight:500;margin:0}.radius-title p{color:var(--muted);font-size:18px;margin:0}
+.radius-columns{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+.radius-sample-heading{height:78px;display:flex;align-items:baseline;gap:14px}
+.radius-sample-heading strong{font-size:32px;font-weight:400}.radius-sample-heading small{font-size:17px;color:var(--muted)}
+.radius-sample .weather{height:310px}
+.radius-sample .weather-content{padding:26px}
+.radius-sample .weather-current{gap:20px}
+.radius-sample .temperature{font-size:68px}
+.radius-sample .weather-symbol{width:94px}
+.radius-sample .weather-word{font-size:22px}
+.radius-controls{display:flex;align-items:center;gap:18px;padding:29px 0 24px}
+.radius-controls .icon-button{width:58px;height:58px}
+.radius-controls .play{background:var(--control-rest);border:1px solid var(--frame-line);color:var(--text)}
+.radius-controls .play>.frame-mark{--mark-color:var(--corner);--mark-weight:1px}
+.radius-controls>span{font-size:16px;line-height:1.8;color:var(--muted);margin-left:5px}
+.radius-note{font-size:17px;line-height:1.9;color:var(--muted);border-top:1px solid var(--frame-line);padding-top:20px;margin:0}
+.radius-rules{margin-top:36px;border-top:1px solid var(--frame-line);padding-top:25px;display:flex;gap:52px;color:var(--muted);font-size:18px}
+.radius-rules strong{font-weight:400;color:var(--text)}
+/* Reset title-span padding on frame overlays so SVG strokes hug the edge. */
+.rounded-theme .frame-mark,.rounded-theme .rounded-panel-frame{padding:0}
+.rounded-theme .setting-panel .settings-row:last-of-type{padding-bottom:0}
