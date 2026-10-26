@@ -29,6 +29,7 @@ public final class OfficialWeatherAdapter {
     private String forecastCity="",forecastReason="";
     private boolean forecastLoading;
     private long forecastAttemptMs;
+    private final Runnable retryForecast=()->requestForecast(data.optString("city",""),data.optString("region",""),false);
     private final Binder callback=new Binder(){
         @Override protected boolean onTransact(int code,Parcel in,Parcel out,int flags)throws RemoteException{
             if(code==INTERFACE_TRANSACTION){if(out!=null)out.writeString(CALLBACK);return true;}
@@ -80,25 +81,30 @@ public final class OfficialWeatherAdapter {
                 .put("code",code).put("condition",description).put("description",description)
                 .put("source","原车天气").put("sourcePackage","com.ecarx.smartcloud")
                 .put("syncedAtMs",System.currentTimeMillis());
-            reason="";changed.run();requestForecast(area.isEmpty()?city:area,false);
+            reason="";changed.run();requestForecast(area.isEmpty()?city:area,city,false);
         }catch(Exception e){reason="原车天气数据格式暂不支持";changed.run();}
     }
     public void refreshForecast(){
         String city=data.optString("city","");
         if(city.isEmpty()){forecastReason="等待原车返回当前城市";changed.run();return;}
-        requestForecast(city,true);
+        requestForecast(city,data.optString("region",""),true);
     }
-    private void requestForecast(String city,boolean force){
+    private void requestForecast(String city,String region,boolean force){
         long now=System.currentTimeMillis();
         if(city==null||city.trim().isEmpty())return;
         city=city.trim();
-        if(forecastLoading&&city.equals(forecastCity))return;
-        if(!force&&city.equals(forecastCity)&&now-forecastAttemptMs<30*60*1000L)return;
-        forecastCity=city;forecastAttemptMs=now;forecastLoading=true;forecastReason="正在获取未来天气";changed.run();
-        final String requestedCity=city;
+        final String requestedCity=city+"|"+region;
+        if(forecastLoading&&requestedCity.equals(forecastCity))return;
+        boolean sameCity=requestedCity.equals(forecastCity);
+        long interval=forecast.optJSONArray("forecasts")==null?60_000L:30*60*1000L;
+        if(!force&&sameCity&&now-forecastAttemptMs<interval)return;
+        if(!sameCity)forecast=new JSONObject();
+        main.removeCallbacks(retryForecast);
+        forecastCity=requestedCity;forecastAttemptMs=now;forecastLoading=true;forecastReason="正在获取未来天气";changed.run();
+        final String area=city,requestedRegion=region;
         forecastWorker.execute(()->{
             try{
-                JSONObject next=downloadForecast(requestedCity);
+                JSONObject next=downloadForecast(area,requestedRegion);
                 main.post(()->{
                     if(!requestedCity.equals(forecastCity))return;
                     forecast=next;forecastLoading=false;forecastReason="";changed.run();
@@ -109,19 +115,37 @@ public final class OfficialWeatherAdapter {
                     if(!requestedCity.equals(forecastCity))return;
                     forecastLoading=false;
                     forecastReason=forecast.optJSONArray("forecasts")!=null
-                        ?"未来天气更新失败，正在显示上次数据":"联网后可获取未来天气";
+                        ?"未来天气更新失败，正在显示上次数据"
+                        :e instanceof WeatherLocationResolver.NotFound?"未找到当前地区的预报位置"
+                        :e instanceof SocketTimeoutException?"天气服务响应超时，请稍后刷新"
+                        :e instanceof UnknownHostException?"无法连接天气服务，请检查网络"
+                        :"未来天气加载失败，请稍后刷新";
+                    main.postDelayed(retryForecast,60_000);
                     changed.run();
                 });
             }
         });
     }
-    private static JSONObject downloadForecast(String city)throws Exception{
-        String name=URLEncoder.encode(city,StandardCharsets.UTF_8.name());
-        JSONObject places=readJson("https://geocoding-api.open-meteo.com/v1/search?name="+name+"&count=1&language=zh&format=json&countryCode=CN");
+    private static java.util.List<WeatherLocationResolver.Place> searchPlaces(String query)throws Exception{
+        String name=URLEncoder.encode(query,StandardCharsets.UTF_8.name());
+        JSONObject places=readJson("https://geocoding-api.open-meteo.com/v1/search?name="+name+"&count=20&language=zh&format=json&countryCode=CN");
         JSONArray results=places.optJSONArray("results");
-        if(results==null||results.length()==0)throw new IOException("City not found");
-        JSONObject place=results.getJSONObject(0);
-        double latitude=place.getDouble("latitude"),longitude=place.getDouble("longitude");
+        java.util.List<WeatherLocationResolver.Place> list=new java.util.ArrayList<>();
+        if(results!=null)for(int i=0;i<results.length();i++){
+            JSONObject p=results.getJSONObject(i);
+            list.add(new WeatherLocationResolver.Place(p.optString("name"),p.optString("country_code"),p.optString("admin1"),p.optString("admin2"),p.optString("admin3"),p.optString("feature_code"),p.optDouble("latitude",Double.NaN),p.optDouble("longitude",Double.NaN),p.optLong("population",0)));
+        }return list;
+    }
+    private static String romanize(String text){
+        try{
+            Class<?> type=Class.forName("android.icu.text.Transliterator");
+            Object transliterator=type.getMethod("getInstance",String.class).invoke(null,"Han-Latin; Latin-ASCII");
+            return (String)type.getMethod("transliterate",String.class).invoke(transliterator,text);
+        }catch(Exception|LinkageError e){return text;}
+    }
+    private static JSONObject downloadForecast(String city,String region)throws Exception{
+        WeatherLocationResolver.Location location=WeatherLocationResolver.resolve(city,region,OfficialWeatherAdapter::searchPlaces,OfficialWeatherAdapter::romanize);
+        double latitude=location.place.latitude,longitude=location.place.longitude;
         String url="https://api.open-meteo.com/v1/forecast?latitude="+latitude+"&longitude="+longitude
             +"&current=relative_humidity_2m,apparent_temperature,wind_speed_10m,wind_direction_10m"
             +"&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max"
@@ -137,7 +161,8 @@ public final class OfficialWeatherAdapter {
             putNumber(day,"precipitation",precipitation,i);putNumber(day,"windSpeed",wind,i);days.put(day);
         }
         JSONObject value=new JSONObject().put("forecasts",days).put("forecastSource","Open-Meteo")
-            .put("forecastUpdatedAtMs",System.currentTimeMillis()).put("forecastLatitude",latitude).put("forecastLongitude",longitude);
+            .put("forecastUpdatedAtMs",System.currentTimeMillis()).put("forecastLatitude",latitude).put("forecastLongitude",longitude)
+            .put("forecastLocation",location.label).put("forecastCityFallback",location.cityFallback);
         if(current!=null){
             putNumber(value,"humidity",current,"relative_humidity_2m");
             putNumber(value,"apparentTemperature",current,"apparent_temperature");
@@ -171,6 +196,7 @@ public final class OfficialWeatherAdapter {
             JSONObject value=new JSONObject(data.toString());
             Iterator<String> keys=forecast.keys();while(keys.hasNext()){String key=keys.next();value.put(key,forecast.get(key));}
             return value.put("connected",connected).put("reason",reason).put("forecastReason",forecastReason)
+                .put("forecastLoading",forecastLoading)
                 .put("night",minute<360||minute>1080).put("available",data.optBoolean("available",false));
         }catch(Exception e){return new JSONObject();}
     }

@@ -107,9 +107,31 @@ class _HeaderWeather extends StatelessWidget {
   }
 }
 
-class Desktop extends StatelessWidget {
+class Desktop extends StatefulWidget {
   final LauncherController controller;
   const Desktop({super.key, required this.controller});
+  @override
+  State<Desktop> createState() => _DesktopState();
+}
+
+class _DesktopState extends State<Desktop> {
+  LauncherController get controller => widget.controller;
+  bool warmed = false;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!warmed) {
+      warmed = true;
+      // Decode the detailed vehicle trace while the first workspace is idle,
+      // rather than on the first frame of the vehicle-page transition.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted)
+          unawaited(precacheImage(
+              const AssetImage('assets/art/lynk-05-top-line.png'), context));
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = controller;
@@ -191,54 +213,56 @@ class _DesktopStaticLayers extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = controller;
-    return GestureDetector(
-        key: const ValueKey('card-grid'),
-        behavior: HitTestBehavior.translucent,
-        onLongPress: c.editing ? null : c.beginEdit,
-        onHorizontalDragEnd: c.editing
-            ? null
-            : (details) {
-                final velocity = details.primaryVelocity ?? 0;
-                if (velocity.abs() > 180)
-                  c.switchPage(c.page + (velocity < 0 ? 1 : -1));
-              },
-        child: Padding(
-            padding: EdgeInsets.fromLTRB(
-                Design.px(32), Design.px(16), Design.px(32), Design.px(24)),
-            child: Column(children: [
-              if (c.editing)
-                SizedBox(
-                    height: Design.px(74),
-                    child: Row(children: [
-                      const Text('编辑桌面', style: TextStyle(fontSize: 28)),
-                      const SizedBox(width: 24),
-                      Text('拖动卡片移动 · 拖到屏幕边缘换页 · 拖动角点缩放',
-                          style: TextStyle(
-                              color: SurfaceStyle.of(context).muted,
-                              fontSize: 17)),
-                      const Spacer(),
-                      TextButton(
-                          key: const ValueKey('cancel-edit'),
-                          onPressed: c.cancelEdit,
-                          child: const Text('取消')),
-                      TextButton.icon(
-                          key: const ValueKey('add-card'),
-                          onPressed: () => showCardLibrary(context, c),
-                          icon: const Icon(Icons.add),
-                          label: const Text('添加卡片')),
-                      FilledButton(
-                          key: const ValueKey('finish-edit'),
-                          onPressed: c.finishEdit,
-                          child: const Text('完成'))
-                    ])),
-              Expanded(
-                  child: DesktopPageStack(
-                      page: c.page,
-                      effect: c.editing ? 'none' : c.appearance.pageTransition,
-                      children: grids)),
-              SizedBox(height: Design.px(16)),
-              _DesktopPageIndicator(controller: c),
-            ])));
+    return BackdropGroup(
+        child: GestureDetector(
+            key: const ValueKey('card-grid'),
+            behavior: HitTestBehavior.translucent,
+            onLongPress: c.editing ? null : c.beginEdit,
+            onHorizontalDragEnd: c.editing
+                ? null
+                : (details) {
+                    final velocity = details.primaryVelocity ?? 0;
+                    if (velocity.abs() > 180)
+                      c.switchPage(c.page + (velocity < 0 ? 1 : -1));
+                  },
+            child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                    Design.px(32), Design.px(16), Design.px(32), Design.px(24)),
+                child: Column(children: [
+                  if (c.editing)
+                    SizedBox(
+                        height: Design.px(74),
+                        child: Row(children: [
+                          const Text('编辑桌面', style: TextStyle(fontSize: 28)),
+                          const SizedBox(width: 24),
+                          Text('拖动卡片移动 · 拖到屏幕边缘换页 · 拖动角点缩放',
+                              style: TextStyle(
+                                  color: SurfaceStyle.of(context).muted,
+                                  fontSize: 17)),
+                          const Spacer(),
+                          TextButton(
+                              key: const ValueKey('cancel-edit'),
+                              onPressed: c.cancelEdit,
+                              child: const Text('取消')),
+                          TextButton.icon(
+                              key: const ValueKey('add-card'),
+                              onPressed: () => showCardLibrary(context, c),
+                              icon: const Icon(Icons.add),
+                              label: const Text('添加卡片')),
+                          FilledButton(
+                              key: const ValueKey('finish-edit'),
+                              onPressed: c.finishEdit,
+                              child: const Text('完成'))
+                        ])),
+                  Expanded(
+                      child: DesktopPageStack(
+                          page: c.page,
+                          effect:
+                              c.editing ? 'none' : c.appearance.pageTransition,
+                          children: grids)),
+                  SizedBox(height: Design.px(16)),
+                  _DesktopPageIndicator(controller: c),
+                ]))));
   }
 }
 

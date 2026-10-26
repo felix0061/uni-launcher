@@ -88,11 +88,7 @@ void main() {
     final (c, g) = await launch(t);
     c.openSettings();
     await t.pumpAndSettle();
-    expect(
-        t
-            .widget<Switch>(find.byKey(const ValueKey('wallpaper-overlay')))
-            .onChanged,
-        isNull);
+    expect(find.byKey(const ValueKey('wallpaper-overlay')), findsNothing);
     final dawn = find.byKey(const ValueKey('wallpaper-dawn'));
     await t.ensureVisible(dawn);
     await t.pumpAndSettle();
@@ -100,22 +96,10 @@ void main() {
     await t.pumpAndSettle();
     expect(c.appearance.wallpaper, 'dawn');
     expect(c.appearance.mode, 'smart');
-    expect(
-        t
-            .widget<Switch>(find.byKey(const ValueKey('wallpaper-overlay')))
-            .onChanged,
-        isNotNull);
+    expect(find.text('叠加主题渐变'), findsNothing);
     expect(jsonDecode(g.saved!)['preferences']['wallpaper'], 'dawn');
-    expect(c.appearance.wallpaperOverlay, true);
-    final beforeToggle =
-        t.state<ScrollableState>(find.byType(Scrollable).first).position.pixels;
-    await t.tap(find.byKey(const ValueKey('wallpaper-overlay')));
-    await t.pumpAndSettle();
-    expect(c.appearance.wallpaperOverlay, false);
-    expect(
-        t.state<ScrollableState>(find.byType(Scrollable).first).position.pixels,
-        closeTo(beforeToggle, 1));
-    expect(jsonDecode(g.saved!)['preferences']['wallpaperOverlay'], false);
+    expect(jsonDecode(g.saved!)['preferences'],
+        isNot(contains('wallpaperOverlay')));
     expect(find.byKey(const ValueKey('wallpaper-neon')), findsOneWidget);
     expect(find.byKey(const ValueKey('wallpaper-precision')), findsOneWidget);
     expect(find.byKey(const ValueKey('wallpaper-terrain')), findsOneWidget);

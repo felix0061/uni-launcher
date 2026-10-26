@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:uni_launcher/controller/launcher_controller.dart';
 import 'package:uni_launcher/model/appearance.dart';
@@ -24,11 +25,9 @@ void main() {
     expect(a.palette, 'mint');
   });
   test('wallpaper selection and custom path round trip safely', () {
-    final builtIn = Appearance.fromJson(const Appearance()
-        .copyWith(wallpaper: 'terrain', wallpaperOverlay: false)
-        .toJson());
+    final builtIn = Appearance.fromJson(
+        const Appearance().copyWith(wallpaper: 'terrain').toJson());
     expect(builtIn.wallpaper, 'terrain');
-    expect(builtIn.wallpaperOverlay, false);
     final custom = Appearance.fromJson(const Appearance()
         .copyWith(
             wallpaper: 'custom',
@@ -39,7 +38,8 @@ void main() {
     expect(custom.wallpaperPath, '/data/user/wall.jpg');
     expect(custom.wallpaperLuminance, .24);
     expect(Appearance.fromJson({'wallpaper': 'invalid'}).wallpaper, 'gradient');
-    expect(Appearance.fromJson(const {}).wallpaperOverlay, true);
+    expect(Appearance.fromJson({'wallpaperOverlay': true}).toJson(),
+        isNot(contains('wallpaperOverlay')));
   });
   test('smart contrast follows wallpaper while manual themes remain explicit',
       () {
@@ -107,6 +107,29 @@ void main() {
     expect(c.pageChanged.value, 1);
     expect(nativeRebuilds, 0);
     expect(g.commands.last, containsPair('action', 'desktop-page'));
+    c.dispose();
+    await g.dispose();
+  });
+  test('page switch waits for native hide and Home cancels an in-flight switch',
+      () async {
+    final g = _DelayedPageGateway(), c = LauncherController(g);
+    await c.initialize();
+    final first = c.switchPage(1);
+    expect(c.page, 0,
+        reason: 'native map must be hidden before Flutter paints another page');
+    g.pending.single.complete();
+    await first;
+    expect(c.page, 1);
+    final second = c.switchPage(0);
+    c.home();
+    g.pending.last.complete();
+    await second;
+    expect(c.page, 0);
+    final cancelled = c.switchPage(1);
+    c.home();
+    g.pending.last.complete();
+    await cancelled;
+    expect(c.page, 0, reason: 'a delayed platform reply cannot undo Home');
     c.dispose();
     await g.dispose();
   });
@@ -212,4 +235,14 @@ void main() {
     await g.dispose();
     await next.dispose();
   });
+}
+
+class _DelayedPageGateway extends FakeGateway {
+  final pending = <Completer<void>>[];
+  @override
+  Future<void> setDesktopPage(int page) {
+    final gate = Completer<void>();
+    pending.add(gate);
+    return gate.future;
+  }
 }

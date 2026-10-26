@@ -51,7 +51,7 @@ class GlassSurface extends StatelessWidget {
         child: ClipRRect(
             borderRadius: shape,
             child: s.glass
-                ? BackdropFilter(
+                ? BackdropFilter.grouped(
                     key: const ValueKey('glass-filter'),
                     filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                     child: content)

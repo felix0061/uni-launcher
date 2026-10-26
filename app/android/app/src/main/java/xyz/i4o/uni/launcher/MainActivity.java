@@ -45,7 +45,7 @@ public final class MainActivity extends FlutterActivity {
     @Override public void configureFlutterEngine(FlutterEngine engine){
         super.configureFlutterEngine(engine);
         if(rt==null)rt=LauncherRuntime.get(this);
-        mapFactory=new EmbeddedNavigationFactory(this,engine.getDartExecutor().getBinaryMessenger());
+        mapFactory=new EmbeddedNavigationFactory(this,engine.getDartExecutor().getBinaryMessenger(),engine.getRenderer());
         engine.getPlatformViewsController().getRegistry().registerViewFactory("xyz.i4o.uni.launcher/navigation",mapFactory);
         channel=new MethodChannel(engine.getDartExecutor().getBinaryMessenger(),"xyz.i4o.uni.launcher/platform");
         channel.setMethodCallHandler((call,result)->{
@@ -66,6 +66,8 @@ public final class MainActivity extends FlutterActivity {
                 }
                 else if("desktopPage".equals(call.method)){
                     int page=call.arguments instanceof Number?((Number)call.arguments).intValue():0;
+                    if(mapFactory!=null)mapFactory.preparePageChange();
+                    flutterViewport.put("page",page);
                     rt.setDesktopContentSilently(page==0);result.success(null);
                 }
                 else if("viewport".equals(call.method)){flutterViewport=new JSONObject((String)call.arguments);

@@ -14,6 +14,7 @@ class LauncherController extends ChangeNotifier {
   List<LauncherCard> cards = defaultCards();
   int page = 0, pageCount = 2;
   final pageChanged = ValueNotifier<int>(0);
+  int _pageRequest = 0;
   bool settings = false, editing = false, ready = false;
   Future<void> Function()? beforeExternalLaunch;
   String _overlayDesign = '';
@@ -278,15 +279,22 @@ class LauncherController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void switchPage(int value) {
-    _setPage(value.clamp(0, pageCount - 1));
+  Future<void> switchPage(int value) async {
+    final target = value.clamp(0, pageCount - 1), request = ++_pageRequest;
+    if (target == page) return;
     // Page selection is intentionally a small one-way platform call. Sending
     // it through the general action channel publishes a complete vehicle
     // snapshot and rebuilds every telemetry/media card during a swipe.
-    unawaited(gateway.setDesktopPage(page));
+    // Hide Android's independent map Surface BEFORE changing the Flutter
+    // workspace. A post-frame hide can briefly put that Surface over page two.
+    try {
+      await gateway.setDesktopPage(target);
+    } catch (_) {}
+    if (request == _pageRequest) _setPage(target);
   }
 
   void _setPage(int value) {
+    _pageRequest++;
     page = value;
     if (pageChanged.value != value) pageChanged.value = value;
   }
@@ -417,6 +425,7 @@ class LauncherController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _pageRequest++;
     _subscription?.cancel();
     pageChanged.dispose();
     native.dispose();

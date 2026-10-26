@@ -194,6 +194,8 @@ void main() {
         'city': '杭州',
         'humidity': 68,
         'forecastSource': 'Open-Meteo',
+        'forecastLocation': '上海市',
+        'forecastCityFallback': true,
         'forecastUpdatedAtMs': 1000,
         'forecasts': [
           {
@@ -209,6 +211,8 @@ void main() {
     });
     expect(value.humidity, 68);
     expect(value.forecastSource, 'Open-Meteo');
+    expect(value.forecastLocation, '上海市');
+    expect(value.forecastCityFallback, true);
     expect(value.forecasts, hasLength(1));
     expect(value.forecasts.single.condition, WeatherKind.lightRain);
     expect(value.forecasts.single.minimum, 17.2);
@@ -303,10 +307,10 @@ void main() {
     await t.pumpAndSettle();
     expect(visibility.last, true);
     final dock = t.getRect(find.byKey(const ValueKey('bottom-dock')));
-    c.switchPage(1);
+    await c.switchPage(1);
     await t.pumpAndSettle();
     expect(visibility.last, false);
-    c.switchPage(0);
+    await c.switchPage(0);
     await t.pumpAndSettle();
     expect(identical(t.state(find.byType(EmbeddedNavigationCard)), original),
         true);

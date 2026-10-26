@@ -59,7 +59,7 @@ class Appearance {
       wallpaperPath;
   final double radius;
   final double? wallpaperLuminance;
-  final bool glass, wallpaperOverlay;
+  final bool glass;
   const Appearance(
       {this.desktopName = defaultDesktopName,
       this.mode = 'system',
@@ -70,8 +70,7 @@ class Appearance {
       this.pageTransition = 'none',
       this.wallpaper = 'gradient',
       this.wallpaperPath = '',
-      this.wallpaperLuminance,
-      this.wallpaperOverlay = true});
+      this.wallpaperLuminance});
   factory Appearance.fromJson(Map<String, dynamic> json) => Appearance(
         desktopName: normalizeDesktopName(json['desktopName']),
         mode: ['smart', 'system', 'light', 'dark'].contains(json['mode'])
@@ -103,7 +102,6 @@ class Appearance {
         wallpaperLuminance: json['wallpaperLuminance'] is num
             ? (json['wallpaperLuminance'] as num).toDouble().clamp(0, 1)
             : null,
-        wallpaperOverlay: json['wallpaperOverlay'] != false,
       );
   Appearance copyWith(
           {String? desktopName,
@@ -115,8 +113,7 @@ class Appearance {
           String? pageTransition,
           String? wallpaper,
           String? wallpaperPath,
-          double? wallpaperLuminance,
-          bool? wallpaperOverlay}) =>
+          double? wallpaperLuminance}) =>
       Appearance(
           desktopName: normalizeDesktopName(desktopName ?? this.desktopName),
           mode: mode ?? this.mode,
@@ -127,8 +124,7 @@ class Appearance {
           pageTransition: pageTransition ?? this.pageTransition,
           wallpaper: wallpaper ?? this.wallpaper,
           wallpaperPath: wallpaperPath ?? this.wallpaperPath,
-          wallpaperLuminance: wallpaperLuminance ?? this.wallpaperLuminance,
-          wallpaperOverlay: wallpaperOverlay ?? this.wallpaperOverlay);
+          wallpaperLuminance: wallpaperLuminance ?? this.wallpaperLuminance);
   Map<String, dynamic> toJson() => {
         'desktopName': desktopName,
         'mode': mode,
@@ -138,7 +134,6 @@ class Appearance {
         'glass': glass,
         'pageTransition': pageTransition,
         'wallpaper': wallpaper,
-        'wallpaperOverlay': wallpaperOverlay,
         if (wallpaperPath.isNotEmpty) 'wallpaperPath': wallpaperPath,
         if (wallpaperLuminance != null)
           'wallpaperLuminance': wallpaperLuminance,

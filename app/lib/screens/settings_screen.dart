@@ -428,20 +428,6 @@ class WallpaperSetting extends StatelessWidget {
     final c = controller, a = c.appearance, s = SurfaceStyle.of(context);
     return SettingBlock(
         title: '桌面壁纸',
-        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-          Text('叠加主题渐变',
-              style: TextStyle(
-                  color: a.wallpaper == 'gradient' ? s.muted : null,
-                  fontSize: Design.px(18))),
-          SizedBox(width: Design.px(10)),
-          Switch(
-              key: const ValueKey('wallpaper-overlay'),
-              value: a.wallpaper == 'gradient' ? true : a.wallpaperOverlay,
-              onChanged: a.wallpaper == 'gradient'
-                  ? null
-                  : (value) =>
-                      c.setAppearance(a.copyWith(wallpaperOverlay: value)))
-        ]),
         child: LayoutBuilder(builder: (context, box) {
           final width = (box.maxWidth - Design.px(36)) / 4;
           return Wrap(
@@ -1085,7 +1071,7 @@ class SourceSettings extends StatelessWidget {
                             c.command('system-navigation-hidden', enabled: v)
                         : null),
                 Row(children: [
-                  Text('UNI 0.6.4 · xyz.i4o.uni.launcher',
+                  Text('UNI 0.6.5 · xyz.i4o.uni.launcher',
                       style:
                           TextStyle(fontSize: Design.px(18), color: s.muted)),
                   const Spacer(),

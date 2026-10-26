@@ -152,8 +152,13 @@ class WeatherForecast {
 
 class WeatherSnapshot {
   final WeatherKind condition;
-  final bool night, available;
-  final String city, description, source, forecastSource, forecastReason;
+  final bool night, available, forecastCityFallback;
+  final String city,
+      description,
+      source,
+      forecastSource,
+      forecastReason,
+      forecastLocation;
   final num? temperature,
       apparentTemperature,
       humidity,
@@ -171,6 +176,8 @@ class WeatherSnapshot {
       required this.forecastSource,
       required this.forecastReason,
       required this.forecasts,
+      this.forecastLocation = '',
+      this.forecastCityFallback = false,
       this.temperature,
       this.apparentTemperature,
       this.humidity,
@@ -219,6 +226,8 @@ class WeatherSnapshot {
                 ? '天气示例'
                 : '',
         forecastReason: '${raw['forecastReason'] ?? ''}',
+        forecastLocation: '${raw['forecastLocation'] ?? ''}',
+        forecastCityFallback: raw['forecastCityFallback'] == true,
         forecasts: forecasts.isNotEmpty
             ? forecasts
             : demo

@@ -5,15 +5,22 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.display.VirtualDisplay;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Rect;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
+import android.view.PixelCopy;
+import android.view.Surface;
+import android.view.SurfaceView;
 import android.widget.FrameLayout;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.StandardMessageCodec;
 import io.flutter.plugin.platform.PlatformView;
 import io.flutter.plugin.platform.PlatformViewFactory;
+import io.flutter.view.TextureRegistry;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,19 +33,24 @@ import xyz.i4o.uni.launcher.integration.NavigationApps;
 public final class EmbeddedNavigationFactory extends PlatformViewFactory {
     private final Activity activity;
     private final BinaryMessenger messenger;
+    private final TextureRegistry textures;
+    private final java.util.concurrent.ExecutorService previewWorker=java.util.concurrent.Executors.newSingleThreadExecutor();
     private final Map<Integer,EmbeddedView> views=new HashMap<>();
     private boolean hostVisible=true;
-    public EmbeddedNavigationFactory(Activity activity,BinaryMessenger messenger){super(StandardMessageCodec.INSTANCE);this.activity=activity;this.messenger=messenger;}
+    public EmbeddedNavigationFactory(Activity activity,BinaryMessenger messenger,TextureRegistry textures){super(StandardMessageCodec.INSTANCE);this.activity=activity;this.messenger=messenger;this.textures=textures;}
     @Override public PlatformView create(Context context,int id,Object args){
         EmbeddedView view=new EmbeddedView(context,id);views.put(id,view);return view;
     }
     public void setVisible(boolean visible){hostVisible=visible;for(EmbeddedView view:views.values()){
         view.applyVisibility();
     }}
+    public void preparePageChange(){for(EmbeddedView view:views.values()){
+        view.requestedVisible=false;view.applyVisibility();
+    }}
     public org.json.JSONArray snapshot(){org.json.JSONArray result=new org.json.JSONArray();for(EmbeddedView view:views.values())try{
         result.put(new org.json.JSONObject(view.status).put("viewId",view.id).put("displayId",view.displayId).put("hostVisible",hostVisible).put("cardVisible",view.requestedVisible));
     }catch(Exception ignored){}return result;}
-    public void close(){for(EmbeddedView v:views.values().toArray(new EmbeddedView[0]))v.dispose();}
+    public void close(){for(EmbeddedView v:views.values().toArray(new EmbeddedView[0]))v.dispose();previewWorker.shutdownNow();}
     private final class EmbeddedView implements PlatformView {
         final FrameLayout root;
         final MethodChannel channel;
@@ -47,6 +59,12 @@ public final class EmbeddedNavigationFactory extends PlatformViewFactory {
         Object activityView;
         VirtualDisplay boundDisplay;
         boolean disposed,started,requestedVisible=true;
+        Boolean appliedVisible;
+        TextureRegistry.SurfaceTextureEntry preview;
+        boolean copying,hasPreview;
+        int frameAttempts,visibilityGeneration;
+        final Handler copyHandler=new Handler(Looper.getMainLooper());
+        final Runnable refreshPreview=()->captureFrame(false);
         int attempts,slotAttempts,placementAttempts,displayId=-1;
         Map<String,Object> status=new HashMap<>();
         EmbeddedView(Context context,int id){
@@ -67,25 +85,33 @@ public final class EmbeddedNavigationFactory extends PlatformViewFactory {
         void surfaceVisibility(View view,boolean visible){
             // On this Android 9 firmware, hiding only the parent leaves the
             // SurfaceControl visible at unscaled coordinates above Flutter.
-            if(view instanceof android.view.SurfaceView)view.setVisibility(visible?View.VISIBLE:View.GONE);
+            if(view instanceof android.view.SurfaceView)view.setVisibility(visible?View.VISIBLE:View.INVISIBLE);
             if(view instanceof android.view.ViewGroup){android.view.ViewGroup group=(android.view.ViewGroup)view;for(int i=0;i<group.getChildCount();i++)surfaceVisibility(group.getChildAt(i),visible);}
         }
         void applyVisibility(){
+            boolean show=visible();
+            if(appliedVisible!=null&&appliedVisible==show)return;
+            appliedVisible=show;visibilityGeneration++;
             handler.removeCallbacksAndMessages(null);
-            if(activityView instanceof View){
-                View embedded=(View)activityView;
-                surfaceVisibility(embedded,visible());
-            }
+            if(activityView instanceof View)surfaceVisibility((View)activityView,false);
             // Retain the ActivityView and its display. Detaching/reparenting on
             // every page/modal transition races Surface reconstruction.
-            root.setVisibility(visible()?View.VISIBLE:View.INVISIBLE);
+            root.setVisibility(View.INVISIBLE);
             if(visible()){
-                if(activityView==null)handler.post(this::start);
-                else {attempts=0;placementAttempts=0;state("loading","正在恢复地图画面");handler.postDelayed(this::awaitDisplay,150);}
+                state("loading","正在恢复地图画面");
+                // Let the incoming Flutter workspace reach the compositor before
+                // revealing Android's independent Surface at its final bounds.
+                handler.postDelayed(()->{
+                    if(!visible())return;
+                    root.setVisibility(View.VISIBLE);
+                    if(activityView==null)start();
+                    else {surfaceVisibility((View)activityView,true);attempts=0;placementAttempts=0;frameAttempts=0;handler.postDelayed(this::awaitDisplay,80);}
+                },180);
             }else state("paused","地图已隐藏");
         }
         void state(String phase,String reason){
             status=new HashMap<>();status.put("phase",phase);status.put("reason",reason);status.put("ready","ready".equals(phase));
+            if(hasPreview&&preview!=null)status.put("previewTextureId",preview.id());
             if(!disposed)channel.invokeMethod("status",status);
         }
         void start(){
@@ -177,7 +203,7 @@ public final class EmbeddedNavigationFactory extends PlatformViewFactory {
                     if(names==null)continue;
                     boolean matches=false;for(String name:names)if(name!=null&&name.startsWith(pkg+"/"))matches=true;
                     if(!matches)continue;
-                    if(source==displayId){state("ready","地图已进入卡片");return;}
+                    if(source==displayId){captureFrame(true);return;}
                     // Only move the selected app's own single-task stack.
                     // Never move a stack that also contains another app.
                     if(names.length==1)candidate=type.getField("stackId").getInt(stack);
@@ -194,8 +220,68 @@ public final class EmbeddedNavigationFactory extends PlatformViewFactory {
             android.util.Log.i("UniMap","Embedding unavailable",error);
             release();state("failed","地图无法嵌入，请使用全屏入口或核对系统授权");
         }
+        SurfaceView mapSurface(View view){
+            if(view instanceof SurfaceView)return (SurfaceView)view;
+            if(view instanceof android.view.ViewGroup){
+                android.view.ViewGroup group=(android.view.ViewGroup)view;
+                for(int i=0;i<group.getChildCount();i++){SurfaceView found=mapSurface(group.getChildAt(i));if(found!=null)return found;}
+            }return null;
+        }
+        boolean hasContent(Bitmap bitmap){
+            // Reject an unfilled Surface, not a genuinely dark/night map.
+            int colored=0;
+            for(int y=1;y<8;y++)for(int x=1;x<12;x++){
+                int color=bitmap.getPixel(bitmap.getWidth()*x/12,bitmap.getHeight()*y/8);
+                if(((color>>16)&255)>3||((color>>8)&255)>3||(color&255)>3)colored++;
+            }return colored>3;
+        }
+        void captureFrame(boolean restoring){
+            if(disposed||!visible()||activityView==null)return;
+            if(copying){if(restoring)handler.postDelayed(()->captureFrame(true),80);return;}
+            SurfaceView surface=mapSurface((View)activityView);
+            if(surface==null||!surface.getHolder().getSurface().isValid()||surface.getWidth()<2||surface.getHeight()<2){
+                if(restoring&&++frameAttempts<30)handler.postDelayed(()->captureFrame(true),80);return;
+            }
+            int width=Math.min(960,surface.getWidth()),height=Math.max(2,width*surface.getHeight()/surface.getWidth());
+            Bitmap frame=Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888);
+            int generation=visibilityGeneration;copying=true;
+            try{PixelCopy.request(surface,frame,result->{
+                if(disposed||generation!=visibilityGeneration||!visible()){copying=false;frame.recycle();return;}
+                if(result==PixelCopy.SUCCESS&&hasContent(frame)){
+                    try{
+                        if(preview==null)preview=textures.createSurfaceTexture();
+                        preview.surfaceTexture().setDefaultBufferSize(width,height);
+                        final Surface target=new Surface(preview.surfaceTexture());
+                        // A Surface buffer queue may wait for Flutter to consume
+                        // its previous texture. Never block the Android UI thread.
+                        previewWorker.execute(()->{
+                            boolean drawn=false;
+                            try{
+                                Canvas canvas=target.lockCanvas(null);
+                                try{canvas.drawBitmap(frame,null,new Rect(0,0,canvas.getWidth(),canvas.getHeight()),null);}
+                                finally{target.unlockCanvasAndPost(canvas);}
+                                drawn=true;
+                            }catch(RuntimeException e){android.util.Log.d("UniMap","Preview not ready: "+e.getClass().getSimpleName());}
+                            finally{target.release();frame.recycle();}
+                            final boolean success=drawn;
+                            copyHandler.post(()->{
+                                copying=false;
+                                if(disposed||generation!=visibilityGeneration||!visible())return;
+                                hasPreview=hasPreview||success;frameAttempts=0;state("ready","地图已进入卡片");
+                                handler.removeCallbacks(refreshPreview);handler.postDelayed(refreshPreview,4000);
+                            });
+                        });
+                    }catch(RuntimeException e){copying=false;frame.recycle();if(restoring)state("ready","地图已进入卡片");}
+                }else{
+                    copying=false;frame.recycle();
+                    if(restoring&&++frameAttempts<30)handler.postDelayed(()->captureFrame(true),80);
+                    else if(restoring)state("loading","等待地图绘制画面");
+                }
+            },copyHandler);}catch(RuntimeException e){copying=false;frame.recycle();if(restoring)state("ready","地图已进入卡片");}
+        }
         void release(){
-            handler.removeCallbacksAndMessages(null);started=false;displayId=-1;boundDisplay=null;
+            handler.removeCallbacksAndMessages(null);visibilityGeneration++;started=false;displayId=-1;boundDisplay=null;
+            if(preview!=null){preview.release();preview=null;}hasPreview=false;
             if(activityView!=null)try{activityView.getClass().getMethod("release").invoke(activityView);}catch(Throwable ignored){}
             root.removeAllViews();activityView=null;
         }

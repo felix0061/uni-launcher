@@ -258,11 +258,12 @@ void main() {
     expect(find.byKey(const ValueKey('tpms-1')), findsOneWidget);
     c.setAppearance(c.appearance.copyWith(pageTransition: 'fade'));
     await t.pumpAndSettle();
-    c.switchPage(0);
+    await c.switchPage(0);
     await t.pump();
     expect(
         find.descendant(
-            of: find.byType(DesktopPageStack), matching: find.byType(Opacity)),
+            of: find.byType(DesktopPageStack),
+            matching: find.byType(FadeTransition)),
         findsOneWidget);
     expect(find.byKey(const ValueKey('nav-1')), findsOneWidget);
     expect(find.byKey(const ValueKey('tpms-1')), findsNothing);
@@ -271,13 +272,17 @@ void main() {
     expect(find.byKey(const ValueKey('tpms-1')), findsNothing);
     c.setAppearance(c.appearance.copyWith(pageTransition: 'none'));
     await t.pumpAndSettle();
-    c.switchPage(1);
+    await c.switchPage(1);
     await t.pump();
     expect(find.byKey(const ValueKey('nav-1')), findsNothing);
     expect(
-        find.descendant(
-            of: find.byType(DesktopPageStack), matching: find.byType(Opacity)),
-        findsNothing);
+        t
+            .widget<FadeTransition>(find.descendant(
+                of: find.byType(DesktopPageStack),
+                matching: find.byType(FadeTransition)))
+            .opacity
+            .value,
+        1);
     expect(t.takeException(), null);
   });
   testWidgets('System reduced motion disables workspace animation', (t) async {
@@ -289,11 +294,69 @@ void main() {
                 effect: 'slide',
                 children: [Text('page 1'), Text('page 2')]))));
     expect(
-        find.descendant(
-            of: find.byType(DesktopPageStack),
-            matching: find.byType(FractionalTranslation)),
-        findsNothing);
+        t
+            .widget<SlideTransition>(find.descendant(
+                of: find.byType(DesktopPageStack),
+                matching: find.byType(SlideTransition)))
+            .position
+            .value,
+        Offset.zero);
     expect(find.text('page 1'), findsOneWidget);
     expect(find.text('page 2'), findsNothing);
   });
+
+  testWidgets('workspace animations retain mounted native-card state',
+      (t) async {
+    final initialized = <int>[], disposed = <int>[];
+    final children = [
+      for (int i = 0; i < 2; i++)
+        _LifetimeProbe(index: i, initialized: initialized, disposed: disposed)
+    ];
+    Future<void> show(int page, String effect) async {
+      await t.pumpWidget(MaterialApp(
+          home: DesktopPageStack(
+              page: page, effect: effect, children: children)));
+    }
+
+    await show(0, 'slide');
+    expect(initialized, [0, 1]);
+    for (final effect in ['slide', 'fade', 'none', 'slide']) {
+      await show(1, effect);
+      await t.pump(const Duration(milliseconds: 60));
+      await show(0, effect); // Reverse before the previous motion completes.
+      await t.pumpAndSettle();
+      expect(initialized, [0, 1],
+          reason: '$effect must not recreate map/card state');
+      expect(disposed, isEmpty,
+          reason: 'finishing motion must not detach native views');
+    }
+    await t.pumpWidget(const SizedBox.shrink());
+    expect(disposed, containsAll([0, 1]));
+  });
+}
+
+class _LifetimeProbe extends StatefulWidget {
+  final int index;
+  final List<int> initialized, disposed;
+  const _LifetimeProbe(
+      {required this.index, required this.initialized, required this.disposed});
+  @override
+  State<_LifetimeProbe> createState() => _LifetimeProbeState();
+}
+
+class _LifetimeProbeState extends State<_LifetimeProbe> {
+  @override
+  void initState() {
+    super.initState();
+    widget.initialized.add(widget.index);
+  }
+
+  @override
+  void dispose() {
+    widget.disposed.add(widget.index);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Text('workspace ${widget.index}');
 }

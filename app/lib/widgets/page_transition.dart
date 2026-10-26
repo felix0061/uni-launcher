@@ -1,5 +1,22 @@
 import 'package:flutter/material.dart';
 
+/// A native Android Surface must stay still while Flutter animates its cached
+/// preview. Showing it only after motion settles avoids hybrid-composition
+/// relocation and a newly created black Surface covering the incoming page.
+class DesktopMotionScope extends InheritedWidget {
+  final bool moving;
+  const DesktopMotionScope(
+      {super.key, required this.moving, required super.child});
+  static bool movingOf(BuildContext context) =>
+      context
+          .dependOnInheritedWidgetOfExactType<DesktopMotionScope>()
+          ?.moving ??
+      false;
+  @override
+  bool updateShouldNotify(DesktopMotionScope oldWidget) =>
+      moving != oldWidget.moving;
+}
+
 /// Keeps every desktop page mounted (including the Android map surface) while
 /// animating the Flutter card layer. This avoids recreating the navigation app
 /// and still gives the familiar launcher fade/slide transitions on car builds.
@@ -87,46 +104,52 @@ class _DesktopPageStackState extends State<DesktopPageStack>
   @override
   Widget build(BuildContext context) {
     if (widget.children.isEmpty) return const SizedBox.shrink();
+    final moving = !_motionDisabled && _fromPage != _toPage;
     return ClipRect(
-        child: AnimatedBuilder(
-            animation: _curve,
-            builder: (context, _) {
-              final moving = !_motionDisabled && _fromPage != _toPage;
-              final value = moving ? _curve.value : 1.0;
-              return Stack(fit: StackFit.expand, children: [
-                for (var i = 0; i < widget.children.length; i++)
-                  Positioned.fill(
-                      key: ValueKey('desktop-motion-page-$i'),
-                      child: Offstage(
-                          // Painting and laying out both card-heavy pages made
-                          // Android 9 miss frames. The incoming workspace alone
-                          // carries the short transition over the stable scene.
-                          offstage: i != _toPage,
-                          child: IgnorePointer(
-                              ignoring: i != _toPage,
-                              child: ExcludeSemantics(
-                                  excluding: i != _toPage,
-                                  child: TickerMode(
-                                      enabled: i == _toPage,
-                                      child: RepaintBoundary(
-                                          child: _animatedPage(
-                                              i, moving, value))))))),
-              ]);
-            }));
+        child: Stack(fit: StackFit.expand, children: [
+      for (var i = 0; i < widget.children.length; i++)
+        Positioned.fill(
+            key: ValueKey('desktop-motion-page-$i'),
+            child: Offstage(
+                // Painting and laying out both card-heavy pages made
+                // Android 9 miss frames. The incoming workspace alone
+                // carries the short transition over the stable scene.
+                offstage: i != _toPage,
+                child: IgnorePointer(
+                    ignoring: i != _toPage,
+                    child: ExcludeSemantics(
+                        excluding: i != _toPage,
+                        child: TickerMode(
+                            enabled: i == _toPage,
+                            child: RepaintBoundary(
+                                child: _animatedPage(i, moving))))))),
+    ]));
   }
 
-  Widget _animatedPage(int index, bool moving, double value) {
+  Widget _animatedPage(int index, bool moving) {
     // Clip each page before translating it. Card shadows deliberately overflow
     // their grid cells, but must never bleed into an adjacent desktop page.
-    final framed = ClipRect(
-        key: ValueKey('desktop-motion-frame-$index'),
-        child: widget.children[index]);
-    if (!moving) return framed;
-    if (widget.effect == 'fade')
-      return Opacity(opacity: .72 + .28 * value, child: framed);
-    final offset = _direction * .08 * (1 - value);
-    return FractionalTranslation(
-        translation: Offset(offset.toDouble(), 0), child: framed);
+    final framed = DesktopMotionScope(
+        moving: moving && index == _toPage,
+        child: ClipRect(
+            key: ValueKey('desktop-motion-frame-$index'),
+            child: widget.children[index]));
+    // Transition widgets update their render layers directly. Do not rebuild
+    // every Offstage/card tree from an AnimatedBuilder on every frame.
+    // Keep BOTH wrappers mounted even at rest. Inserting/removing a wrapper
+    // destroys the card subtree (including ActivityView and its virtual display).
+    final active = moving && index == _toPage;
+    return SlideTransition(
+        position: active && widget.effect == 'slide'
+            ? Tween<Offset>(
+                    begin: Offset(_direction * .08, 0), end: Offset.zero)
+                .animate(_curve)
+            : const AlwaysStoppedAnimation(Offset.zero),
+        child: FadeTransition(
+            opacity: active && widget.effect == 'fade'
+                ? Tween<double>(begin: .85, end: 1).animate(_curve)
+                : const AlwaysStoppedAnimation(1),
+            child: framed));
   }
 }
 

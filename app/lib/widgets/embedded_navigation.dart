@@ -9,6 +9,7 @@ import '../theme/design_tokens.dart';
 import 'glass_surface.dart';
 import 'uni_icon.dart';
 import 'navigation_app_picker.dart';
+import 'page_transition.dart';
 
 /// Desktop preview must never start a second map instance.
 class EmbeddedContentPolicy extends InheritedWidget {
@@ -87,7 +88,9 @@ class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
   void syncVisibility(bool visible) {
     desiredVisible = visible;
     final current = channel;
-    if (current == null || sentVisible == visible) return;
+    if (current == null ||
+        (sentVisible == visible && !(visible && status['phase'] == 'paused')))
+      return;
     sentVisible = visible;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && channel == current && desiredVisible == visible) {
@@ -104,9 +107,11 @@ class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
     final displayName = c.appName(
         {'package': package, 'label': widget.navigation['label'] ?? '高德地图'});
     final allowed = EmbeddedContentPolicy.allowed(context);
+    final moving = DesktopMotionScope.movingOf(context);
     // Offstage alone does not hide Android 9's independently composited SurfaceView.
     syncVisibility(allowed &&
         EmbeddedContentPolicy.visibleOf(context) &&
+        !moving &&
         !c.settings &&
         (ModalRoute.of(context)?.isCurrent ?? true));
     final canEmbed = widget.navigation['canEmbed'] == true &&
@@ -148,7 +153,16 @@ class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
       Expanded(
           child: canEmbed && !failed
               ? Stack(children: [
+                  // Consume the cached texture while live native content covers
+                  // it, so its producer cannot fill an unread buffer queue.
+                  if (status['previewTextureId'] is num)
+                    Positioned.fill(
+                        key: const ValueKey('map-preview-background'),
+                        child: Texture(
+                            textureId:
+                                (status['previewTextureId'] as num).toInt())),
                   Positioned.fill(
+                      key: const ValueKey('map-native-surface'),
                       child: PlatformViewLink(
                           key: ValueKey('native-map-$package'),
                           viewType: 'xyz.i4o.uni.launcher/navigation',
@@ -178,8 +192,17 @@ class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
                             controller.create();
                             return controller;
                           })),
-                  if (status['ready'] != true)
-                    const Center(child: CircularProgressIndicator()),
+                  if (status['ready'] != true || moving)
+                    Positioned.fill(
+                        key: const ValueKey('map-restoring-preview'),
+                        child: status['previewTextureId'] is num
+                            ? Texture(
+                                textureId:
+                                    (status['previewTextureId'] as num).toInt())
+                            : ColoredBox(
+                                color: s.strong.withValues(alpha: 1),
+                                child: const Center(
+                                    child: CircularProgressIndicator()))),
                 ])
               : Center(
                   child: Padding(

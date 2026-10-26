@@ -124,6 +124,15 @@ class WeatherDetailsContent extends StatelessWidget {
             style: TextStyle(
                 fontSize: Design.px(27), fontWeight: FontWeight.w500)),
         SizedBox(width: Design.px(16)),
+        if (weather.forecastLocation.isNotEmpty) ...[
+          Flexible(
+              child: Text(
+                  '${weather.forecastLocation}${weather.forecastCityFallback ? ' · 城市预报' : ''}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: Design.px(17), color: s.muted))),
+          SizedBox(width: Design.px(16)),
+        ],
         if (weather.forecastUpdatedAtMs != null)
           Text('更新于 ${_time(weather.forecastUpdatedAtMs)}',
               style: TextStyle(fontSize: Design.px(17), color: s.muted)),
