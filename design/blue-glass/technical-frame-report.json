@@ -1,0 +1,143 @@
+{
+  "checks": [
+    {
+      "name": "home-dark-technical: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "home-dark-technical: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "home-dark-technical: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "home-dark-technical: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "home-dark-technical: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "home-dark-technical: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "home-dark-technical: eight static corner segments on square panels",
+      "passed": true
+    },
+    {
+      "name": "home-dark-technical: examples labelled",
+      "passed": true
+    },
+    {
+      "name": "home-light-technical: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "home-light-technical: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "home-light-technical: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "home-light-technical: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "home-light-technical: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "home-light-technical: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "home-light-technical: eight static corner segments on square panels",
+      "passed": true
+    },
+    {
+      "name": "home-light-technical: examples labelled",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-technical: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-technical: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-technical: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-technical: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-technical: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-technical: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "vehicle: horizontal car and separate tyre labels",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-technical: eight static corner segments on square panels",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark-technical: examples labelled",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-technical: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-technical: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-technical: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-technical: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-technical: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-technical: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "settings-dark-technical: eight static corner segments on square panels",
+      "passed": true
+    },
+    {
+      "name": "settings: preview ratio is 16:9",
+      "passed": true
+    }
+  ],
+  "runtimeErrors": [],
+  "screenshots": [
+    "home-dark-technical.png",
+    "home-light-technical.png",
+    "vehicle-dark-technical.png",
+    "settings-dark-technical.png"
+  ]
+}
