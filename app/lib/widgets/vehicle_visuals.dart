@@ -113,9 +113,8 @@ class VehicleDoorSnapshot {
 }
 
 /// Horizontal TPMS visual traced from the supplied Lynk & Co 05 top view.
-/// It deliberately uses a lightweight vector painter so theme colors,
-/// dark/light modes and optional opening states remain live without maintaining
-/// separate raster assets.
+/// The vehicle stays in its own center lane. Each reading is anchored outside
+/// the artwork beside its matching wheel, so no label can cover the trace.
 class TireDiagram extends StatelessWidget {
   static const _vehicleAspect = 1826 / 833;
   final Map<String, dynamic> native;
@@ -126,52 +125,65 @@ class TireDiagram extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = SurfaceStyle.of(context);
     final doors = VehicleDoorSnapshot.fromNative(native, nowMs: nowMs);
-    final tires = <_TirePosition>[
-      _TirePosition('左后', 'pressureRearLeft', Alignment.topLeft),
-      _TirePosition('左前', 'pressureFrontLeft', Alignment.topRight),
-      _TirePosition('右后', 'pressureRearRight', Alignment.bottomLeft),
-      _TirePosition('右前', 'pressureFrontRight', Alignment.bottomRight),
-    ];
     return LayoutBuilder(builder: (context, box) {
       final compact =
           box.maxHeight < Design.px(250) || box.maxWidth < Design.px(430);
-      final nodeWidth = math.min(
-          Design.px(compact ? 96 : 124), box.maxWidth * (compact ? .28 : .25));
-      final carInset = math.max(nodeWidth * .72, Design.px(62));
-      final carWidth = math.max(0.0, box.maxWidth - carInset * 2);
-      final carHeight = math.min(
-          box.maxHeight * (compact ? .58 : .62), carWidth / _vehicleAspect);
-      Widget node(_TirePosition tire) {
-        final reading = VehicleField.fromNative(native, tire.field,
+      final nodeWidth =
+          math.min(Design.px(compact ? 88 : 98), box.maxWidth * .3);
+      final nodeHeight = math.min(
+          Design.px(compact ? 45 : 64), math.max(0.0, box.maxHeight * .28));
+      final laneGap = Design.px(compact ? 5 : 9);
+      final laneHeight =
+          math.max(0.0, box.maxHeight - (nodeHeight + laneGap) * 2);
+      final carWidth =
+          math.min(box.maxWidth * .76, laneHeight * _vehicleAspect);
+      final carHeight = carWidth / _vehicleAspect;
+      final carLeft = (box.maxWidth - carWidth) / 2;
+      final carTop = (box.maxHeight - carHeight) / 2;
+      // The supplied trace points right: rear axle at 23%, front axle at 74%.
+      final rearX = carLeft + carWidth * .23;
+      final frontX = carLeft + carWidth * .74;
+
+      Widget node(String label, String field) {
+        final reading = VehicleField.fromNative(native, field,
             nowMs: nowMs ?? DateTime.now().millisecondsSinceEpoch);
         return _PressureNode(
-            label: tire.label,
+            key: ValueKey('tire-pressure-$field'),
+            label: label,
             value: reading.display(decimals: 2),
             available: reading.valid,
             compact: compact,
-            width: nodeWidth);
+            width: nodeWidth,
+            height: nodeHeight);
       }
+
+      Widget positionedNode(
+              String label, String field, double centerX, bool top) =>
+          Positioned(
+              left: (centerX - nodeWidth / 2)
+                  .clamp(0.0, math.max(0.0, box.maxWidth - nodeWidth)),
+              top: top ? 0 : math.max(0.0, box.maxHeight - nodeHeight),
+              width: nodeWidth,
+              height: nodeHeight,
+              child: node(label, field));
 
       return Semantics(
           label: '领克05胎压示意，${doors.statusLabel}',
           child: Stack(fit: StackFit.expand, children: [
             Positioned(
-                left: carInset,
-                right: carInset,
-                top: (box.maxHeight - carHeight) / 2,
+                left: carLeft,
+                width: carWidth,
+                top: carTop,
                 height: carHeight,
                 child: RepaintBoundary(
                     child: _Lynk05TopView(
                         key: const ValueKey('lynk-05-horizontal-vehicle'),
                         style: s,
                         doors: doors))),
-            for (final tire in tires)
-              Align(
-                  alignment: tire.alignment,
-                  child: Padding(
-                      padding: EdgeInsets.symmetric(
-                          vertical: Design.px(compact ? 2 : 7)),
-                      child: node(tire))),
+            positionedNode('左后', 'pressureRearLeft', rearX, true),
+            positionedNode('左前', 'pressureFrontLeft', frontX, true),
+            positionedNode('右后', 'pressureRearRight', rearX, false),
+            positionedNode('右前', 'pressureFrontRight', frontX, false),
             if (doors.anyOpen)
               Align(
                   alignment: Alignment.center,
@@ -194,22 +206,18 @@ class TireDiagram extends StatelessWidget {
   }
 }
 
-class _TirePosition {
-  final String label, field;
-  final Alignment alignment;
-  const _TirePosition(this.label, this.field, this.alignment);
-}
-
 class _PressureNode extends StatelessWidget {
   final String label, value;
   final bool available, compact;
-  final double width;
+  final double width, height;
   const _PressureNode(
-      {required this.label,
+      {super.key,
+      required this.label,
       required this.value,
       required this.available,
       required this.compact,
-      required this.width});
+      required this.width,
+      required this.height});
 
   @override
   Widget build(BuildContext context) {
@@ -217,6 +225,7 @@ class _PressureNode extends StatelessWidget {
     final color = available ? s.accent : s.muted;
     return SizedBox(
         width: width,
+        height: height,
         child: DecoratedBox(
             decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -230,46 +239,56 @@ class _PressureNode extends StatelessWidget {
                 border: Border.all(color: color.withValues(alpha: .22))),
             child: Padding(
                 padding: EdgeInsets.symmetric(
-                    horizontal: Design.px(compact ? 8 : 11),
-                    vertical: Design.px(compact ? 5 : 8)),
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Row(children: [
-                    Container(
-                        width: Design.px(4),
-                        height: Design.px(4),
-                        decoration: BoxDecoration(
-                            shape: BoxShape.circle, color: color)),
-                    SizedBox(width: Design.px(6)),
-                    Text(label,
-                        style: TextStyle(
-                            fontSize: Design.px(compact ? 12 : 14),
-                            height: 1,
-                            color: s.muted)),
-                  ]),
-                  SizedBox(height: Design.px(compact ? 3 : 6)),
-                  FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            Text(value,
-                                style: TextStyle(
-                                    fontSize: Design.px(compact ? 24 : 31),
-                                    height: 1,
-                                    fontWeight: FontWeight.w300,
-                                    fontFeatures: const [
-                                      FontFeature.tabularFigures()
-                                    ],
-                                    color: available ? s.text : s.muted)),
+                    horizontal: Design.px(compact ? 7 : 9),
+                    vertical: Design.px(compact ? 4 : 7)),
+                child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: SizedBox(
+                        width:
+                            math.max(0, width - Design.px(compact ? 14 : 18)),
+                        child:
+                            Column(mainAxisSize: MainAxisSize.min, children: [
+                          Row(children: [
+                            Container(
+                                width: Design.px(4),
+                                height: Design.px(4),
+                                decoration: BoxDecoration(
+                                    shape: BoxShape.circle, color: color)),
                             SizedBox(width: Design.px(6)),
-                            Text('bar',
+                            Text(label,
                                 style: TextStyle(
-                                    fontSize: Design.px(compact ? 11 : 13),
+                                    fontSize: Design.px(compact ? 12 : 14),
                                     height: 1,
                                     color: s.muted)),
-                          ])),
-                ]))));
+                          ]),
+                          SizedBox(height: Design.px(compact ? 3 : 6)),
+                          FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.baseline,
+                                  textBaseline: TextBaseline.alphabetic,
+                                  children: [
+                                    Text(value,
+                                        style: TextStyle(
+                                            fontSize:
+                                                Design.px(compact ? 24 : 31),
+                                            height: 1,
+                                            fontWeight: FontWeight.w300,
+                                            fontFeatures: const [
+                                              FontFeature.tabularFigures()
+                                            ],
+                                            color:
+                                                available ? s.text : s.muted)),
+                                    SizedBox(width: Design.px(6)),
+                                    Text('bar',
+                                        style: TextStyle(
+                                            fontSize:
+                                                Design.px(compact ? 11 : 13),
+                                            height: 1,
+                                            color: s.muted)),
+                                  ])),
+                        ]))))));
   }
 }
 
@@ -284,22 +303,18 @@ class _Lynk05TopView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget trace(double opacity) => Transform.rotate(
-          angle: math.pi,
-          child: Image.asset(
-            'assets/art/lynk-05-top-line.png',
-            fit: BoxFit.contain,
-            filterQuality: FilterQuality.high,
-            isAntiAlias: true,
-            gaplessPlayback: true,
-            color: style.accent.withValues(alpha: opacity),
-            colorBlendMode: BlendMode.srcIn,
-            semanticLabel: '领克05原图等比俯视线稿，车头向右',
-          ),
-        );
+    final trace = Image.asset(
+      'assets/art/lynk-05-top-line.png',
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
+      isAntiAlias: true,
+      gaplessPlayback: true,
+      color: style.accent.withValues(alpha: style.dark ? .86 : .76),
+      colorBlendMode: BlendMode.srcIn,
+      semanticLabel: '领克05原图等比俯视线稿，车头向右',
+    );
     return Stack(fit: StackFit.expand, children: [
-      trace(style.dark ? .18 : .12),
-      trace(style.dark ? .82 : .72),
+      trace,
       if (doors.anyOpen)
         CustomPaint(painter: _VehicleOpeningPainter(doors: doors)),
     ]);

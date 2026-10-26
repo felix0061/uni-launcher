@@ -395,10 +395,26 @@ void main() {
         lessThan(t.getCenter(find.text('2.42')).dy));
     expect(find.byKey(const ValueKey('lynk-05-horizontal-vehicle')),
         findsOneWidget);
+    final vehicleRect =
+        t.getRect(find.byKey(const ValueKey('lynk-05-horizontal-vehicle')));
+    for (final field in const [
+      'pressureFrontLeft',
+      'pressureFrontRight',
+      'pressureRearLeft',
+      'pressureRearRight'
+    ]) {
+      final pressureRect =
+          t.getRect(find.byKey(ValueKey('tire-pressure-$field')));
+      expect(pressureRect.overlaps(vehicleRect), isFalse,
+          reason: '$field must remain outside the vehicle artwork');
+      expect(pressureRect.center.dx,
+          inInclusiveRange(vehicleRect.left, vehicleRect.right),
+          reason: '$field stays aligned with its axle');
+    }
     final traces = t.widgetList<Image>(find.descendant(
         of: find.byKey(const ValueKey('lynk-05-horizontal-vehicle')),
         matching: find.byType(Image)));
-    expect(traces, hasLength(2));
+    expect(traces, hasLength(1));
     expect(
         traces.every((image) =>
             (image.image as AssetImage).assetName ==
