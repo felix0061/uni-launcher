@@ -125,106 +125,322 @@ class BatteryLevelBar extends StatelessWidget {
   }
 }
 
-/// Official-style energy flow: 发动机 — 电池 — 车轮 with per-segment direction.
-/// Only officially decoded states light a path; an invalid/unknown state keeps
-/// everything dim so a stale read can never look like a live flow.
-class EnergyFlowDiagram extends StatelessWidget {
+/// Official-state energy flow rendered as a compact technical schematic.
+/// Moving particles follow the actual direction decoded from the IP753 hybrid
+/// enum. Unknown or stale values keep every path dim.
+class EnergyFlowDiagram extends StatefulWidget {
   final String? state;
   const EnergyFlowDiagram({super.key, required this.state});
 
-  // (engine→battery right, battery→wheels right, wheels→battery left)
-  (bool, bool, bool, bool engineOn, bool batteryOn, bool wheelsOn) _plan() =>
-      switch (state) {
-        'ELECTRIC_DRIVE' || 'EAWD' => (false, true, false, false, true, true),
-        'ENGINE_ONLY' => (false, true, false, true, false, true),
-        'ENGINE_ONLY_AND_CHARGE' || 'STANDSTILL_ENGINE_ON_CHARGE' => (
-            true,
-            true,
-            false,
-            true,
-            true,
-            true
-          ),
-        'BOOST' => (true, true, false, true, true, true),
-        'MAIN_CHARGING' => (true, false, false, false, true, false),
-        'ENGINE_OFF_REGEN_BRAKE' ||
-        'ENGINE_ON_REGEN_BRAKE' ||
-        'ENGINE_ON_REGEN_BRAKE_CHARGE' =>
-          (
-            false,
-            false,
-            true,
-            state == 'ENGINE_ON_REGEN_BRAKE' ||
-                state == 'ENGINE_ON_REGEN_BRAKE_CHARGE',
-            true,
-            true
-          ),
-        'STANDSTILL_ENGINE_ON' => (false, false, false, true, false, false),
-        _ => (false, false, false, false, false, false),
-      };
+  @override
+  State<EnergyFlowDiagram> createState() => _EnergyFlowDiagramState();
+}
+
+class _EnergyFlowDiagramState extends State<EnergyFlowDiagram>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController controller;
+  Timer? cycle;
+  bool tickerEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1300));
+    _syncAnimation();
+  }
+
+  @override
+  void didUpdateWidget(covariant EnergyFlowDiagram oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.state != widget.state) _syncAnimation();
+  }
+
+  void _syncAnimation() {
+    cycle?.cancel();
+    final plan = _EnergyFlowPlan.fromState(widget.state);
+    if (!plan.hasFlow) {
+      controller.value = 0;
+      return;
+    }
+    controller.forward(from: 0);
+    cycle = Timer.periodic(const Duration(milliseconds: 1600), (_) {
+      if (mounted && tickerEnabled) controller.forward(from: 0);
+    });
+  }
+
+  @override
+  void dispose() {
+    cycle?.cancel();
+    controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    tickerEnabled = TickerMode.valuesOf(context).enabled;
     final s = SurfaceStyle.of(context);
-    final (chargeAB, driveBW, regenWB, engineOn, batteryOn, wheelsOn) = _plan();
-    Widget node(IconData icon, bool on, String label) =>
-        Column(mainAxisSize: MainAxisSize.min, children: [
-          Container(
-              width: Design.px(40),
-              height: Design.px(40),
-              decoration: BoxDecoration(
-                  color: on
-                      ? s.accent.withValues(alpha: .16)
-                      : s.muted.withValues(alpha: .10),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                      color: on ? s.accent : s.muted.withValues(alpha: .35),
-                      width: 1)),
-              child: Icon(icon,
-                  size: Design.px(22),
-                  color: on ? s.accent : s.muted.withValues(alpha: .7))),
-          SizedBox(height: Design.px(4)),
-          Text(label,
-              style: TextStyle(
-                  fontSize: Design.px(13),
-                  color: on ? s.text : s.muted.withValues(alpha: .8))),
-        ]);
-    Widget link({required bool on, required bool left}) => Expanded(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Container(
-              height: Design.px(2),
-              margin: EdgeInsets.symmetric(horizontal: Design.px(6)),
-              color: on ? s.accent : s.muted.withValues(alpha: .3)),
-          SizedBox(height: Design.px(2)),
-          Icon(left ? Icons.arrow_back : Icons.arrow_forward,
-              size: Design.px(18),
-              color: on ? s.accent : s.muted.withValues(alpha: .35)),
-        ]));
-    return Container(
-        padding: EdgeInsets.symmetric(
-            horizontal: Design.px(10), vertical: Design.px(8)),
-        decoration: BoxDecoration(
-            color: s.muted.withValues(alpha: .08),
-            borderRadius: BorderRadius.circular(s.radius * .4)),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-          node(Icons.local_gas_station, engineOn, '发动机'),
-          link(on: chargeAB || driveBW, left: false),
-          node(Icons.battery_charging_full, batteryOn, '电池'),
-          link(on: regenWB, left: true),
-          node(Icons.directions_car, wheelsOn, '车轮'),
-          if (regenWB)
-            Padding(
-                padding: EdgeInsets.only(left: Design.px(10)),
-                child: Text('能量回收',
-                    style:
-                        TextStyle(fontSize: Design.px(15), color: s.accent))),
-          if (state == 'MAIN_CHARGING')
-            Padding(
-                padding: EdgeInsets.only(left: Design.px(10)),
-                child: Text('充电中',
-                    style:
-                        TextStyle(fontSize: Design.px(15), color: s.accent))),
-        ]));
+    final plan = _EnergyFlowPlan.fromState(widget.state);
+    return Semantics(
+        label: '混动能量流，${vehicleEnergyLabels[widget.state] ?? '状态未同步'}',
+        child: Container(
+            height: Design.px(92),
+            decoration: BoxDecoration(
+                color: s.muted.withValues(alpha: .065),
+                borderRadius: BorderRadius.circular(s.radius * .42),
+                border: Border.all(color: s.edge.withValues(alpha: .72))),
+            child: ClipRRect(
+                borderRadius: BorderRadius.circular(s.radius * .42),
+                child: AnimatedBuilder(
+                    animation: controller,
+                    builder: (context, _) => CustomPaint(
+                        key: const ValueKey('hybrid-energy-flow'),
+                        painter: _EnergyFlowPainter(
+                            style: s,
+                            plan: plan,
+                            progress: controller.value))))));
+  }
+}
+
+@immutable
+class _EnergyFlowPlan {
+  final bool engineOn, batteryOn, wheelsOn;
+  final bool engineDrive, engineCharge, electricDrive, regen;
+  const _EnergyFlowPlan(
+      {this.engineOn = false,
+      this.batteryOn = false,
+      this.wheelsOn = false,
+      this.engineDrive = false,
+      this.engineCharge = false,
+      this.electricDrive = false,
+      this.regen = false});
+
+  factory _EnergyFlowPlan.fromState(String? state) => switch (state) {
+        'ELECTRIC_DRIVE' || 'EAWD' => const _EnergyFlowPlan(
+            batteryOn: true, wheelsOn: true, electricDrive: true),
+        'ENGINE_ONLY' => const _EnergyFlowPlan(
+            engineOn: true, wheelsOn: true, engineDrive: true),
+        'ENGINE_ONLY_AND_CHARGE' => const _EnergyFlowPlan(
+            engineOn: true,
+            batteryOn: true,
+            wheelsOn: true,
+            engineDrive: true,
+            engineCharge: true),
+        'STANDSTILL_ENGINE_ON_CHARGE' => const _EnergyFlowPlan(
+            engineOn: true, batteryOn: true, engineCharge: true),
+        'BOOST' => const _EnergyFlowPlan(
+            engineOn: true,
+            batteryOn: true,
+            wheelsOn: true,
+            engineDrive: true,
+            electricDrive: true),
+        // The firmware enum does not prove that a charge cable is attached.
+        // Keep the battery active without inventing a source or direction.
+        'MAIN_CHARGING' => const _EnergyFlowPlan(batteryOn: true),
+        'ENGINE_OFF_REGEN_BRAKE' =>
+          const _EnergyFlowPlan(batteryOn: true, wheelsOn: true, regen: true),
+        'ENGINE_ON_REGEN_BRAKE' => const _EnergyFlowPlan(
+            engineOn: true, batteryOn: true, wheelsOn: true, regen: true),
+        'ENGINE_ON_REGEN_BRAKE_CHARGE' => const _EnergyFlowPlan(
+            engineOn: true,
+            batteryOn: true,
+            wheelsOn: true,
+            engineCharge: true,
+            regen: true),
+        'STANDSTILL_ENGINE_ON' => const _EnergyFlowPlan(engineOn: true),
+        _ => const _EnergyFlowPlan(),
+      };
+
+  bool get hasFlow => engineDrive || engineCharge || electricDrive || regen;
+}
+
+class _EnergyFlowPainter extends CustomPainter {
+  final SurfaceStyle style;
+  final _EnergyFlowPlan plan;
+  final double progress;
+  const _EnergyFlowPainter(
+      {required this.style, required this.plan, required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    final engine = Offset(size.width * .13, size.height * .45);
+    final motor = Offset(size.width * .50, size.height * .45);
+    final wheels = Offset(size.width * .86, size.height * .45);
+    final battery = Offset(size.width * .50, size.height * .83);
+    final electric = style.accent;
+    const fuel = Color(0xffffb45c);
+    final dim = style.muted.withValues(alpha: .24);
+
+    Path line(Offset a, Offset b, {Offset? control}) {
+      final path = Path()..moveTo(a.dx, a.dy);
+      if (control == null) {
+        path.lineTo(b.dx, b.dy);
+      } else {
+        path.quadraticBezierTo(control.dx, control.dy, b.dx, b.dy);
+      }
+      return path;
+    }
+
+    final engineMotor = line(engine, motor);
+    final motorWheels = line(motor, wheels);
+    final batteryMotor = line(battery, motor);
+    final engineBattery = line(engine, battery,
+        control: Offset(size.width * .26, size.height * .84));
+
+    final carBody = Path()
+      ..moveTo(size.width * .54, size.height * .29)
+      ..quadraticBezierTo(size.width * .68, size.height * .20, size.width * .83,
+          size.height * .29)
+      ..quadraticBezierTo(size.width * .94, size.height * .45, size.width * .83,
+          size.height * .61)
+      ..quadraticBezierTo(size.width * .68, size.height * .70, size.width * .54,
+          size.height * .61)
+      ..quadraticBezierTo(size.width * .49, size.height * .45, size.width * .54,
+          size.height * .29)
+      ..close();
+    canvas.drawPath(
+        carBody,
+        Paint()
+          ..color = style.accent.withValues(alpha: .055)
+          ..style = PaintingStyle.fill);
+    canvas.drawPath(
+        carBody,
+        Paint()
+          ..color = style.accent.withValues(alpha: .18)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = Design.px(.8));
+
+    void flow(Path path, bool active, Color color, {bool reverse = false}) {
+      canvas.drawPath(
+          path,
+          Paint()
+            ..color = active ? color.withValues(alpha: .56) : dim
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = Design.px(active ? 2 : 1.1)
+            ..strokeCap = StrokeCap.round);
+      if (!active) return;
+      final metrics = path.computeMetrics().toList();
+      if (metrics.isEmpty) return;
+      final metric = metrics.first;
+      for (int i = 0; i < 3; i++) {
+        var t = (progress + i / 3) % 1;
+        if (reverse) t = 1 - t;
+        final tangent = metric.getTangentForOffset(metric.length * t);
+        if (tangent == null) continue;
+        canvas.drawCircle(
+            tangent.position,
+            Design.px(2.5),
+            Paint()
+              ..color = color
+              ..maskFilter = MaskFilter.blur(BlurStyle.normal, Design.px(2)));
+      }
+    }
+
+    flow(engineMotor, plan.engineDrive, fuel);
+    flow(motorWheels, plan.engineDrive || plan.electricDrive || plan.regen,
+        plan.electricDrive || plan.regen ? electric : fuel,
+        reverse: plan.regen);
+    flow(batteryMotor, plan.electricDrive || plan.regen, electric,
+        reverse: plan.regen);
+    flow(engineBattery, plan.engineCharge, fuel);
+
+    void labelNode(Offset center, String label, _EnergyGlyph glyph, bool active,
+        {Color? color}) {
+      final c = active ? (color ?? electric) : style.muted;
+      final radius = Design.px(17);
+      canvas.drawCircle(
+          center,
+          radius,
+          Paint()
+            ..color = c.withValues(alpha: active ? .14 : .065)
+            ..style = PaintingStyle.fill);
+      canvas.drawCircle(
+          center,
+          radius,
+          Paint()
+            ..color = c.withValues(alpha: active ? .7 : .28)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = Design.px(1));
+      _drawEnergyGlyph(canvas, center, Design.px(12), glyph,
+          c.withValues(alpha: active ? 1 : .55));
+      final text = TextPainter(
+          text: TextSpan(
+              text: label,
+              style: TextStyle(fontSize: Design.px(10.5), color: style.muted)),
+          textDirection: TextDirection.ltr)
+        ..layout();
+      text.paint(canvas,
+          Offset(center.dx - text.width / 2, center.dy + Design.px(20)));
+    }
+
+    labelNode(engine, '发动机', _EnergyGlyph.engine, plan.engineOn, color: fuel);
+    labelNode(motor, '电驱', _EnergyGlyph.motor, plan.hasFlow);
+    labelNode(wheels, '车轮', _EnergyGlyph.wheels, plan.wheelsOn);
+    labelNode(battery, '动力电池', _EnergyGlyph.battery, plan.batteryOn);
+  }
+
+  @override
+  bool shouldRepaint(covariant _EnergyFlowPainter oldDelegate) =>
+      oldDelegate.progress != progress ||
+      oldDelegate.plan != plan ||
+      oldDelegate.style != style;
+}
+
+enum _EnergyGlyph { engine, motor, battery, wheels }
+
+void _drawEnergyGlyph(Canvas canvas, Offset center, double radius,
+    _EnergyGlyph glyph, Color color) {
+  final paint = Paint()
+    ..color = color
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = math.max(1, Design.px(1.4))
+    ..strokeCap = StrokeCap.round
+    ..strokeJoin = StrokeJoin.round;
+  switch (glyph) {
+    case _EnergyGlyph.engine:
+      canvas.drawCircle(center, radius * .46, paint);
+      canvas.drawCircle(center, radius * .15, paint);
+      for (int i = 0; i < 6; i++) {
+        final angle = i * math.pi / 3;
+        canvas.drawLine(
+            center + Offset(math.cos(angle), math.sin(angle)) * radius * .50,
+            center + Offset(math.cos(angle), math.sin(angle)) * radius * .76,
+            paint);
+      }
+    case _EnergyGlyph.motor:
+      final bolt = Path()
+        ..moveTo(center.dx + radius * .12, center.dy - radius * .72)
+        ..lineTo(center.dx - radius * .43, center.dy + radius * .04)
+        ..lineTo(center.dx - radius * .03, center.dy + radius * .04)
+        ..lineTo(center.dx - radius * .14, center.dy + radius * .72)
+        ..lineTo(center.dx + radius * .47, center.dy - radius * .10)
+        ..lineTo(center.dx + radius * .08, center.dy - radius * .10)
+        ..close();
+      canvas.drawPath(bolt, paint);
+    case _EnergyGlyph.battery:
+      final rect = RRect.fromRectAndRadius(
+          Rect.fromCenter(
+              center: center, width: radius * 1.18, height: radius * .90),
+          Radius.circular(radius * .15));
+      canvas.drawRRect(rect, paint);
+      canvas.drawLine(
+          Offset(center.dx + radius * .59, center.dy - radius * .20),
+          Offset(center.dx + radius * .73, center.dy - radius * .20),
+          paint);
+      canvas.drawLine(
+          Offset(center.dx + radius * .59, center.dy + radius * .20),
+          Offset(center.dx + radius * .73, center.dy + radius * .20),
+          paint);
+      canvas.drawLine(Offset(center.dx - radius * .28, center.dy),
+          Offset(center.dx + radius * .28, center.dy), paint);
+    case _EnergyGlyph.wheels:
+      canvas.drawCircle(center, radius * .64, paint);
+      canvas.drawCircle(center, radius * .27, paint);
+      canvas.drawLine(Offset(center.dx - radius * .64, center.dy),
+          Offset(center.dx + radius * .64, center.dy), paint);
+      canvas.drawLine(Offset(center.dx, center.dy - radius * .64),
+          Offset(center.dx, center.dy + radius * .64), paint);
   }
 }
 

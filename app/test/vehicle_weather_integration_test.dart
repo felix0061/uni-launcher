@@ -387,10 +387,54 @@ void main() {
       expect(find.text(v), findsOneWidget);
     }
     expect(find.text('bar'), findsNWidgets(4));
-    expect(t.getCenter(find.text('2.41')).dx,
-        lessThan(t.getCenter(find.text('2.42')).dx));
+    // The Lynk 05 top view points to the right: left-side wheels are above the
+    // vehicle and the front axle is at the right-hand side of the card.
+    expect(t.getCenter(find.text('2.43')).dx,
+        lessThan(t.getCenter(find.text('2.41')).dx));
     expect(t.getCenter(find.text('2.41')).dy,
-        lessThan(t.getCenter(find.text('2.43')).dy));
+        lessThan(t.getCenter(find.text('2.42')).dy));
+    expect(find.byKey(const ValueKey('lynk-05-horizontal-vehicle')),
+        findsOneWidget);
+    final traces = t.widgetList<Image>(find.descendant(
+        of: find.byKey(const ValueKey('lynk-05-horizontal-vehicle')),
+        matching: find.byType(Image)));
+    expect(traces, hasLength(2));
+    expect(
+        traces.every((image) =>
+            (image.image as AssetImage).assetName ==
+            'assets/art/lynk-05-top-line.png'),
+        isTrue);
     expect(t.takeException(), null);
+  });
+
+  testWidgets('Optional door fields render without changing the TPMS contract',
+      (t) async {
+    const now = 1800000000000;
+    final native = <String, dynamic>{
+      'vehicle': {
+        'connected': true,
+        'fields': {
+          'doorFrontLeft': {'valid': true, 'value': true, 'updatedAtMs': now},
+          'doorFrontRight': {'valid': true, 'value': false, 'updatedAtMs': now},
+          'tailgateOpen': {'valid': true, 'value': 'OPEN', 'updatedAtMs': now},
+        }
+      }
+    };
+    final doors = VehicleDoorSnapshot.fromNative(native, nowMs: now);
+    expect(doors.hasData, isTrue);
+    expect(doors.anyOpen, isTrue);
+    expect(doors.statusLabel, contains('左前门'));
+    expect(doors.statusLabel, contains('尾门'));
+    await t.pumpWidget(MaterialApp(
+        theme: launcherTheme(SurfaceStyle.from(const Appearance(), true)),
+        home: Scaffold(
+            body: SizedBox(
+                width: 700,
+                height: 400,
+                child: TireDiagram(native: native, nowMs: now)))));
+    await t.pump();
+    expect(find.byKey(const ValueKey('vehicle-opening-alert')), findsOneWidget);
+    expect(find.text('车门开启'), findsOneWidget);
+    expect(t.takeException(), isNull);
   });
 }

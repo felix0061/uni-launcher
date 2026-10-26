@@ -3,6 +3,7 @@ import 'package:uni_launcher/model/appearance.dart';
 import 'package:uni_launcher/theme/launcher_theme.dart';
 import 'package:uni_launcher/widgets/glass_surface.dart';
 import 'package:uni_launcher/widgets/vehicle_cards.dart';
+import 'package:uni_launcher/widgets/vehicle_visuals.dart';
 
 enum VehicleGalleryState { live, disconnected, partial }
 
@@ -24,6 +25,10 @@ Map<String, dynamic> vehicleGalleryFixture(
       ('odometer', 18764.0, 'km'),
       ('range', 426.0, 'km'),
       ('maintenanceMileage', 3200.0, 'km'),
+      ('pressureFrontLeft', 2.41, 'bar'),
+      ('pressureFrontRight', 2.42, 'bar'),
+      ('pressureRearLeft', 2.43, 'bar'),
+      ('pressureRearRight', 2.44, 'bar'),
     ])
       item.$1: <String, dynamic>{
         'value': item.$2,
@@ -86,12 +91,13 @@ class VehicleCardGallery extends StatelessWidget {
             BatteryCard(native: native, nowMs: () => vehicleGalleryNow),
           'air' =>
             AirQualityCard(native: native, nowMs: () => vehicleGalleryNow),
+          'tpms' => TireDiagram(native: native, nowMs: vehicleGalleryNow),
           _ => DrivingInfoCard(native: native, nowMs: () => vehicleGalleryNow),
         };
     Widget row(bool compact) =>
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          for (final type in ['battery', 'air', 'vehicle']) ...[
-            if (type != 'battery') const SizedBox(width: 28),
+          for (final type in ['tpms', 'battery', 'air', 'vehicle']) ...[
+            if (type != 'tpms') const SizedBox(width: 28),
             Expanded(
                 child: Align(
                     alignment: Alignment.topLeft,

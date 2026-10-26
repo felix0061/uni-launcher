@@ -20,9 +20,12 @@ import 'media_source_badge.dart';
 import 'weather_icon.dart';
 import 'weather_details_sheet.dart';
 import 'vehicle_cards.dart';
+import 'vehicle_visuals.dart';
 import 'official_card_entry.dart';
 import '../model/weather_condition.dart';
 import '../model/vehicle_data.dart';
+
+export 'vehicle_visuals.dart' show TireDiagram, VehicleDoorSnapshot;
 
 part 'card_content_music.dart';
 part 'card_content_navigation.dart';

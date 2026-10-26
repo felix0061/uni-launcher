@@ -28,6 +28,11 @@ void main() {
         'radius-40'
       ),
     ];
+    await tester.pumpWidget(const VehicleCardGallery());
+    await tester.runAsync(() => precacheImage(
+        const AssetImage('assets/art/lynk-05-top-line.png'),
+        tester.element(find.byType(VehicleCardGallery))));
+    await tester.pumpAndSettle();
     for (final (appearance, state, suffix) in cases) {
       await tester
           .pumpWidget(VehicleCardGallery(appearance: appearance, state: state));

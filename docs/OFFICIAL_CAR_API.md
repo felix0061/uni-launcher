@@ -165,4 +165,18 @@ python3 tools/test_official_car.py --skip-android-compile
 
 三项状态在原有轮询中更新；保留源时间戳、读取时间、原始值与 apiVerified，实车同值验收之前 verified=false。UI 仍要求逐字段有效、5 秒新鲜度和已知枚举；驾驶模式与能量流可以分别缺失。动力电池卡片显示驾驶模式、能量流和独立的“外接充电待同步”，车辆详情另显示混动选择。
 
+动力电池卡片按上述 `energyFlow` 精确枚举绘制发动机、电驱、动力电池和车轮之间的有向路径。流动粒子仅在对应路径有有效状态时运行：燃油动力为暖橙色，电驱与回收为主题色，制动回收反向流向电池；未知或过期枚举不显示活动路径，也不从电量或 `MAIN_CHARGING` 推断外接充电流向。
+
 `HevImpl.getChargingManager()` 在本车实现中返回 null，不能仅靠 `ICharging` 的声明常量接通插枪状态。`getPaPmCharge()` / `0x24020200` 是 HYBRID_FUNC_BATTERY_CHARGE_MODE 的 ON/OFF，不是插枪状态。外接充电仍未接通。新增离线 `OfficialHybridReaderTest` 31 项校验覆盖 HAL 状态／类型、精确属性、ZigZag、未知枚举、缺失 PA 和不可信续航；不使用设备。本轮新增字段尚未上车采样。
+
+## 0.6.3 车门状态扩展契约
+
+当前 `OfficialCarReader` 没有向 Flutter 发布车门字段，因此界面不把未知状态显示成“已关闭”。已核对的 SystemUI 车辆 SDK 声明提供 `VehicleAPI.getBcm() → IBcm.getDoorAndWindowState()`；`IDoorAndWindow` 支持四门 `isDoorOpened/isDoorLocked`、四窗 `isWindowOpened` 以及状态监听，门位常量为前左 `1`、前右 `2`、后左 `3`、后右 `4`。这份 SDK 声明没有尾门或机舱盖常量，且尚未验证该 API 实现在自定义 Launcher 进程中可加载和读取，故本版不建立未经实车验证的 native 连接。
+
+横向车辆组件已预留标准字段 `doorFrontLeft`、`doorFrontRight`、`doorRearLeft`、`doorRearRight`、`tailgateOpen`、`hoodOpen`。每项沿用 `{valid,value,updatedAtMs}` 包装，`value` 为开门布尔值；允许只提供部分字段。有效开启状态以暖橙描边和“车门开启”提示展示，缺字段时不占界面空间。后续四门可接入上述 BCM 读取；尾门和机舱盖须找到并实车核对 IP753 对应属性后再写入，避免把锁止、车窗或默认 `false` 误当开闭状态。
+
+### 车辆线稿参考
+
+胎压卡直接使用用户提供的领克 05 多视图图稿中第一张俯视图提取出的透明线稿 [`lynk-05-top-line.png`](../app/assets/art/lynk-05-top-line.png)，不再以 Flutter `Path` 近似重画。资产固定为 `1826 × 833`（宽高比 `2.192`），组件只做等比缩放和主题色着色，保留外轮廓、前后风挡、分段全景天窗、机盖、后视镜、门缝、门把手、灯组和徽标的相对坐标、曲率与间距。
+
+同一图稿中的车尾、车头及左右侧视图保留为后续设计依据，用于完善车门、尾门、机舱盖、车窗、灯光和车身姿态状态；当前胎压卡不混入这些视角，在原车信号未经确认前也不展示推测状态。

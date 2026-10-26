@@ -388,6 +388,12 @@ void main() {
         'radius-40'
       ),
     ];
+    await t.pumpWidget(VehicleCardGallery(
+        fontFamily: output.isEmpty ? null : 'VehicleGalleryReview'));
+    await t.runAsync(() => precacheImage(
+        const AssetImage('assets/art/lynk-05-top-line.png'),
+        t.element(find.byType(VehicleCardGallery))));
+    await t.pumpAndSettle();
     for (final (appearance, state, suffix) in cases) {
       await t.pumpWidget(VehicleCardGallery(
           appearance: appearance,
