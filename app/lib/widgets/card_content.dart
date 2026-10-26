@@ -8,6 +8,7 @@ import '../theme/design_tokens.dart';
 import '../theme/launcher_theme.dart';
 import 'clock_card.dart';
 import 'clock_weather_card.dart';
+import 'account_details_sheet.dart';
 import 'glass_surface.dart';
 import 'launcher_dialog.dart';
 import 'uni_icon.dart';
@@ -202,9 +203,9 @@ class _Heading extends StatelessWidget {
 class _OpenCardButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
-  final bool arrowFirst, compact;
+  final bool compact;
   const _OpenCardButton(this.label,
-      {required this.onTap, this.arrowFirst = false, this.compact = false});
+      {required this.onTap, this.compact = false});
   @override
   Widget build(BuildContext context) {
     final s = SurfaceStyle.of(context);
@@ -219,11 +220,11 @@ class _OpenCardButton extends StatelessWidget {
                 padding: EdgeInsets.symmetric(horizontal: Design.px(12)),
                 textStyle: TextStyle(fontSize: Design.px(compact ? 18 : 20))),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              if (arrowFirst) ...[arrow, SizedBox(width: Design.px(10))],
               Flexible(
                   child: Text(label,
                       maxLines: 1, overflow: TextOverflow.ellipsis)),
-              if (!arrowFirst) ...[SizedBox(width: Design.px(10)), arrow],
+              SizedBox(width: Design.px(10)),
+              arrow,
             ])));
   }
 }

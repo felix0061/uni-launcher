@@ -138,12 +138,12 @@ public final class SystemStatusAdapter {
                 return j.put("known",false).put("reason",userInitState).put("apiVersion",call(userApi,"getVersionInt")).put("implementation",userApi.getClass().getName());
             }
             boolean logged=Boolean.TRUE.equals(call(userApi,"hasLogin"));
-            j.put("known",true).put("loggedIn",logged);
+            j.put("known",true).put("loggedIn",logged).put("source","user-api");
             if(logged){Object user=call(userApi,"getLoginUser");Object name=call(user,"getNickName");if(name instanceof String)j.put("name",((String)name).substring(0,Math.min(40,((String)name).length())));}
         }catch(Exception|LinkageError ignored){}return j;
     }
     /** The installed member centre's exported legacy SDK provider. Only login
-     * state, row identity and display name are consumed, never tokens/contact
+     * state, row identity, display name, avatar and membership level are consumed, never tokens/contact
      * fields. This firmware ignores projection, so no cursor is logged/serialized. */
     private JSONObject accountFromProvider(){
         if(context.getPackageManager().resolveContentProvider("com.ecarx.userProvider",0)==null)return null;
@@ -157,12 +157,16 @@ public final class SystemStatusAdapter {
                 if(c.getInt(login)!=1)return new JSONObject().put("known",true).put("loggedIn",false).put("source","member-provider");
                 if(key<0)return null;id=c.getString(key);if(id==null||id.isEmpty())return null;
             }
-            try(android.database.Cursor c=context.getContentResolver().query(uri,new String[]{"userName","userId"},"User",null,null)){
-                if(c==null)return null;int name=c.getColumnIndex("userName"),key=c.getColumnIndex("userId");
+            try(android.database.Cursor c=context.getContentResolver().query(uri,new String[]{"userName","userId","avatarUrl","level","levelName"},"User",null,null)){
+                if(c==null)return null;int name=c.getColumnIndex("userName"),key=c.getColumnIndex("userId"),avatar=c.getColumnIndex("avatarUrl"),level=c.getColumnIndex("level"),levelName=c.getColumnIndex("levelName");
                 if(name<0||key<0)return null;
                 while(c.moveToNext())if(id.equals(c.getString(key))){
                     String label=c.getString(name);if(label==null||label.trim().isEmpty())return null;
-                    return new JSONObject().put("known",true).put("loggedIn",true).put("name",label.substring(0,Math.min(40,label.length()))).put("source","member-provider");
+                    JSONObject result=new JSONObject().put("known",true).put("loggedIn",true).put("name",label.substring(0,Math.min(40,label.length()))).put("source","member-provider");
+                    if(avatar>=0&&!c.isNull(avatar)){String value=c.getString(avatar);if(value!=null&&(value.startsWith("https://")||value.startsWith("http://")))result.put("avatarUrl",value.substring(0,Math.min(2048,value.length())));}
+                    if(level>=0&&!c.isNull(level))result.put("memberLevel",Math.max(0,c.getInt(level)));
+                    if(levelName>=0&&!c.isNull(levelName)){String value=c.getString(levelName);if(value!=null&&!value.trim().isEmpty())result.put("memberLevelName",value.substring(0,Math.min(40,value.length())));}
+                    return result;
                 }
             }
         }catch(Exception|LinkageError ignored){}return null;

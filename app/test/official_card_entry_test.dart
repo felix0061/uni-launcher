@@ -9,7 +9,7 @@ import 'package:uni_launcher/widgets/glass_surface.dart';
 import 'fake_gateway.dart';
 
 void main() {
-  for (final type in ['calendar', 'member', 'cleanup']) {
+  for (final type in ['calendar', 'cleanup']) {
     testWidgets('$type has an OEM entry without claiming live fields',
         (t) async {
       final g = FakeGateway()..state['demo'] = false;
@@ -24,7 +24,7 @@ void main() {
               body: Center(
                   child: SizedBox(
                       width: 360,
-                      height: type == 'member' ? 420 : 230,
+                      height: 230,
                       child: GlassSurface(
                           padding: EdgeInsets.zero,
                           child: CardContent(card: card, controller: c)))))));
@@ -32,7 +32,6 @@ void main() {
       final button = find.widgetWithText(
           OutlinedButton,
           switch (type) {
-            'member' => '打开账号中心',
             'cleanup' => '打开清理',
             'calendar' => '打开日历',
             _ => '打开日历',
@@ -49,6 +48,68 @@ void main() {
       await g.dispose();
     });
   }
+  testWidgets('member card shows account summary and opens unified details',
+      (t) async {
+    t.view.physicalSize = const Size(1920, 1080);
+    t.view.devicePixelRatio = 1;
+    final g = FakeGateway()
+      ..state['demo'] = false
+      ..state['systemStatus'] = {
+        'account': {
+          'known': true,
+          'loggedIn': true,
+          'name': '车主账号',
+          'memberLevel': 4,
+          'memberLevelName': '银卡会员',
+          'source': 'member-provider'
+        }
+      };
+    final c = LauncherController(g);
+    await c.initialize();
+    final style = SurfaceStyle.from(const Appearance(mode: 'dark'), true);
+    const card = LauncherCard('member-live', 'member', '账号', 0, 0, 4, 3, 0);
+    await t.pumpWidget(MaterialApp(
+        theme: launcherTheme(style),
+        home: Scaffold(
+            body: Center(
+                child: SizedBox(
+                    width: 500,
+                    height: 380,
+                    child: GlassSurface(
+                        padding: EdgeInsets.zero,
+                        child: CardContent(card: card, controller: c)))))));
+    await t.pumpAndSettle();
+    expect(find.text('车主账号'), findsOneWidget);
+    expect(find.text('已登录'), findsOneWidget);
+    expect(find.text('银卡会员'), findsOneWidget);
+    expect(find.text('点击查看账号详情'), findsOneWidget);
+    expect(find.text('打开账号中心'), findsNothing);
+
+    await t.tap(find.byKey(const ValueKey('member-card-open')));
+    await t.pumpAndSettle();
+    expect(find.text('账号详情'), findsOneWidget);
+    expect(
+        find.byKey(const ValueKey('account-profile-detail')), findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byKey(const ValueKey('account-profile-detail')),
+            matching: find.text('车主账号')),
+        findsNWidgets(2));
+    expect(find.text('原车会员中心'), findsOneWidget);
+    expect(find.text('会员等级'), findsOneWidget);
+    expect(find.text('银卡会员'), findsNWidgets(2));
+
+    await t.tap(find.byKey(const ValueKey('account-open-center')));
+    await t.pumpAndSettle();
+    expect(g.commands.last['action'], 'official-widget');
+    expect(g.commands.last['value'], 'member');
+    expect(t.takeException(), isNull);
+    await t.pumpWidget(const SizedBox.shrink());
+    c.dispose();
+    await g.dispose();
+    t.view.resetPhysicalSize();
+    t.view.resetDevicePixelRatio();
+  });
   testWidgets('weather card opens the detailed forecast sheet', (t) async {
     t.view.physicalSize = const Size(1920, 1080);
     t.view.devicePixelRatio = 1;

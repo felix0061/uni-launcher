@@ -24,12 +24,19 @@ class _OemCard extends StatelessWidget {
     final s = SurfaceStyle.of(context), editing = controller.editing;
     final account =
         mapOf(mapOf(controller.native.value['systemStatus'])['account']);
+    final levelName = '${account['memberLevelName'] ?? ''}'.trim();
+    final level = (account['memberLevel'] as num?)?.toInt() ?? 0;
+    final levelLabel = levelName.isNotEmpty
+        ? levelName
+        : level > 0
+            ? 'Lv. $level'
+            : '';
     final calendar = mapOf(controller.native.value['calendar']);
     return LayoutBuilder(builder: (context, box) {
       final compact = box.maxHeight < Design.px(380);
       final title =
           card.type == 'member' && card.title == '领克账号' ? '账号' : card.title;
-      return _CardCanvas(
+      final content = _CardCanvas(
           minHeight: card.type == 'member'
               ? 340
               : card.type == 'tpms'
@@ -44,43 +51,72 @@ class _OemCard extends StatelessWidget {
             if (card.type == 'member') ...[
               Expanded(
                   child: Center(
-                      child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Container(
-                    width: Design.px(compact ? 72 : 140),
-                    height: Design.px(compact ? 72 : 140),
-                    decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: s.soft,
-                        border: Border.all(color: s.edge)),
-                    child: Center(
-                        child: UniIcon('user',
-                            size: Design.px(compact ? 38 : 70),
-                            color: s.accent))),
-                SizedBox(height: Design.px(compact ? 16 : 28)),
-                Text(
-                    account['known'] == true && account['loggedIn'] == true
-                        ? '${account['name'] ?? '领克账号'}'
-                        : '领克账号',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        fontSize: Design.px(compact ? 26 : 34), height: 1.2)),
-                SizedBox(height: Design.px(compact ? 10 : 14)),
-                Text(
-                    demo
-                        ? '演示数据'
-                        : account['known'] == true
-                            ? (account['loggedIn'] == true ? '已登录' : '未登录')
-                            : '账号状态未同步',
-                    style: TextStyle(
-                        fontSize: Design.px(compact ? 18 : 22),
-                        color: s.muted)),
+                      child: Row(children: [
+                AccountAvatar(
+                    account: account, size: Design.px(compact ? 72 : 116)),
+                SizedBox(width: Design.px(compact ? 18 : 26)),
+                Expanded(
+                    child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      Text(
+                          demo
+                              ? '演示账号'
+                              : account['known'] == true &&
+                                      account['loggedIn'] == true
+                                  ? '${account['name'] ?? '领克账号'}'
+                                  : '领克账号',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontSize: Design.px(compact ? 25 : 31),
+                              height: 1.2,
+                              fontWeight: FontWeight.w500)),
+                      SizedBox(height: Design.px(compact ? 10 : 13)),
+                      Row(children: [
+                        Container(
+                            width: Design.px(8),
+                            height: Design.px(8),
+                            decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: demo || account['loggedIn'] == true
+                                    ? s.accent
+                                    : s.muted)),
+                        SizedBox(width: Design.px(9)),
+                        Flexible(
+                            child: Text(
+                                demo
+                                    ? '演示数据'
+                                    : account['known'] == true
+                                        ? (account['loggedIn'] == true
+                                            ? '已登录'
+                                            : '未登录')
+                                        : '账号状态未同步',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    fontSize: Design.px(compact ? 17 : 20),
+                                    color: s.muted)))
+                      ]),
+                      if (levelLabel.isNotEmpty) ...[
+                        SizedBox(height: Design.px(compact ? 8 : 11)),
+                        Text(levelLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontSize: Design.px(compact ? 15 : 18),
+                                color: s.accent)),
+                      ],
+                      SizedBox(height: Design.px(compact ? 10 : 14)),
+                      Text('点击查看账号详情',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontSize: Design.px(compact ? 15 : 17),
+                              color: s.muted)),
+                    ]))
               ]))),
-              _OpenCardButton('打开账号中心',
-                  arrowFirst: true,
-                  compact: editing,
-                  onTap: () =>
-                      controller.command('official-widget', value: 'member')),
             ] else if (card.type == 'cleanup') ...[
               Expanded(
                   child: Row(children: [
@@ -220,6 +256,16 @@ class _OemCard extends StatelessWidget {
               const _StateLine('其他车型配置 · 本车未确认'),
             ],
           ]));
+      if (card.type != 'member') return content;
+      return Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+              key: const ValueKey('member-card-open'),
+              borderRadius: BorderRadius.circular(s.radius),
+              onTap: editing
+                  ? null
+                  : () => showAccountDetails(context, controller),
+              child: content));
     });
   }
 }
