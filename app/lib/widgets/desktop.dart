@@ -135,9 +135,7 @@ class _DesktopState extends State<Desktop> {
   @override
   Widget build(BuildContext context) {
     final c = controller;
-    // Android 9 surfaces cannot participate in Flutter's outgoing-page
-    // animation. Keep page elements mounted and only change their visibility.
-    // Other layouts retain the selected Flutter page transition.
+    // Keep pages and live map textures mounted while the workspace animates.
     final grids = <Widget>[
       for (int page = 0; page < c.pageCount; page++) _grid(context, page)
     ];

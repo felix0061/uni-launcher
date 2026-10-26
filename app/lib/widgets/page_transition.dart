@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
-/// A native Android Surface must stay still while Flutter animates its cached
-/// preview. Showing it only after motion settles avoids hybrid-composition
-/// relocation and a newly created black Surface covering the incoming page.
+/// Exposes workspace motion to cards without rebuilding their content per frame.
 class DesktopMotionScope extends InheritedWidget {
   final bool moving;
   const DesktopMotionScope(
@@ -19,7 +17,7 @@ class DesktopMotionScope extends InheritedWidget {
 }
 
 /// Keeps every desktop page mounted (including the Android map surface) while
-/// animating the Flutter card layer. This avoids recreating the navigation app
+/// animating the Flutter card layer. This avoids recreating the live map texture
 /// and still gives the familiar launcher fade/slide transitions on car builds.
 class DesktopPageStack extends StatefulWidget {
   final int page;
@@ -137,7 +135,7 @@ class _DesktopPageStackState extends State<DesktopPageStack>
     // Transition widgets update their render layers directly. Do not rebuild
     // every Offstage/card tree from an AnimatedBuilder on every frame.
     // Keep BOTH wrappers mounted even at rest. Inserting/removing a wrapper
-    // destroys the card subtree (including ActivityView and its virtual display).
+    // destroys the card subtree, including its live map texture.
     final active = moving && index == _toPage;
     return SlideTransition(
         position: active && widget.effect == 'slide'

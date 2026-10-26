@@ -277,11 +277,11 @@ void main() {
     t.view.resetDevicePixelRatio();
   });
   testWidgets(
-      'Pages settings and modals retain one map and hide its native surface',
+      'Pages settings and modals retain one live map without overlay leakage',
       (t) async {
     t.view.physicalSize = const Size(1920, 1080);
     t.view.devicePixelRatio = 1;
-    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
     addTearDown(() => debugDefaultTargetPlatformOverride = null);
     final g = FakeGateway();
     g.state['demo'] = false;
@@ -290,21 +290,34 @@ void main() {
       'package': 'com.autonavi.amapauto',
       'reason': '未授权'
     };
+    final visibility = <bool>[];
+    var creates = 0;
+    const host = MethodChannel('xyz.i4o.uni.launcher/navigation');
+    const channel = MethodChannel('xyz.i4o.uni.launcher/map/99');
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(host, (call) async {
+      if (call.method == 'create') {
+        creates++;
+        return {'id': 99, 'textureId': 99, 'phase': 'ready', 'ready': true};
+      }
+      return null;
+    });
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      if (call.method == 'visible') visibility.add(call.arguments == true);
+      return call.method == 'status'
+          ? {'id': 99, 'textureId': 99, 'phase': 'ready', 'ready': true}
+          : null;
+    });
+    addTearDown(() {
+      messenger.setMockMethodCallHandler(host, null);
+      messenger.setMockMethodCallHandler(channel, null);
+    });
     final c = LauncherController(g);
     await c.initialize();
     await t.pumpWidget(LauncherApp(controller: c));
     await t.pumpAndSettle();
     final original = t.state(find.byType(EmbeddedNavigationCard));
-    final visibility = <bool>[];
-    const channel = MethodChannel('xyz.i4o.uni.launcher/map/99');
-    final messenger =
-        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
-    messenger.setMockMethodCallHandler(channel, (call) async {
-      if (call.method == 'visible') visibility.add(call.arguments == true);
-      return call.method == 'status' ? {'phase': 'ready', 'ready': true} : null;
-    });
-    (original as dynamic).connect(99);
-    await t.pumpAndSettle();
     expect(visibility.last, true);
     final dock = t.getRect(find.byKey(const ValueKey('bottom-dock')));
     await c.switchPage(1);
@@ -319,7 +332,7 @@ void main() {
     c.openSettings();
     await t.pumpAndSettle();
     expect(visibility.last, false,
-        reason: 'The native SurfaceView must be hidden above settings');
+        reason: 'Settings must not forward input to the live map');
     expect(
         find
             .byType(EmbeddedNavigationCard, skipOffstage: false)
@@ -334,10 +347,11 @@ void main() {
     await t.tap(find.byKey(const ValueKey('music-info')));
     await t.pumpAndSettle();
     expect(visibility.last, false,
-        reason: 'Native map must not cover a Flutter modal');
+        reason: 'A modal owns input while the map stays composited below');
     await t.tap(find.byTooltip('关闭音乐详情'));
     await t.pumpAndSettle();
     expect(visibility.last, true);
+    expect(creates, 1);
     await t.pumpWidget(const SizedBox.shrink());
     c.dispose();
     await g.dispose();

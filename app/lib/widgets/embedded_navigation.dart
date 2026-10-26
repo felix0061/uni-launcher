@@ -2,14 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/rendering.dart';
 import '../controller/launcher_controller.dart';
 import '../theme/launcher_theme.dart';
 import '../theme/design_tokens.dart';
 import 'glass_surface.dart';
 import 'uni_icon.dart';
 import 'navigation_app_picker.dart';
-import 'page_transition.dart';
 
 /// Desktop preview must never start a second map instance.
 class EmbeddedContentPolicy extends InheritedWidget {
@@ -41,103 +39,251 @@ class EmbeddedNavigationCard extends StatefulWidget {
 }
 
 class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
+  static const host = MethodChannel('xyz.i4o.uni.launcher/navigation');
   MethodChannel? channel;
-  bool desiredVisible = true;
+  int? nativeId, textureId;
+  int generation = 0;
+  bool desiredVisible = false;
   bool? sentVisible;
-  bool visibilityScheduled = false;
+  bool scheduled = false, syncing = false;
+  Size? desiredSize, sentSize;
   Map<String, dynamic> status = {};
-  MemoryImage? preview;
-  int? previewRevision;
+  final Map<int, Offset> pointers = {};
+  final Map<int, int> pointerIds = {};
+  Future<void> cleanup = Future<void>.value();
   String get package => '${widget.navigation['package'] ?? ''}';
+
+  void releaseNative() {
+    generation++;
+    cancelTouches();
+    final id = nativeId;
+    channel?.setMethodCallHandler(null);
+    channel = null;
+    nativeId = textureId = null;
+    sentVisible = null;
+    sentSize = null;
+    status = {};
+    if (id != null) {
+      cleanup = cleanup
+          .then((_) => host.invokeMethod<void>('dispose', id))
+          .catchError((Object _) {});
+    }
+  }
+
   @override
   void didUpdateWidget(EmbeddedNavigationCard old) {
     super.didUpdateWidget(old);
     if ('${old.navigation['package'] ?? ''}' != package ||
         old.navigation['canEmbed'] != widget.navigation['canEmbed']) {
-      channel?.setMethodCallHandler(null);
-      channel = null;
-      sentVisible = null;
-      clearPreview();
-      status = {};
+      releaseNative();
     }
   }
 
   @override
   void dispose() {
-    channel?.setMethodCallHandler(null);
-    clearPreview();
+    releaseNative();
     super.dispose();
   }
 
-  void connect(int id) {
-    final current = MethodChannel('xyz.i4o.uni.launcher/map/$id');
-    channel = current;
-    sentVisible = null;
-    syncVisibility(desiredVisible);
-    channel!.setMethodCallHandler((call) async {
-      if (mounted &&
-          channel == current &&
-          call.method == 'status' &&
-          call.arguments is Map)
-        updateStatus(Map<String, dynamic>.from(call.arguments));
-    });
-    channel!.invokeMapMethod<String, dynamic>('status').then((value) {
-      if (mounted && channel == current && value != null) updateStatus(value);
-    }).catchError((Object error) {
-      if (mounted && channel == current)
-        updateStatus({'phase': 'failed', 'reason': '地图连接已断开'});
+  void scheduleSync() {
+    if (scheduled || syncing) return;
+    scheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      scheduled = false;
+      if (mounted) syncNative();
     });
   }
 
-  void clearPreview() {
-    final retired = preview;
-    preview = null;
-    previewRevision = null;
-    retired?.evict();
+  Map<String, int> dimensions(Size size) => {
+        'width': size.width.toInt(),
+        'height': size.height.toInt(),
+      };
+
+  Future<void> syncNative() async {
+    if (syncing) return;
+    syncing = true;
+    final epoch = generation;
+    try {
+      await cleanup;
+      if (!mounted || epoch != generation) return;
+      if (!desiredVisible || widget.controller.editing) cancelTouches();
+      if (channel == null) {
+        final size = desiredSize;
+        if (!desiredVisible || size == null || status['phase'] == 'failed')
+          return;
+        final result = await host.invokeMapMethod<String, dynamic>(
+            'create', dimensions(size));
+        if (result == null || result['id'] is! num) {
+          throw StateError('Missing navigation id');
+        }
+        final id = (result['id'] as num).toInt();
+        if (!mounted || epoch != generation) {
+          await host.invokeMethod<void>('dispose', id);
+          return;
+        }
+        nativeId = id;
+        sentSize = size;
+        final current = MethodChannel('xyz.i4o.uni.launcher/map/$id');
+        channel = current;
+        updateStatus(result);
+        int events = 0;
+        current.setMethodCallHandler((call) async {
+          if (mounted &&
+              channel == current &&
+              call.method == 'status' &&
+              call.arguments is Map) {
+            events++;
+            updateStatus(Map<String, dynamic>.from(call.arguments));
+          }
+        });
+        final initial =
+            await current.invokeMapMethod<String, dynamic>('status');
+        if (!mounted || channel != current) return;
+        if (initial != null && events == 0) updateStatus(initial);
+      }
+      final current = channel;
+      if (current == null || epoch != generation) return;
+      final size = desiredSize;
+      if (desiredVisible && size != null && size != sentSize) {
+        await current.invokeMethod<void>('resize', dimensions(size));
+        if (!mounted || channel != current) return;
+        sentSize = size;
+      }
+      final visible = desiredVisible;
+      if (sentVisible != visible) {
+        await current.invokeMethod<void>('visible', visible);
+        if (!mounted || channel != current) return;
+        sentVisible = visible;
+      }
+    } catch (error) {
+      if (mounted && epoch == generation) {
+        updateStatus({'phase': 'failed', 'ready': false, 'reason': '地图连接已断开'});
+      }
+    } finally {
+      syncing = false;
+      if (mounted &&
+          status['phase'] != 'failed' &&
+          (epoch != generation ||
+              (channel != null &&
+                  (sentVisible != desiredVisible ||
+                      (desiredVisible && sentSize != desiredSize))))) {
+        scheduleSync();
+        WidgetsBinding.instance.ensureVisualUpdate();
+      }
+    }
   }
 
   void updateStatus(Map<String, dynamic> value) {
-    final bytes = value['previewBytes'];
-    final revision = value['previewRevision'];
-    final valid = bytes is Uint8List && bytes.isNotEmpty && revision is int;
-    final changed = valid
-        ? preview == null || previewRevision != revision
-        : preview != null;
-    // The provider owns the bytes; status only retains lightweight metadata.
-    final next = Map<String, dynamic>.of(value)..remove('previewBytes');
-    if (!changed && mapEquals(status, next)) return;
+    final nextTexture = value['textureId'];
+    if (mapEquals(status, value) &&
+        (nextTexture is! num || textureId == nextTexture.toInt())) return;
     setState(() {
-      if (changed) {
-        clearPreview();
-        if (valid) {
-          preview = MemoryImage(bytes);
-          previewRevision = revision;
-        }
-      }
-      status = next;
+      status = value;
+      if (nextTexture is num) textureId = nextTexture.toInt();
     });
   }
 
-  void syncVisibility(bool visible) {
-    desiredVisible = visible;
-    if (channel == null || visibilityScheduled) return;
-    if (sentVisible == visible && !(visible && status['phase'] == 'paused')) {
+  void sendTouch(int action, int index) {
+    final current = channel;
+    if (current == null || pointers.isEmpty) return;
+    current.invokeMethod<void>('touch', {
+      'action': action,
+      'actionIndex': index,
+      'pointers': [
+        for (final entry in pointers.entries)
+          {
+            'id': pointerIds[entry.key],
+            'x': entry.value.dx,
+            'y': entry.value.dy
+          }
+      ],
+    }).catchError((Object _) {});
+  }
+
+  void cancelTouches() {
+    if (pointers.isNotEmpty) sendTouch(3, 0);
+    pointers.clear();
+    pointerIds.clear();
+  }
+
+  void touch(PointerEvent event, Size size, int action) {
+    if (!desiredVisible ||
+        widget.controller.editing ||
+        channel == null ||
+        size.isEmpty) return;
+    final key = event.pointer;
+    if (action == 0) {
+      if (pointers.containsKey(key) || pointers.length >= 10) return;
+      int id = 0;
+      while (pointerIds.containsValue(id)) {
+        id++;
+      }
+      pointerIds[key] = id;
+    } else if (!pointers.containsKey(key)) {
       return;
     }
-    visibilityScheduled = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      visibilityScheduled = false;
-      final current = channel;
-      if (!mounted || current == null) return;
-      final next = desiredVisible;
-      if (sentVisible == next && !(next && status['phase'] == 'paused')) return;
-      sentVisible = next;
-      current.invokeMethod<void>('visible', next).catchError((Object _) {
-        if (mounted && channel == current && sentVisible == next) {
-          sentVisible = null;
-        }
-      });
-    });
+    pointers[key] = Offset(
+        (event.localPosition.dx / size.width).clamp(0.0, 1.0).toDouble(),
+        (event.localPosition.dy / size.height).clamp(0.0, 1.0).toDouble());
+    final index = pointers.keys.toList().indexOf(key);
+    if (action == 3) {
+      cancelTouches();
+      return;
+    }
+    sendTouch(
+        pointers.length > 1 && action == 0
+            ? 5
+            : pointers.length > 1 && action == 1
+                ? 6
+                : action,
+        index);
+    if (action == 1) {
+      pointers.remove(key);
+      pointerIds.remove(key);
+    }
+  }
+
+  Widget liveMap(BoxConstraints constraints) {
+    final size = constraints.biggest;
+    final scale = View.of(context).physicalSize.width / Design.canvasWidth;
+    if (size.isFinite && !size.isEmpty && scale > 0) {
+      desiredSize = Size((size.width * scale).round().clamp(1, 1920).toDouble(),
+          (size.height * scale).round().clamp(1, 1080).toDouble());
+      scheduleSync();
+    }
+    return RawGestureDetector(
+      gestures: widget.controller.editing
+          ? <Type, GestureRecognizerFactory>{}
+          : <Type, GestureRecognizerFactory>{
+              EagerGestureRecognizer:
+                  GestureRecognizerFactoryWithHandlers<EagerGestureRecognizer>(
+                () => EagerGestureRecognizer(),
+                (instance) {},
+              ),
+            },
+      child: Listener(
+        key: const ValueKey('map-live-input'),
+        behavior: HitTestBehavior.opaque,
+        onPointerDown: (e) => touch(e, size, 0),
+        onPointerMove: (e) => touch(e, size, 2),
+        onPointerUp: (e) => touch(e, size, 1),
+        onPointerCancel: (e) => touch(e, size, 3),
+        child: Stack(fit: StackFit.expand, children: [
+          if (textureId != null)
+            Texture(
+                key: const ValueKey('map-live-texture'), textureId: textureId!),
+          if (status['ready'] != true)
+            const Positioned(
+                right: 12,
+                top: 12,
+                child: IgnorePointer(
+                    child: SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2)))),
+        ]),
+      ),
+    );
   }
 
   @override
@@ -146,17 +292,15 @@ class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
     final displayName = c.appName(
         {'package': package, 'label': widget.navigation['label'] ?? '高德地图'});
     final allowed = EmbeddedContentPolicy.allowed(context);
-    final moving = DesktopMotionScope.movingOf(context);
-    // Offstage alone does not hide Android 9's independently composited SurfaceView.
-    syncVisibility(allowed &&
-        EmbeddedContentPolicy.visibleOf(context) &&
-        !moving &&
-        !c.settings &&
-        (ModalRoute.of(context)?.isCurrent ?? true));
     final canEmbed = widget.navigation['canEmbed'] == true &&
         allowed &&
         !kIsWeb &&
         defaultTargetPlatform == TargetPlatform.android;
+    desiredVisible = canEmbed &&
+        EmbeddedContentPolicy.visibleOf(context) &&
+        !c.settings &&
+        (ModalRoute.of(context)?.isCurrent ?? true);
+    scheduleSync();
     final failed =
         status['phase'] == 'failed' || status['phase'] == 'unavailable';
     return Column(children: [
@@ -190,52 +334,9 @@ class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
                 onTap: () => c.command('launch-navigation')),
           ])),
       Expanded(
-          child: canEmbed && !failed
-              ? Stack(children: [
-                  Positioned.fill(
-                      key: const ValueKey('map-native-surface'),
-                      child: PlatformViewLink(
-                          key: ValueKey('native-map-$package'),
-                          viewType: 'xyz.i4o.uni.launcher/navigation',
-                          surfaceFactory: (context, controller) =>
-                              AndroidViewSurface(
-                                  controller:
-                                      controller as AndroidViewController,
-                                  gestureRecognizers: c.editing
-                                      ? {}
-                                      : {
-                                          Factory<OneSequenceGestureRecognizer>(
-                                              () => EagerGestureRecognizer())
-                                        },
-                                  hitTestBehavior: c.editing
-                                      ? PlatformViewHitTestBehavior.transparent
-                                      : PlatformViewHitTestBehavior.opaque),
-                          onCreatePlatformView: (params) {
-                            final controller =
-                                PlatformViewsService.initExpensiveAndroidView(
-                                    id: params.id,
-                                    viewType: 'xyz.i4o.uni.launcher/navigation',
-                                    layoutDirection: TextDirection.ltr);
-                            controller.addOnPlatformViewCreatedListener(
-                                params.onPlatformViewCreated);
-                            controller
-                                .addOnPlatformViewCreatedListener(connect);
-                            controller.create();
-                            return controller;
-                          })),
-                  if (status['ready'] != true || moving)
-                    Positioned.fill(
-                        key: const ValueKey('map-restoring-preview'),
-                        child: preview != null
-                            ? Image(
-                                image: preview!,
-                                fit: BoxFit.fill,
-                                gaplessPlayback: true)
-                            : ColoredBox(
-                                color: s.strong.withValues(alpha: 1),
-                                child: const Center(
-                                    child: CircularProgressIndicator()))),
-                ])
+          child: canEmbed && (!failed || textureId != null)
+              ? LayoutBuilder(
+                  builder: (context, constraints) => liveMap(constraints))
               : Center(
                   child: Padding(
                       padding: EdgeInsets.all(Design.px(30)),
@@ -260,7 +361,7 @@ class _EmbeddedNavigationCardState extends State<EmbeddedNavigationCard> {
                               child: const Text('全屏打开导航')),
                         if (failed && allowed)
                           TextButton(
-                              onPressed: () => setState(() => status = {}),
+                              onPressed: () => setState(releaseNative),
                               child: const Text('重新尝试嵌入')),
                       ]))))
     ]);

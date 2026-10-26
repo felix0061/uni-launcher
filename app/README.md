@@ -1,4 +1,6 @@
-# UNI Launcher 0.5.0 · Flutter Android
+# UNI Launcher · Flutter Android
+
+最新版本 0.6.8 使用原生实时地图纹理，移除地图静态占位和 ActivityView 容器。模拟器已验证触控、换屏、弹窗与全屏恢复；实车已完成初始实时画面接入，其余回归因 ADB 离线待续。见 [0.6.8 验证记录](../docs/IP753_0_6_8.md)。
 
 0.5.0 增加全局底栏、独立系统导航栏开关和三张车辆信息卡。底栏背景铺满屏幕宽度、外层直角、底部无留白；跨应用媒体 / 空调与桌面共用原生 Runtime。实现和限制见[全局底栏](../docs/GLOBAL_DOCK.md)、[车辆卡片](../docs/VEHICLE_CARD_DESIGN.md)、[官方能力对照](../docs/OEM_PARITY_0_5.md)。
 

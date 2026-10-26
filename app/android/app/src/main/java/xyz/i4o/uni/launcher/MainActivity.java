@@ -24,14 +24,14 @@ import java.util.Map;
 import org.json.JSONObject;
 import xyz.i4o.uni.launcher.integration.NavigationChrome;
 import xyz.i4o.uni.launcher.overlay.SystemNavigationPolicy;
-import xyz.i4o.uni.launcher.platform.EmbeddedNavigationFactory;
+import xyz.i4o.uni.launcher.platform.LiveNavigationHost;
 
 /** Home window and Flutter bridge; shared integrations live in LauncherRuntime. */
 public final class MainActivity extends FlutterActivity {
     private static java.lang.ref.WeakReference<MainActivity> active=new java.lang.ref.WeakReference<>(null);
     private LauncherRuntime rt;
     private NavigationChrome chrome;
-    private EmbeddedNavigationFactory mapFactory;
+    private LiveNavigationHost mapHost;
     private String cached="{}";
     private JSONObject flutterViewport=new JSONObject();
     private int reservedBottomPx;
@@ -49,19 +49,18 @@ public final class MainActivity extends FlutterActivity {
 
     @Override public void onTrimMemory(int level){
         super.onTrimMemory(level);
-        if(mapFactory!=null)mapFactory.trimMemory(level);
+        if(mapHost!=null)mapHost.trimMemory(level);
     }
 
     @Override public void onLowMemory(){
         super.onLowMemory();
-        if(mapFactory!=null)mapFactory.trimMemory(android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL);
+        if(mapHost!=null)mapHost.trimMemory(android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL);
     }
 
     @Override public void configureFlutterEngine(FlutterEngine engine){
         super.configureFlutterEngine(engine);
         if(rt==null)rt=LauncherRuntime.get(this);
-        mapFactory=new EmbeddedNavigationFactory(this,engine.getDartExecutor().getBinaryMessenger(),engine.getRenderer());
-        engine.getPlatformViewsController().getRegistry().registerViewFactory("xyz.i4o.uni.launcher/navigation",mapFactory);
+        mapHost=new LiveNavigationHost(this,engine.getDartExecutor().getBinaryMessenger(),engine.getRenderer());
         channel=new MethodChannel(engine.getDartExecutor().getBinaryMessenger(),"xyz.i4o.uni.launcher/platform");
         channel.setMethodCallHandler((call,result)->{
             try{
@@ -81,7 +80,7 @@ public final class MainActivity extends FlutterActivity {
                 }
                 else if("desktopPage".equals(call.method)){
                     int page=call.arguments instanceof Number?((Number)call.arguments).intValue():0;
-                    if(mapFactory!=null)mapFactory.preparePageChange();
+                    if(mapHost!=null)mapHost.preparePageChange();
                     flutterViewport.put("page",page);
                     rt.setDesktopContentSilently(page==0);result.success(null);
                 }
@@ -161,7 +160,7 @@ public final class MainActivity extends FlutterActivity {
             else rt.publish();
             return;
         }
-        if("launch-navigation".equals(action)&&mapFactory!=null)mapFactory.setVisible(false);
+        if("launch-navigation".equals(action)&&mapHost!=null)mapHost.setVisible(false);
         if("hide-navigation".equals(action)||"global-navigation".equals(action)){
             if("global-navigation".equals(action)&&request.optBoolean("enabled",false)
                 &&checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS")!=PackageManager.PERMISSION_GRANTED){
@@ -190,7 +189,7 @@ public final class MainActivity extends FlutterActivity {
                 if(m!=null)for(String key:new String[]{"available","authorized","playing","source","preferredPackage","sessions","reason","canToggle","canNext","canPrevious","canSeek","controlSource","lyricsSource","durationMs","positionMs","steeringControlReady","instrumentMetadataReady"})safe.put(key,m.opt(key));
                 if(m!=null)safe.put("lyricsAvailable",!m.optString("lyrics").isEmpty()).put("artworkAvailable",!m.optString("artwork").isEmpty()).put("officialMedia",m.optJSONObject("officialMedia"));
                 report.put("media",safe).put("flutterViewport",flutterViewport).put("globalDock",GlobalDockService.snapshot(this)).put("systemSettings",full.opt("systemSettings"));
-                if(mapFactory!=null)report.put("mapViews",mapFactory.snapshot());
+                if(mapHost!=null)report.put("mapViews",mapHost.snapshot());
                 writer.println("UNI_STATE="+report.toString());
             }catch(Exception e){writer.println("UNI_STATE_UNAVAILABLE");}return;
         }
@@ -201,7 +200,7 @@ public final class MainActivity extends FlutterActivity {
 
     @Override protected void onStart(){
         super.onStart();rt.setHomeVisible(true);rt.addListener(this,this::publish);
-        if(mapFactory!=null)mapFactory.setVisible(true);
+        if(mapHost!=null)mapHost.setVisible(true);
         publish();
     }
 
@@ -216,7 +215,7 @@ public final class MainActivity extends FlutterActivity {
             if(active.get()==this)rt.setHomeVisible(false);
             rt.removeListener(this);
         }
-        if(mapFactory!=null)mapFactory.setVisible(false);
+        if(mapHost!=null)mapHost.setVisible(false);
         super.onStop();
     }
 
@@ -280,7 +279,7 @@ public final class MainActivity extends FlutterActivity {
     @Override protected void onDestroy(){
         if(wallpaperResult!=null){wallpaperResult.success(null);wallpaperResult=null;}
         if(rt!=null)rt.removeListener(this);
-        if(mapFactory!=null)mapFactory.close();
+        if(mapHost!=null)mapHost.close();
         if(channel!=null)channel.setMethodCallHandler(null);
         if(events!=null)events.setStreamHandler(null);
         sink=null;if(active.get()==this)active.clear();
