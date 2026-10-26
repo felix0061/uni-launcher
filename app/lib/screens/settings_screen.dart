@@ -1085,7 +1085,7 @@ class SourceSettings extends StatelessWidget {
                             c.command('system-navigation-hidden', enabled: v)
                         : null),
                 Row(children: [
-                  Text('UNI 0.6.3 · xyz.i4o.uni.launcher',
+                  Text('UNI 0.6.4 · xyz.i4o.uni.launcher',
                       style:
                           TextStyle(fontSize: Design.px(18), color: s.muted)),
                   const Spacer(),

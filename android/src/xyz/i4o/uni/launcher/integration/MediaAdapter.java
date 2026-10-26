@@ -25,6 +25,7 @@ public final class MediaAdapter {
     private final Context context;
     private final MediaSessionManager manager;
     private final MediaSession steeringSession;
+    private final OfficialMediaBridge officialBridge;
     private final ComponentName listener;
     private final Runnable changed;
     private final NeteaseMediaAdapter netease;
@@ -53,6 +54,12 @@ public final class MediaAdapter {
     public MediaAdapter(Context context,Runnable changed){
         this.context=context;this.changed=changed;netease=new NeteaseMediaAdapter(changed);manager=(MediaSessionManager)context.getSystemService(Context.MEDIA_SESSION_SERVICE);
         listener=new ComponentName(context,MediaAccessService.class);
+        officialBridge=new OfficialMediaBridge(context,(action,source)->{
+            if(controller==null||!source.equals(controller.getPackageName()))return false;
+            if("play".equals(action)){setPlaying(true);return true;}
+            if("pause".equals(action)){setPlaying(false);return true;}
+            return command(action);
+        },changed);
         steeringSession=new MediaSession(context,"UNI steering media bridge");
         steeringSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS|MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
         steeringSession.setCallback(new MediaSession.Callback(){
@@ -67,6 +74,7 @@ public final class MediaAdapter {
         stop();
         try{manager.addOnActiveSessionsChangedListener(sessions,listener,handler);select(manager.getActiveSessions(listener));authorized=true;}
         catch(SecurityException e){authorized=false;select(null);}
+        officialBridge.start();
     }
     private void select(List<MediaController> list){
         for(MediaController c:observed)c.unregisterCallback(callback);
@@ -102,6 +110,7 @@ public final class MediaAdapter {
      * steering-wheel dispatcher can now target transport callbacks and the
      * instrument cluster can consume the same title/artist/playback state. */
     private void syncSteeringSession(){
+        officialBridge.update(controller);
         if(controller==null){steeringSession.setActive(false);return;}
         try{
             MediaMetadata source=controller.getMetadata();
@@ -121,6 +130,7 @@ public final class MediaAdapter {
             PlaybackState p=controller.getPlaybackState();
             long actions=PlaybackState.ACTION_PLAY|PlaybackState.ACTION_PAUSE|PlaybackState.ACTION_PLAY_PAUSE;
             if(p!=null)actions|=p.getActions()&(PlaybackState.ACTION_SKIP_TO_NEXT|PlaybackState.ACTION_SKIP_TO_PREVIOUS|PlaybackState.ACTION_SEEK_TO);
+            if(NeteaseMediaAdapter.supports(controller))actions|=PlaybackState.ACTION_SKIP_TO_NEXT|PlaybackState.ACTION_SKIP_TO_PREVIOUS|PlaybackState.ACTION_SEEK_TO;
             steeringSession.setPlaybackState(new PlaybackState.Builder().setActions(actions)
                 .setState(p==null?PlaybackState.STATE_NONE:p.getState(),p==null?0:Math.max(0,p.getPosition()),p==null?0:p.getPlaybackSpeed(),SystemClock.elapsedRealtime()).build());
             Intent launch=context.getPackageManager().getLaunchIntentForPackage(controller.getPackageName());
@@ -134,7 +144,9 @@ public final class MediaAdapter {
     public JSONObject snapshot(){
         JSONObject j=new JSONObject();try{
             j.put("authorized",authorized).put("available",controller!=null).put("playing",false).put("preferredPackage",preferred).put("sessions",activeSources)
-                .put("steeringControlReady",controller!=null).put("instrumentMetadataReady",controller!=null)
+                .put("steeringControlReady",officialBridge.snapshot().optBoolean("registered"))
+                .put("instrumentMetadataReady",officialBridge.snapshot().optBoolean("playbackAccepted"))
+                .put("officialMedia",officialBridge.snapshot())
                 .put("reason",!authorized?"请授权媒体访问":controller==null?"所选播放器尚未建立媒体会话":"");
             if(controller!=null){
                 MediaMetadata m=controller.getMetadata();PlaybackState p=controller.getPlaybackState();
@@ -216,5 +228,5 @@ public final class MediaAdapter {
         }else return false;
         return true;
     }
-    public void stop(){try{manager.removeOnActiveSessionsChangedListener(sessions);}catch(Exception ignored){}select(null);steeringSession.setActive(false);}
+    public void stop(){try{manager.removeOnActiveSessionsChangedListener(sessions);}catch(Exception ignored){}officialBridge.stop();select(null);steeringSession.setActive(false);}
 }
