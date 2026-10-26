@@ -1,0 +1,127 @@
+{
+  "checks": [
+    {
+      "name": "home-dark: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "home-dark: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "home-dark: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "home-dark: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "home-dark: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "home-dark: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "home-dark: examples labelled",
+      "passed": true
+    },
+    {
+      "name": "home-light: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "home-light: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "home-light: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "home-light: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "home-light: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "home-light: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "home-light: examples labelled",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "vehicle: horizontal car and separate tyre labels",
+      "passed": true
+    },
+    {
+      "name": "vehicle-dark: examples labelled",
+      "passed": true
+    },
+    {
+      "name": "settings-dark: canvas 1920x1080",
+      "passed": true
+    },
+    {
+      "name": "settings-dark: dock is full width and flush with bottom",
+      "passed": true
+    },
+    {
+      "name": "settings-dark: all panel children fit",
+      "passed": true
+    },
+    {
+      "name": "settings-dark: all primary panels clear dock",
+      "passed": true
+    },
+    {
+      "name": "settings-dark: no live blur or animated visual filters",
+      "passed": true
+    },
+    {
+      "name": "settings-dark: assets decoded",
+      "passed": true
+    },
+    {
+      "name": "settings: preview ratio is 16:9",
+      "passed": true
+    }
+  ],
+  "runtimeErrors": [],
+  "screenshots": [
+    "home-dark.png",
+    "home-light.png",
+    "vehicle-dark.png",
+    "settings-dark.png"
+  ]
+}
