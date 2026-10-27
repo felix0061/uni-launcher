@@ -14,7 +14,8 @@ Future<void> main() async {
 
   if (await adb(['shell', 'getprop', 'ro.kernel.qemu']) != '1')
     throw StateError('Emulator required');
-  final out = Directory('verification/audio-spectrum')
+  final out = Directory(
+      Platform.environment['UNI_SPECTRUM_OUT'] ?? 'verification/audio-spectrum')
     ..createSync(recursive: true);
   final driver = await FlutterDriver.connect();
   final vm = driver.serviceClient;

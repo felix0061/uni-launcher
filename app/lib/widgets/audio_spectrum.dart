@@ -25,12 +25,18 @@ class _AudioSpectrumState extends State<AudioSpectrum>
     super.initState();
     service = widget.service ?? AudioSpectrumService.shared;
     presentation = service.status;
-    resumed = WidgetsBinding.instance.lifecycleState == null ||
-        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+    resumed = _canRender(WidgetsBinding.instance.lifecycleState);
     service.addListener(statusChanged);
     WidgetsBinding.instance.addObserver(this);
     service.refreshStatus();
   }
+
+  // Android 9 can mark a visible launcher inactive when its embedded map
+  // or global dock owns window focus. Hidden/paused still stop capture.
+  bool _canRender(AppLifecycleState? state) =>
+      state == null ||
+      state == AppLifecycleState.resumed ||
+      state == AppLifecycleState.inactive;
 
   void statusChanged() {
     if (!mounted || presentation == service.status) return;
@@ -71,7 +77,7 @@ class _AudioSpectrumState extends State<AudioSpectrum>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    resumed = state == AppLifecycleState.resumed;
+    resumed = _canRender(state);
     service.setDemand(this, visible && resumed && widget.playing);
     if (resumed) service.refreshStatus();
   }

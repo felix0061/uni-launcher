@@ -63,7 +63,8 @@ public final class SpectrumBridge {
         volatile int generation;
         boolean failed;
         volatile String reason="idle";
-        long sequence;
+        long sequence,signalFrames;
+        double peakLevel;
         volatile int captureSize,sampleRate;
         Runnable poll;
         Broker(Context context){this.context=context;}
@@ -78,6 +79,7 @@ public final class SpectrumBridge {
             data.put("activeConsumers",demand());data.put("clients",clients.size());
             data.put("captureSize",captureSize);data.put("sampleRateHz",sampleRate/1000);
             data.put("sequence",sequence);data.put("captureHz",10);
+            data.put("peakLevel",running?peakLevel:0d);data.put("signalFrames",signalFrames);
             if(levels!=null){ArrayList<Double> values=new ArrayList<>(levels.length);for(double v:levels)values.add(v);data.put("levels",values);}
             return data;
         }
@@ -92,7 +94,7 @@ public final class SpectrumBridge {
                 if(worker==null){HandlerThread thread=new HandlerThread("uni-audio-spectrum",android.os.Process.THREAD_PRIORITY_BACKGROUND);thread.start();worker=new Handler(thread.getLooper());}
                 worker.post(()->start(epoch));
             }else if(!needed&&running){
-                running=false;reason="idle";generation++;
+                running=false;reason="idle";peakLevel=0;generation++;
                 worker.post(this::release);
                 publish(new double[SpectrumBands.COUNT]);
             }else if(!needed){failed=false;reason="idle";}
@@ -121,12 +123,15 @@ public final class SpectrumBridge {
                 if(visualizer.getFft(fft)!=Visualizer.SUCCESS)throw new IllegalStateException("fft-unavailable");
                 double[] values=SpectrumBands.decode(fft,sampleRate);
                 for(int i=0;i<values.length;i++){values[i]=Math.max(values[i],previous[i]*.70);previous[i]=values[i];}
-                main.post(()->{if(running&&epoch==generation){sequence++;publish(values);}});
+                main.post(()->{if(running&&epoch==generation){
+                    peakLevel=0;for(double value:values)peakLevel=Math.max(peakLevel,value);
+                    if(peakLevel>.02)signalFrames++;sequence++;publish(values);
+                }});
                 worker.postDelayed(poll,100);
             }catch(RuntimeException error){fail(epoch);}
         }
         void fail(int epoch){
-            release();main.post(()->{if(epoch==generation){failed=true;running=false;reason="unavailable";publish(new double[SpectrumBands.COUNT]);}});
+            release();main.post(()->{if(epoch==generation){failed=true;running=false;peakLevel=0;reason="unavailable";publish(new double[SpectrumBands.COUNT]);}});
         }
     }
 }

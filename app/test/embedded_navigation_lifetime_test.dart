@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:uni_launcher/controller/launcher_controller.dart';
+import 'package:uni_launcher/launcher_app.dart';
 import 'package:uni_launcher/model/appearance.dart';
 import 'package:uni_launcher/theme/design_tokens.dart';
 import 'package:uni_launcher/theme/launcher_theme.dart';
@@ -133,6 +134,61 @@ class LiveMapHarness {
 }
 
 void main() {
+  testWidgets(
+      'wallpaper settings and theme changes retain the real desktop map subtree',
+      (t) async {
+    t.view.physicalSize = const Size(1920, 1080);
+    t.view.devicePixelRatio = 1;
+    addTearDown(() {
+      t.view.resetPhysicalSize();
+      t.view.resetDevicePixelRatio();
+    });
+    final h = LiveMapHarness(t);
+    h.gateway.state['demo'] = false;
+    h.gateway.state['media'] = {'available': false, 'playing': false};
+    h.gateway.state['navigation'] = {
+      'package': 'test.map',
+      'label': '地图',
+      'canEmbed': true
+    };
+    await h.controller.initialize();
+    h.controller
+        .setAppearance(const Appearance(mode: 'dark', wallpaper: 'graphite'));
+    await t.pumpWidget(LauncherApp(controller: h.controller));
+    await h.flush();
+    expect(h.creates, hasLength(1));
+    final texture =
+        find.byKey(const ValueKey('map-live-texture'), skipOffstage: false);
+    final original = t.element(texture);
+    for (final theme in ['classic', 'blueGlass', 'classic']) {
+      h.controller.openSettings();
+      await h.flush();
+      expect(h.disposed, isEmpty,
+          reason: 'Settings wallpaper tint must not reparent the desktop');
+      expect(t.element(texture), same(original));
+      h.controller
+          .setAppearance(h.controller.appearance.copyWith(themeStyle: theme));
+      await h.flush();
+      expect(h.disposed, isEmpty,
+          reason: 'Changing background style must retain embedded resources');
+      h.controller.setAppearance(
+          h.controller.appearance.copyWith(wallpaper: 'gradient'));
+      await h.flush();
+      expect(h.disposed, isEmpty,
+          reason: 'Changing wallpaper must not recreate maps');
+      h.controller.setAppearance(
+          h.controller.appearance.copyWith(wallpaper: 'graphite'));
+      await h.flush();
+      h.controller.home();
+      await h.flush();
+      expect(h.creates, hasLength(1));
+      expect(t.element(texture), same(original));
+    }
+    expect(h.visibility, contains(false));
+    expect(h.visibility.last, true);
+    expect(t.takeException(), isNull);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.android));
+
   testWidgets(
       'one live texture survives loading, motion and real constraint resize',
       (t) async {

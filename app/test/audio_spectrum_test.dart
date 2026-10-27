@@ -132,6 +132,31 @@ void main() {
   });
 
   testWidgets(
+      'visible Android 9 host keeps FFT when an embedded map takes focus',
+      (t) async {
+    final service = AudioSpectrumService(methods: methods, events: events);
+    await t.pumpWidget(MaterialApp(
+        theme: launcherTheme(SurfaceStyle.from(const Appearance(), true)),
+        home: Scaffold(
+            body: SizedBox(
+                width: 300,
+                child: AudioSpectrum(playing: true, service: service)))));
+    await t.pump();
+    expect(service.activeConsumers, 1);
+    t.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    expect(service.activeConsumers, 1,
+        reason:
+            'A visible Android host loses window focus to its secondary-display map; inactive is not backgrounded');
+    t.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    expect(service.activeConsumers, 0);
+    t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    expect(service.activeConsumers, 1);
+    await t.pumpWidget(const SizedBox.shrink());
+    service.dispose();
+    await t.pump();
+  });
+
+  testWidgets(
       'offscreen paused and disposed widgets release demand; permission is explicit',
       (t) async {
     final service = AudioSpectrumService(methods: methods, events: events);
