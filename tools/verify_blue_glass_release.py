@@ -4,7 +4,9 @@ Uses this app's known design coordinates and native diagnostics; deliberately
 avoids UIAutomator waitForIdle, which is unsuitable for a live media desktop.
 No vehicle, run-as, private preferences or media permissions are touched.
 """
+import argparse
 import io
+import re
 import json
 from pathlib import Path
 import subprocess
@@ -13,7 +15,13 @@ from PIL import Image
 
 ADB = ['/data/tools/linkco-android/sdk/platform-tools/adb', '-s', 'emulator-5580']
 PKG = 'xyz.i4o.uni.launcher'
-OUT = Path(__file__).resolve().parents[1] / 'app/verification/blue-glass'
+ROOT = Path(__file__).resolve().parents[1]
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--out', type=Path, default=ROOT / 'app/verification/blue-glass')
+args = parser.parse_args()
+OUT = args.out
+OUT.mkdir(parents=True, exist_ok=True)
+VERSION = re.search(r'^version: ([^+\s]+)', (ROOT / 'app/pubspec.yaml').read_text(), re.M)[1]
 checks = []
 
 def run(*args):
@@ -54,7 +62,8 @@ check('isolated API28 x86_64 1920x1080 emulator', sh('getprop', 'ro.kernel.qemu'
     and sh('getprop', 'ro.build.version.sdk') == '28'
     and sh('wm', 'size') == 'Physical size: 1920x1080')
 launch()
-check('installed release is 0.6.12', state().get('version') == '0.6.12-flutter')
+check('installed release is ' + VERSION, state().get('version') == VERSION + '-flutter')
+check('idle spectrum does not capture audio', state().get('audioSpectrum', {}).get('running') is False)
 if state().get('globalDock', {}).get('running'):
     raise AssertionError('This fixture requires the inline dock')
 launch(settings=True)
@@ -77,6 +86,6 @@ tap(450, 210)
 shot('blue-glass-release-settings.png')
 check('system settings renders after restart without losing host', state().get('flutterViewport', {}).get('settings') is True)
 launch()
-report = {'version': '0.6.12', 'scope': 'API28 release/AOT emulator; first theme choice, painted background and process restart persistence. Actual screenshots also retained; detailed semantics verified by Flutter integration tests.', 'checks': checks}
+report = {'version': VERSION, 'scope': 'API28 release/AOT emulator; first theme choice, painted background and process restart persistence. Actual screenshots also retained; detailed semantics verified by Flutter integration tests.', 'checks': checks}
 (OUT / 'release-smoke-report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
 print(f'{len(checks)} release checks passed')

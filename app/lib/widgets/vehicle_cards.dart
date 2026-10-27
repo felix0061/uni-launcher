@@ -45,7 +45,7 @@ class BatteryCard extends StatelessWidget {
                           accent: true))),
               BatteryLevelBar(value: reading.value),
               SizedBox(height: Design.px(compact ? 10 : 18)),
-              _Footer('剩余电量', reading.status,
+              _Footer('剩余电量', '',
                   color: reading.available ? s.accent : s.muted),
               SizedBox(height: Design.px(compact ? 8 : 16)),
               if (!compact) ...[
@@ -68,7 +68,8 @@ class BatteryCard extends StatelessWidget {
                   SizedBox(width: Design.px(12)),
                   Expanded(
                       child: Text(
-                          vehicleStatusLabel(native, 'energyFlow', nowMs: now),
+                          vehicleStatusLabel(native, 'energyFlow', nowMs: now)
+                              .replaceAll('待同步', '—'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -82,13 +83,13 @@ class BatteryCard extends StatelessWidget {
                       style:
                           TextStyle(fontSize: Design.px(16), color: s.muted)),
                   SizedBox(width: Design.px(12)),
-                  Text('待同步',
+                  Text('—',
                       style:
                           TextStyle(fontSize: Design.px(16), color: s.muted)),
                 ]),
               if (compact) ...[
                 SizedBox(height: Design.px(4)),
-                const _Footer('外接充电', '待同步'),
+                const _Footer('外接充电', '—'),
               ],
             ]);
       });
@@ -476,7 +477,6 @@ class AirQualityCard extends StatelessWidget {
                             unit: 'µg/m³',
                             accent: true)),
                   ])),
-              _Footer('PM2.5', pm.status),
               SizedBox(height: Design.px(compact ? 8 : 16)),
               Container(height: 1, color: s.edge),
               SizedBox(height: Design.px(compact ? 8 : 16)),
@@ -489,9 +489,6 @@ class AirQualityCard extends StatelessWidget {
                         alignment: Alignment.centerRight,
                         child: _Value(aqi,
                             field: 'aqi', size: compact ? 25 : 30))),
-                SizedBox(width: Design.px(12)),
-                Text(aqi.status,
-                    style: TextStyle(fontSize: Design.px(15), color: s.muted)),
               ]),
             ]);
       });
@@ -513,7 +510,7 @@ class DrivingInfoCard extends StatelessWidget {
         return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _VehicleHeading(title, '原车', 'car', compact),
+              _VehicleHeading(title, '', 'car', compact),
               SizedBox(height: Design.px(compact ? 12 : 22)),
               Expanded(
                   child: Column(children: [
@@ -576,11 +573,6 @@ class _DrivingMetric extends StatelessWidget {
                   size: compact ? 30 : 40,
                   unit: reading.unit,
                   accent: field == 'speed'))),
-      SizedBox(height: Design.px(3)),
-      Text(reading.status,
-          key: ValueKey('vehicle-status-$field'),
-          style: TextStyle(
-              fontSize: Design.px(compact ? 13 : 15), color: s.muted)),
     ]);
   }
 }
@@ -681,7 +673,7 @@ class _Footer extends StatelessWidget {
           child: Text(label,
               style: TextStyle(fontSize: Design.px(16), color: s.muted))),
       Expanded(
-          child: Text(status,
+          child: Text(status == '待同步' ? '—' : status,
               textAlign: TextAlign.end,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

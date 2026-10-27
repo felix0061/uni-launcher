@@ -238,17 +238,19 @@ class _CardEditorState extends State<_CardEditor> {
         widget.controller.native.value['demo'] == true;
     final vehicleCard =
         const {'battery', 'air', 'vehicle'}.contains(draft.type);
-    final sizes = <(int, int)>[
-      draft.type == 'weather' ? (4, 2) : (spec.minW, spec.minH),
-      if (draft.type == 'trafficLight') ...[
-        (4, 3),
-        (8, 3)
-      ] else if (vehicleCard)
-        (4, 3)
-      else
-        (spec.minW > 4 ? spec.minW : 4, spec.minH > 4 ? spec.minH : 4),
-      (spec.minW > 8 ? spec.minW : 8, 6),
-    ].toSet().toList();
+    final sizes = draft.type == 'music'
+        ? <(int, int)>[(4, 2), (4, 3), (4, 4), (8, 6)]
+        : <(int, int)>[
+            draft.type == 'weather' ? (4, 2) : (spec.minW, spec.minH),
+            if (draft.type == 'trafficLight') ...[
+              (4, 3),
+              (8, 3)
+            ] else if (vehicleCard)
+              (4, 3)
+            else
+              (spec.minW > 4 ? spec.minW : 4, spec.minH > 4 ? spec.minH : 4),
+            (spec.minW > 8 ? spec.minW : 8, 6),
+          ].toSet().toList();
     return SingleChildScrollView(
         child:
             Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [

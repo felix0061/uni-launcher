@@ -46,7 +46,7 @@ class AccountDetailsContent extends StatelessWidget {
           : '领克账号';
 
   String get _status => !_known
-      ? '状态未同步'
+      ? '—'
       : _loggedIn
           ? '已登录'
           : '未登录';

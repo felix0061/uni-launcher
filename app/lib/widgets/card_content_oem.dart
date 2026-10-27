@@ -74,31 +74,32 @@ class _OemCard extends StatelessWidget {
                               height: 1.2,
                               fontWeight: FontWeight.w500)),
                       SizedBox(height: Design.px(compact ? 10 : 13)),
-                      Row(children: [
-                        Container(
-                            width: Design.px(8),
-                            height: Design.px(8),
-                            decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: demo || account['loggedIn'] == true
-                                    ? s.accent
-                                    : s.muted)),
-                        SizedBox(width: Design.px(9)),
-                        Flexible(
-                            child: Text(
-                                demo
-                                    ? '演示数据'
-                                    : account['known'] == true
-                                        ? (account['loggedIn'] == true
-                                            ? '已登录'
-                                            : '未登录')
-                                        : '账号状态未同步',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    fontSize: Design.px(compact ? 17 : 20),
-                                    color: s.muted)))
-                      ]),
+                      if (demo || account['known'] == true)
+                        Row(children: [
+                          Container(
+                              width: Design.px(8),
+                              height: Design.px(8),
+                              decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: demo || account['loggedIn'] == true
+                                      ? s.accent
+                                      : s.muted)),
+                          SizedBox(width: Design.px(9)),
+                          Flexible(
+                              child: Text(
+                                  demo
+                                      ? '演示数据'
+                                      : account['known'] == true
+                                          ? (account['loggedIn'] == true
+                                              ? '已登录'
+                                              : '未登录')
+                                          : '—',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      fontSize: Design.px(compact ? 17 : 20),
+                                      color: s.muted)))
+                        ]),
                       if (levelLabel.isNotEmpty) ...[
                         SizedBox(height: Design.px(compact ? 8 : 11)),
                         Text(levelLabel,
@@ -142,7 +143,7 @@ class _OemCard extends StatelessWidget {
                               height: 1,
                               fontWeight: FontWeight.w300)),
                       SizedBox(height: Design.px(14)),
-                      Text('清理状态未同步',
+                      Text('释放运行内存',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -168,7 +169,7 @@ class _OemCard extends StatelessWidget {
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                      Text(demo ? '星期六' : '${calendar['weekday'] ?? '日期未同步'}',
+                      Text(demo ? '星期六' : '${calendar['weekday'] ?? '—'}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style:
@@ -215,7 +216,9 @@ class _OemCard extends StatelessWidget {
                                       ? '10:30  车辆保养预约'
                                       : calendar['eventAvailable'] == true
                                           ? '${calendar['title'] ?? '未命名日程'}'
-                                          : '${calendar['reason'] ?? '日程未同步'}',
+                                          : calendar['authorized'] == true
+                                              ? '暂无日程'
+                                              : '点击授权日历',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
@@ -249,9 +252,6 @@ class _OemCard extends StatelessWidget {
                   SizedBox(width: Design.px(18)),
                   Text('出行服务', style: TextStyle(fontSize: Design.px(30))),
                 ]),
-                SizedBox(height: Design.px(18)),
-                Text('服务信息未同步',
-                    style: TextStyle(fontSize: Design.px(20), color: s.muted)),
               ]))),
               const _StateLine('其他车型配置 · 本车未确认'),
             ],
@@ -371,24 +371,6 @@ class _WeatherCard extends StatelessWidget {
                             size: Design.px(editing ? 80 : 100),
                             color: s.accent),
                       ])),
-                      if (!editing)
-                        Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('天气',
-                                  style: TextStyle(
-                                      fontSize: Design.px(17), color: s.muted)),
-                              Flexible(
-                                  child: Text(
-                                      weather.available
-                                          ? '已同步'
-                                          : '${(mapOf(native['weather'])['reason'] ?? '等待天气同步').toString().replaceAll('原车', '')}',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                          fontSize: Design.px(17),
-                                          color: s.muted))),
-                            ]),
                     ]))));
   }
 }

@@ -214,7 +214,7 @@ class WeatherSnapshot {
             ? (text?.toString() ?? '未知')
             : demo
                 ? '多云'
-                : '未同步',
+                : '—',
         source: available
             ? '${raw['source'] ?? '原车天气'}'
             : demo

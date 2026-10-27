@@ -209,14 +209,16 @@ void main() {
       expect(find.text('混动'), findsOneWidget);
       expect(find.text('电力驱动'), findsOneWidget);
       expect(find.text('外接充电'), findsOneWidget);
-      expect(find.text('待同步'), findsOneWidget);
+      expect(find.text('待同步'), findsNothing);
+      expect(find.text('已同步'), findsNothing);
       expect(find.textContaining('充电中'), findsNothing);
     }
     await t.pumpWidget(surface(BatteryCard(
         native: vehicleGalleryFixture(VehicleGalleryState.disconnected),
         nowMs: () => vehicleGalleryNow)));
     await t.pumpAndSettle();
-    expect(find.text('—'), findsOneWidget);
+    expect(find.byKey(const ValueKey('vehicle-value-batteryPercent')),
+        findsOneWidget);
     expect(t.getSize(find.byKey(const ValueKey('battery-fill'))).width, 0);
     await t.pumpWidget(const SizedBox.shrink());
   });
@@ -233,7 +235,10 @@ void main() {
     expect(find.text('12'), findsOneWidget);
     now += 101;
     await t.pump(const Duration(milliseconds: 101));
-    expect(find.text('等待更新'), findsOneWidget);
+    expect(
+        t.widget<Text>(find.byKey(const ValueKey('vehicle-value-pm25'))).data,
+        '—');
+    expect(find.text('等待更新'), findsNothing);
     expect(find.text('28'), findsOneWidget);
     final next = vehicleGalleryFixture();
     field(next, 'pm25').addAll({'value': 7, 'updatedAtMs': now});

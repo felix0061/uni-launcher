@@ -226,6 +226,8 @@ void main() {
     final (c, _) = await setup(t);
     for (final size in [
       (3, 2, 450.0, 240.0),
+      (4, 2, 600.0, 240.0),
+      (4, 3, 600.0, 390.0),
       (4, 4, 600.0, 530.0),
       (8, 6, 1200.0, 800.0)
     ]) {
@@ -241,7 +243,7 @@ void main() {
       await t.pumpAndSettle();
       expect(find.text('测试播放器'), findsOneWidget);
       expect(find.text('正在播放'), findsOneWidget);
-      if (size.$1 == 3) {
+      if (size.$2 < 4) {
         expect(find.byType(LyricsView), findsNothing);
         await t.tap(find.byKey(const ValueKey('media-source-entry')));
         expect(c.gateway, isA<FakeGateway>());

@@ -107,26 +107,44 @@ class _MusicCard extends StatelessWidget {
         artist: _mediaValue(state, 'artist', 'Coastline', '等待媒体会话'),
         album: _mediaValue(state, 'collection', '晨间驾驶歌单', ''),
         compact: compact);
+    final spectrum = AudioSpectrum(
+        playing: !demo && media['playing'] == true,
+        height: compact
+            ? 24
+            : large
+                ? 58
+                : 34);
     return _CardCanvas(
-        minHeight: compact ? 190 : 320,
+        minHeight: compact
+            ? 190
+            : card.h == 3
+                ? 290
+                : 320,
         child:
             Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           MediaSourceBadge(
               controller: controller, titleBar: true, compact: true),
-          SizedBox(height: Design.px(compact ? 12 : 18)),
+          SizedBox(height: Design.px(compact ? 10 : 16)),
           Expanded(child: LayoutBuilder(builder: (context, box) {
             final cover = Design.px(compact
-                ? 84
+                ? 86
                 : large
                     ? 260
-                    : 150);
-            if (compact || !lyrics) {
-              return Center(
-                  child: Row(children: [
+                    : 132);
+            if (!lyrics) {
+              return Row(children: [
                 _MediaCover(demo: demo, size: cover, media: media),
-                SizedBox(width: Design.px(20)),
-                Expanded(child: metadata),
-              ]));
+                SizedBox(width: Design.px(compact ? 16 : 22)),
+                Expanded(
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                      metadata,
+                      SizedBox(height: Design.px(compact ? 6 : 12)),
+                      spectrum,
+                    ])),
+              ]);
             }
             return Row(children: [
               Expanded(
@@ -149,18 +167,26 @@ class _MusicCard extends StatelessWidget {
               SizedBox(width: Design.px(26)),
               Expanded(
                   flex: 5,
-                  child: Center(
-                      key: const ValueKey('music-card-lyrics'),
-                      child: LyricsView(
-                          media: media,
-                          visibleLines: large ? 7 : 5,
-                          lineHeight: large ? 48 : 38,
-                          fontSize: large ? 28 : 22,
-                          textAlign: TextAlign.start))),
+                  child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        spectrum,
+                        SizedBox(height: Design.px(12)),
+                        Flexible(
+                            child: Center(
+                                key: const ValueKey('music-card-lyrics'),
+                                child: LyricsView(
+                                    media: media,
+                                    visibleLines: large ? 7 : 5,
+                                    lineHeight: large ? 48 : 32,
+                                    fontSize: large ? 28 : 21,
+                                    textAlign: TextAlign.start))),
+                      ])),
             ]);
           })),
           if (!compact) ...[
-            SizedBox(height: Design.px(14)),
+            SizedBox(height: Design.px(10)),
             MediaProgress(
                 media: media,
                 onSeek: (v) => controller.command('seek', value: '$v')),
@@ -210,6 +236,10 @@ class MediaPanel extends StatelessWidget {
                                   height: 1.4,
                                   color: s.muted)),
                           SizedBox(height: Design.px(20)),
+                          AudioSpectrum(
+                              playing: !demo && m['playing'] == true,
+                              height: 48),
+                          SizedBox(height: Design.px(16)),
                           LyricsView(media: m),
                           SizedBox(height: Design.px(20)),
                           MediaProgress(

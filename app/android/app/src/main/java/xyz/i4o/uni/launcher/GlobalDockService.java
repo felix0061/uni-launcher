@@ -43,7 +43,7 @@ public final class GlobalDockService extends Service {
     private static final long PANEL_IDLE_MS=5000;
     private final Runnable releaseIdlePanel=()->{
         if(!panel.isEmpty()||panelWindow==null)return;
-        OverlayWindow old=panelWindow;panelWindow=null;old.close();
+        panelWindow.suspend();
     };
     private final Handler main=new Handler(Looper.getMainLooper());
 
@@ -65,6 +65,8 @@ public final class GlobalDockService extends Service {
              .put("panelReady",s!=null&&s.panelReady)
              .put("liveFlutterEngines",LauncherEngines.liveCount())
              .put("panelEngineAlive",s!=null&&s.panelWindow!=null)
+             .put("panelWindowAttached",s!=null&&s.panelWindow!=null&&s.panelWindow.attached)
+             .put("panelEngineIdentity",s==null||s.panelWindow==null?0:System.identityHashCode(s.panelWindow.engine))
              .put("recentSnapshotCount",s==null?0:s.recentTaskItems.length())
              .put("recentsReady",s!=null&&s.recentTasksReady)
              .put("recentsDisplayId",-1)
@@ -193,15 +195,18 @@ public final class GlobalDockService extends Service {
     private final class OverlayWindow {
         final boolean isPanel;
         final FlutterEngine engine;
+        final xyz.i4o.uni.launcher.audio.SpectrumBridge spectrumBridge;
         final FlutterView view;
         final WindowManager.LayoutParams bounds=new WindowManager.LayoutParams();
         final MethodChannel methods;
         final EventChannel events;
         EventChannel.EventSink sink;
         int relayouts;
+        boolean attached;
         OverlayWindow(boolean isPanel){
             this.isPanel=isPanel;
             engine=LauncherEngines.create(GlobalDockService.this,isPanel?"globalPanelMain":"globalDockMain",false);
+            spectrumBridge=xyz.i4o.uni.launcher.audio.SpectrumBridge.attach(GlobalDockService.this,engine);
             methods=new MethodChannel(engine.getDartExecutor().getBinaryMessenger(),"xyz.i4o.uni.launcher/platform");
             methods.setMethodCallHandler((call,result)->{
                 try{
@@ -246,7 +251,7 @@ public final class GlobalDockService extends Service {
             if(!isPanel)bounds.flags|=WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
             bounds.softInputMode=WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING;
             setBounds();windows.addView(view,bounds);
-            view.attachToFlutterEngine(engine);
+            view.attachToFlutterEngine(engine);attached=true;
         }
         private boolean setBounds(){
             DisplayMetrics real=new DisplayMetrics();windows.getDefaultDisplay().getRealMetrics(real);
@@ -258,15 +263,24 @@ public final class GlobalDockService extends Service {
         }
         void updateBounds(){if(setBounds()&&view.getParent()!=null){windows.updateViewLayout(view,bounds);relayouts++;}}
         void show(boolean show){
+            if(show&&!attached){windows.addView(view,bounds);view.attachToFlutterEngine(engine);attached=true;}
+            if(!attached)return;
             if((view.getVisibility()==View.VISIBLE)==show)return;
             view.setVisibility(show?View.VISIBLE:View.INVISIBLE);
             if(show){engine.getLifecycleChannel().appIsResumed();if(isPanel)view.requestFocus();}
             else engine.getLifecycleChannel().appIsPaused();
         }
         void publish(){if(sink!=null)sink.success(state(isPanel).toString());}
+        void suspend(){
+            if(!attached)return;
+            show(false);view.detachFromFlutterEngine();windows.removeViewImmediate(view);attached=false;
+            engine.getSystemChannel().sendMemoryPressureWarning();
+            engine.getRenderer().onTrimMemory(android.content.ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN);
+        }
         void close(){
+            spectrumBridge.close();
             methods.setMethodCallHandler(null);sink=null;events.setStreamHandler(null);
-            view.detachFromFlutterEngine();if(view.getParent()!=null)windows.removeViewImmediate(view);
+            if(attached){view.detachFromFlutterEngine();if(view.getParent()!=null)windows.removeViewImmediate(view);attached=false;}
             engine.destroy();
         }
     }
@@ -390,7 +404,12 @@ public final class GlobalDockService extends Service {
         if(dockWindow!=null){dockWindow.engine.getSystemChannel().sendMemoryPressureWarning();dockWindow.engine.getRenderer().onTrimMemory(level);}
         if(panelWindow!=null){panelWindow.engine.getSystemChannel().sendMemoryPressureWarning();panelWindow.engine.getRenderer().onTrimMemory(level);}
         if(level>=android.content.ComponentCallbacks2.TRIM_MEMORY_BACKGROUND||level==android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW||level==android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL){
-            if(panel.isEmpty()){main.removeCallbacks(releaseIdlePanel);resetRecentItems();releaseIdlePanel.run();}
+            if(panel.isEmpty()){
+                main.removeCallbacks(releaseIdlePanel);resetRecentItems();
+                // Ordinary idle reuses the engine; genuine system pressure
+                // must still be able to reclaim that cached engine entirely.
+                if(panelWindow!=null){OverlayWindow old=panelWindow;panelWindow=null;panelReady=false;old.close();}
+            }
         }
     }
     @Override public void onLowMemory(){super.onLowMemory();onTrimMemory(android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL);}

@@ -37,7 +37,8 @@ void main() {
             _ => '打开日历',
           });
       expect(button, findsOneWidget);
-      expect(find.textContaining('未同步'), findsWidgets);
+      expect(find.textContaining('未同步'), findsNothing);
+      expect(find.textContaining('已同步'), findsNothing);
       await t.tap(button);
       await t.pumpAndSettle();
       expect(g.commands.last['action'], 'official-widget');

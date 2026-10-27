@@ -1,9 +1,12 @@
 {
   "cycles": 4,
   "activeEngines": 3,
-  "idleEngines": 2,
-  "idlePanelReleased": true,
+  "idleEngines": 3,
+  "idlePanelWindowReleased": true,
+  "panelEngineReused": true,
   "nativeRecentsPurged": true,
   "dockRelayoutsUnchanged": true,
-  "panelRecreated": true
+  "panelReattached": true,
+  "lowMemoryReleasesIdleEngine": true,
+  "panelReopensAfterPressure": true
 }

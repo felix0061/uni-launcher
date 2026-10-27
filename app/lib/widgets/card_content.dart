@@ -16,6 +16,7 @@ import 'lyrics_view.dart';
 import 'media_progress.dart';
 import 'embedded_navigation.dart';
 import 'media_artwork.dart';
+import 'audio_spectrum.dart';
 import 'media_source_badge.dart';
 import 'weather_icon.dart';
 import 'weather_details_sheet.dart';

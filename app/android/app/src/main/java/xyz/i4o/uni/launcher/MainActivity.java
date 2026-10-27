@@ -30,6 +30,7 @@ import xyz.i4o.uni.launcher.platform.LiveNavigationHost;
 public final class MainActivity extends FlutterActivity {
     private static java.lang.ref.WeakReference<MainActivity> active=new java.lang.ref.WeakReference<>(null);
     private LauncherRuntime rt;
+    private xyz.i4o.uni.launcher.audio.SpectrumBridge spectrumBridge;
     private NavigationChrome chrome;
     private LiveNavigationHost mapHost;
     private String cached="{}";
@@ -59,6 +60,7 @@ public final class MainActivity extends FlutterActivity {
 
     @Override public void configureFlutterEngine(FlutterEngine engine){
         super.configureFlutterEngine(engine);
+        spectrumBridge=xyz.i4o.uni.launcher.audio.SpectrumBridge.attach(this,engine);
         if(rt==null)rt=LauncherRuntime.get(this);
         mapHost=new LiveNavigationHost(this,engine.getDartExecutor().getBinaryMessenger(),engine.getRenderer());
         channel=new MethodChannel(engine.getDartExecutor().getBinaryMessenger(),"xyz.i4o.uni.launcher/platform");
@@ -188,6 +190,7 @@ public final class MainActivity extends FlutterActivity {
                 JSONObject m=full.optJSONObject("media"),safe=new JSONObject();
                 if(m!=null)for(String key:new String[]{"available","authorized","playing","source","preferredPackage","sessions","reason","canToggle","canNext","canPrevious","canSeek","controlSource","lyricsSource","durationMs","positionMs","steeringControlReady","instrumentMetadataReady"})safe.put(key,m.opt(key));
                 if(m!=null)safe.put("lyricsAvailable",!m.optString("lyrics").isEmpty()).put("artworkAvailable",!m.optString("artwork").isEmpty()).put("officialMedia",m.optJSONObject("officialMedia"));
+                report.put("audioSpectrum",new JSONObject(xyz.i4o.uni.launcher.audio.SpectrumBridge.diagnostics()));
                 report.put("media",safe).put("flutterViewport",flutterViewport).put("globalDock",GlobalDockService.snapshot(this)).put("systemSettings",full.opt("systemSettings"));
                 if(mapHost!=null)report.put("mapViews",mapHost.snapshot());
                 writer.println("UNI_STATE="+report.toString());
@@ -222,7 +225,7 @@ public final class MainActivity extends FlutterActivity {
     @Override public void onWindowFocusChanged(boolean focus){super.onWindowFocusChanged(focus);if(focus&&chrome!=null)chrome.apply();}
     @Override public void onConfigurationChanged(Configuration c){super.onConfigurationChanged(c);publish();}
     @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] results){
-        super.onRequestPermissionsResult(requestCode,permissions,results);if(requestCode==4105){try{rt.handle(new JSONObject().put("action","calendar-refresh"));}catch(Exception ignored){}publish();}
+        super.onRequestPermissionsResult(requestCode,permissions,results);if(requestCode==4106)xyz.i4o.uni.launcher.audio.SpectrumBridge.permissionChanged();if(requestCode==4105){try{rt.handle(new JSONObject().put("action","calendar-refresh"));}catch(Exception ignored){}publish();}
     }
 
     @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
@@ -266,7 +269,17 @@ public final class MainActivity extends FlutterActivity {
         Map<String,Object> result=new HashMap<>();result.put("path",out.getAbsolutePath());result.put("luminance",luminance);return result;
     }
 
+    public static void requestAudioSpectrumPermission(android.content.Context context){
+        MainActivity owner=active.get();
+        if(owner!=null&&owner.hasWindowFocus()){
+            owner.requestPermissions(new String[]{android.Manifest.permission.RECORD_AUDIO},4106);
+        }else context.startActivity(new Intent(context,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).putExtra("uniSpectrumPermission",true));
+    }
     private void dispatchIntent(Intent intent){
+        if(intent!=null&&intent.getBooleanExtra("uniSpectrumPermission",false)){
+            getWindow().getDecorView().post(()->requestPermissions(new String[]{android.Manifest.permission.RECORD_AUDIO},4106));
+            intent.removeExtra("uniSpectrumPermission");
+        }
         if(channel!=null)channel.invokeMethod(intent!=null&&intent.getBooleanExtra("uniSettings",false)?"open-settings":"home",null);
     }
 
@@ -280,6 +293,7 @@ public final class MainActivity extends FlutterActivity {
         if(wallpaperResult!=null){wallpaperResult.success(null);wallpaperResult=null;}
         if(rt!=null)rt.removeListener(this);
         if(mapHost!=null)mapHost.close();
+        if(spectrumBridge!=null){spectrumBridge.close();spectrumBridge=null;}
         if(channel!=null)channel.setMethodCallHandler(null);
         if(events!=null)events.setStreamHandler(null);
         sink=null;if(active.get()==this)active.clear();
