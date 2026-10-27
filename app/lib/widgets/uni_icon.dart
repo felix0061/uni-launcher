@@ -20,6 +20,7 @@ class UniIcon extends StatelessWidget {
 }
 
 final _originalIcons = <IconData, String>{
+  Icons.settings_outlined: 'settings',
   Icons.home_outlined: 'home',
   Icons.apps: 'apps',
   Icons.air: 'fan',

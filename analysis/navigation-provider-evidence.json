@@ -1,0 +1,109 @@
+{
+  "date": "2026-10-27",
+  "scope": "Static inspection of owner-supplied APKs only. No live map signal, route or app-to-app handshake has been verified.",
+  "baidu": {
+    "input": {
+      "file": "BaiduMapForAuto_AndroidPhone_x640001.apk",
+      "package": "com.baidu.naviauto",
+      "version": "22.0.1",
+      "versionCode": "1645",
+      "sha256": "06a9bab223d46c5429242bb05c611d97ff19118dfb0b1ead11cfa5bd25086452"
+    },
+    "internalSignal": {
+      "models": [
+        "BMATrafficLightInfo",
+        "BDDirectionLightInfo",
+        "BDPeriodLightInfo",
+        "BDCrossLightInfo"
+      ],
+      "event": "TRAFFIC_LIGHT_UPDATE",
+      "scene": 20001,
+      "path": [
+        "Ls5/c;->H(ArrayList)",
+        "Lt5/b;->d()JSONObject",
+        "Ls5/c;->C(String,JSONObject,int)",
+        "Ls5/c;->z(String,int,JSONObject)",
+        "Lu5/a;->a(int,String,JSONObject)"
+      ],
+      "payload": {
+        "result": {
+          "lng": "double",
+          "lat": "double",
+          "detail": [
+            "color",
+            "countdownTime",
+            "direction",
+            "blinkPeriod",
+            "blinkText",
+            "blinkShowCountDown",
+            "mainFlow"
+          ]
+        }
+      },
+      "caveats": [
+        "detail is one JSONObject updated inside a loop, not a multi-direction JSONArray in this serializer.",
+        "The inspected event dispatch calls an in-process notifier interface; no external traffic Intent transport was established.",
+        "Raw multi-direction SDK callbacks do not prove a launcher can subscribe across processes."
+      ]
+    },
+    "otherBroadcast": {
+      "sender": "Lr4/a;->f(String,int,Bundle,String)",
+      "action": "com.baidu.BaiduMap.OPENAPI_CALLBACK",
+      "receiverPermission": "com.baidu.BaiduMap.permission.OPENAPI_RECEIVE",
+      "gates": [
+        "feature flag Lct/d;->b()",
+        "authentication Lr4/a;->a(); failure replaces payload with code 113 and error_message"
+      ],
+      "permissionProtectionLevel": "not declared by this APK; not inferred",
+      "trafficEventToThisSenderConfirmed": false
+    },
+    "adapter": "Not enabled: no confirmed cross-process multi-direction traffic-light contract."
+  },
+  "tencent": {
+    "input": {
+      "file": "TencentMapAuto_user_lovely_9.11.0.159_release_20260920152034 (1).apk",
+      "package": "com.tencent.wecarnavi",
+      "version": "9.11.0.159",
+      "versionCode": "1091100159",
+      "sha256": "2a015d23a76517a6be8f3060027130e574895036dc1d6bc74b5d9935ce449e2f"
+    },
+    "signalPath": {
+      "model": "com.tencent.pangu.mapbase.common.MultiLightCountdownTimerInfo",
+      "path": [
+        "Lab/b;->j(MultiLightCountdownTimerInfo)",
+        "SdkAutoStatus.MAP_NAVI_TRAFFIC_LIGHT_INFO JSON",
+        "Lid/e;->l(SdkAutoStatus)",
+        "NaviSdkApiImpl.l1(SdkAutoStatus)",
+        "ICommonStateListener.onAutoStatusChangedDetail(int,String)"
+      ],
+      "transport": "Binder RemoteCallbackList, not Android Intent broadcast"
+    },
+    "standardBroadcast": {
+      "sender": "Lot/j;->b(int,int,Bundle)",
+      "action": "WECARNAVIAUTO_STANDARD_BROADCAST_SEND",
+      "gate": "AppFeatureConfigInfo.isSendStatusBroadcast()",
+      "guideSender": "Lot/j;->v(GuideInfoModel)",
+      "guideKeyType": 2004,
+      "trafficField": "rg_on_remain_traffic_light",
+      "trafficSourceField": "GuideInfoModel.remainLightCount",
+      "meaning": "Remaining count of intersections/lights on the route, not seconds, light color or turn direction.",
+      "multiDirectionPayloadConfirmed": false
+    },
+    "futureIpcCandidate": {
+      "service": "com.tencent.wecarnavi.sdk.NaviSdkService",
+      "exported": true,
+      "manifestPermission": null,
+      "interface": "com.tencent.wecarnavi.sdk.INaviSdkService",
+      "subscribe": "registerCommonStateListener(String,ICommonStateListener)",
+      "unsubscribe": "unregisterCommonStateListener(String,ICommonStateListener)",
+      "status": "Candidate only. Caller validation, event JSON schema/enums, subscription lifecycle and actual signal delivery require separate verification."
+    },
+    "adapter": "No new broadcast adapter enabled; Binder candidate remains unverified."
+  },
+  "reproduce": {
+    "tool": "tools/analyze_navigation_signals.py",
+    "baiduReferences": "Lu5/a;|Ls5/c;->|Lt5/b;",
+    "tencentReferences": "Lid/e;|Lot/j;|MAP_NAVI_TRAFFIC_LIGHT_INFO|NaviSdkService|ICommonStateListener|MultiLightCountdownTimerInfo|Lcom/tencent/wecarnavi/sdk/NaviSdkApiImpl;->l1",
+    "rawOutput": "analysis/raw/{baidu,tencent}-signals/{signal,broadcast,reference}-bytecode.txt; ignored by Git"
+  }
+}

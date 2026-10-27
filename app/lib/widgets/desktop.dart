@@ -94,6 +94,20 @@ class _HeaderState extends State<Header> {
                                     native['systemStatus'])
                                 : const {}),
                       ])),
+              if (!widget.controller.settings) ...[
+                SizedBox(width: Design.px(16)),
+                IconAction(
+                    key: const ValueKey('desktop-settings-entry'),
+                    icon: Icons.settings_outlined,
+                    label: '桌面设置',
+                    size: Design.px(40),
+                    iconSize: Design.px(22),
+                    foregroundColor: s.muted,
+                    framed: false,
+                    onTap: widget.controller.editing
+                        ? null
+                        : widget.controller.openSettings),
+              ],
             ])));
   }
 }
