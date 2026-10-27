@@ -1,4 +1,4 @@
-# UNI 桌面
+# UNI桌面
 
 面向领克 05 PHEV 原车 IP753 车机的 Android 桌面。界面使用 Flutter 构建，通过 Android 原生适配层接入导航、媒体和车辆信息；应用包名为 `xyz.i4o.uni.launcher`。
 
