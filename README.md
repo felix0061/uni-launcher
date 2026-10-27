@@ -54,6 +54,12 @@ flutter build apk --release --target-platform android-arm64,android-x64 --split-
 - [产品与界面设计](docs/PRODUCT_DESIGN.md)、[车辆卡片设计](docs/VEHICLE_CARD_DESIGN.md)
 - [完整参考资料与历史设计](docs/PROJECT_REFERENCE.md)
 
+## 贡献与 Pull Request
+
+永远欢迎提交 Pull Request！请使用 `feat/lynkco-<车型>` 命名车型功能分支，例如领克 05 使用 `feat/lynkco-05`。
+
+提交 PR 前，请在对应车型的车机上完成测试并确认验证通过，在 PR 描述中说明车型、车机系统版本及测试结果。同时请同步最新的 `main` 分支，解决所有合并冲突，确保 PR 可以无冲突地合并到 `main`。
+
 ## 免费使用与许可声明
 
 UNI桌面免费提供，其原创代码及资源采用**非商业、源码可用、相同条款共享**的自定义许可：禁止未经授权的商业使用和收费，分发时须向接收者提供对应源码，并按相同条款共享。完整条款见 [LICENSE](LICENSE)。
