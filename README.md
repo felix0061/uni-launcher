@@ -49,7 +49,9 @@ flutter build apk --release --target-platform android-arm64,android-x64 --split-
 | 目录 | 内容 |
 | --- | --- |
 | `app/` | Flutter 界面、Android 应用入口和测试 |
-| `android/` | 原生适配模块及早期实现参考 |
+| `app/android/` | Android 平台入口、原生适配和导航栏资源 |
+| `app/native-tests/` | 原生适配测试、模拟器夹具和测试工具 |
+| `archive/webview-android/` | 早期 WebView 基线与历史验证资料 |
 | `docs/` | 设计、接口、版本验证与实车记录 |
 | `design/` | 设计稿及交互原型 |
 | `analysis/` | APK 分析摘要与证据索引 |
@@ -61,7 +63,7 @@ flutter build apk --release --target-platform android-arm64,android-x64 --split-
 - [Flutter 工程说明](app/README.md)与[原车车辆接口](docs/OFFICIAL_CAR_API.md)
 - [导航与红绿灯](docs/AMAP_TRAFFIC_LIGHT_CARD.md)、[媒体歌词与动效](docs/MEDIA_LYRICS_AND_MOTION.md)
 - [产品与界面设计](docs/PRODUCT_DESIGN.md)、[车辆卡片设计](docs/VEHICLE_CARD_DESIGN.md)
-- [完整参考资料与历史设计](docs/PROJECT_REFERENCE.md)
+- [项目目录与原生代码](docs/PROJECT_STRUCTURE.md)、[完整参考资料与历史设计](docs/PROJECT_REFERENCE.md)
 
 ## 贡献与 Pull Request
 
