@@ -22,6 +22,7 @@ python3 tools/test_official_car.py
 python3 tools/test_weather_location.py
 python3 tools/test_system_settings.py
 python3 app/native-tests/tools/test-netease-adapter.py
+python3 app/native-tests/tools/test-lyrics-resolver.py
 python3 app/native-tests/tools/test-official-media-bridge.py
 python3 app/native-tests/tools/test-navigation-media-performance.py
 cd app
