@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('directory', type=Path)
 parser.add_argument('--out', type=Path, default=Path('analysis/raw/amap'))
 args = parser.parse_args()
-pattern = re.compile(r'traffic.?light|red.?light|light.?count|lightsData|countDown|count_down|signal.?light|60073|0xeaa9|红绿灯', re.I)
+pattern = re.compile(r'traffic.?light|red.?light|light.?count|lightsData|countDown|count_down|signal.?light|CameraLightInfo|TYPE_DIRECTIONS|TYPE_BGS|60073|0xeaa9|红绿灯', re.I)
 inventories = {}
 for source in sorted(args.directory.glob('*.apk')):
     label = 'official' if source.name.startswith('Auto') else 'modified'

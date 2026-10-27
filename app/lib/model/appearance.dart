@@ -43,6 +43,7 @@ const wallpaperPresets = <WallpaperPreset>[
 
 class Appearance {
   static const themeStyles = ['classic', 'blueGlass'];
+  static const spectrumStyles = ['bars', 'segments', 'mirror', 'outline'];
   static const defaultDesktopName = 'LYNK & CO / 05';
   static String normalizeDesktopName(Object? value) {
     final name =
@@ -57,6 +58,7 @@ class Appearance {
       palette,
       custom,
       pageTransition,
+      spectrumStyle,
       desktopName,
       wallpaper,
       wallpaperPath;
@@ -72,6 +74,7 @@ class Appearance {
       this.radius = 28,
       this.glass = false,
       this.pageTransition = 'slide',
+      this.spectrumStyle = 'bars',
       this.wallpaper = 'gradient',
       this.wallpaperPath = '',
       this.wallpaperLuminance});
@@ -95,6 +98,9 @@ class Appearance {
             : 28,
         glass: json['glass'] == true,
         pageTransition: normalizePageEffect(json['pageTransition']),
+        spectrumStyle: spectrumStyles.contains(json['spectrumStyle'])
+            ? json['spectrumStyle']
+            : 'bars',
         wallpaper: [...wallpaperPresets.map((item) => item.id), 'custom']
                 .contains(json['wallpaper'])
             ? json['wallpaper']
@@ -116,6 +122,7 @@ class Appearance {
           double? radius,
           bool? glass,
           String? pageTransition,
+          String? spectrumStyle,
           String? wallpaper,
           String? wallpaperPath,
           double? wallpaperLuminance}) =>
@@ -128,6 +135,9 @@ class Appearance {
           radius: (radius ?? this.radius).clamp(0, 40),
           glass: glass ?? this.glass,
           pageTransition: pageTransition ?? this.pageTransition,
+          spectrumStyle: spectrumStyles.contains(spectrumStyle)
+              ? spectrumStyle!
+              : this.spectrumStyle,
           wallpaper: wallpaper ?? this.wallpaper,
           wallpaperPath: wallpaperPath ?? this.wallpaperPath,
           wallpaperLuminance: wallpaperLuminance ?? this.wallpaperLuminance);
@@ -140,6 +150,7 @@ class Appearance {
         'radius': radius.round(),
         'glass': glass,
         'pageTransition': pageTransition,
+        'spectrumStyle': spectrumStyle,
         'wallpaper': wallpaper,
         if (wallpaperPath.isNotEmpty) 'wallpaperPath': wallpaperPath,
         if (wallpaperLuminance != null)

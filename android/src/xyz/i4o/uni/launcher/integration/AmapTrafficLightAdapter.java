@@ -72,9 +72,10 @@ public final class AmapTrafficLightAdapter {
             }
         }catch(RuntimeException|org.json.JSONException ignored){return;}
         if(incoming==null)return;
-        // Prefer a fresh multi-direction batch over a concurrent standard sample.
+        // Prefer the richer, enum-verified yh batch (even one direction) over
+        // concurrent standard data whose direction enum is unverified.
         // A cruise empty array always clears; it cannot fall back to stale data.
-        if("standard".equals(channel)&&"cruise".equals(protocol)&&lights.length()>1
+        if("standard".equals(channel)&&"cruise".equals(protocol)&&lights.length()>0
                 &&receivedAt>=0&&SystemClock.elapsedRealtime()-receivedAt<TTL_MS)return;
         handler.removeCallbacks(expire);sequence++;
         lights=incoming;protocol=channel;reason=lights.length()==0?"waiting":"live";

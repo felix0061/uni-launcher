@@ -120,78 +120,89 @@ class _MusicCard extends StatelessWidget {
             : card.h == 3
                 ? 290
                 : 320,
-        child:
-            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          MediaSourceBadge(
-              controller: controller, titleBar: true, compact: true),
-          SizedBox(height: Design.px(compact ? 10 : 16)),
-          Expanded(child: LayoutBuilder(builder: (context, box) {
-            final cover = Design.px(compact
-                ? 86
-                : large
-                    ? 260
-                    : 132);
-            if (!lyrics) {
-              return Row(children: [
-                _MediaCover(demo: demo, size: cover, media: media),
-                SizedBox(width: Design.px(compact ? 16 : 22)),
-                Expanded(
-                    child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                      metadata,
-                      SizedBox(height: Design.px(compact ? 6 : 12)),
-                      spectrum,
-                    ])),
-              ]);
-            }
-            return Row(children: [
-              Expanded(
-                  flex: 4,
-                  child: Center(
-                      child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: SizedBox(
-                              width: box.maxWidth * 4 / 9,
-                              child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _MediaCover(
-                                        demo: demo, size: cover, media: media),
-                                    SizedBox(height: Design.px(18)),
-                                    metadata,
-                                  ]))))),
-              SizedBox(width: Design.px(26)),
-              Expanded(
-                  flex: 5,
-                  child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        spectrum,
-                        SizedBox(height: Design.px(12)),
-                        Flexible(
-                            child: Center(
-                                key: const ValueKey('music-card-lyrics'),
-                                child: LyricsView(
-                                    media: media,
-                                    visibleLines: large ? 7 : 5,
-                                    lineHeight: large ? 48 : 32,
-                                    fontSize: large ? 28 : 21,
-                                    textAlign: TextAlign.start))),
-                      ])),
-            ]);
-          })),
-          if (!compact) ...[
-            SizedBox(height: Design.px(10)),
-            MediaProgress(
-                media: media,
-                onSeek: (v) => controller.command('seek', value: '$v')),
-          ],
-        ]));
+        child: GestureDetector(
+            key: const ValueKey('music-card-open-panel'),
+            behavior: HitTestBehavior.opaque,
+            onTap: controller.editing
+                ? null
+                : () => showMediaPanel(context, controller),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  MediaSourceBadge(
+                      controller: controller, titleBar: true, compact: true),
+                  SizedBox(height: Design.px(compact ? 10 : 16)),
+                  Expanded(child: LayoutBuilder(builder: (context, box) {
+                    final cover = Design.px(compact
+                        ? 86
+                        : large
+                            ? 260
+                            : 132);
+                    if (!lyrics) {
+                      return Row(children: [
+                        _MediaCover(demo: demo, size: cover, media: media),
+                        SizedBox(width: Design.px(compact ? 16 : 22)),
+                        Expanded(
+                            child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                              metadata,
+                              SizedBox(height: Design.px(compact ? 6 : 12)),
+                              spectrum,
+                            ])),
+                      ]);
+                    }
+                    return Row(children: [
+                      Expanded(
+                          flex: 4,
+                          child: Center(
+                              child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: SizedBox(
+                                      width: box.maxWidth * 4 / 9,
+                                      child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            _MediaCover(
+                                                demo: demo,
+                                                size: cover,
+                                                media: media),
+                                            SizedBox(height: Design.px(18)),
+                                            metadata,
+                                          ]))))),
+                      SizedBox(width: Design.px(26)),
+                      Expanded(
+                          flex: 5,
+                          child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                spectrum,
+                                SizedBox(height: Design.px(12)),
+                                Flexible(
+                                    child: Center(
+                                        key:
+                                            const ValueKey('music-card-lyrics'),
+                                        child: LyricsView(
+                                            media: media,
+                                            visibleLines: large ? 7 : 5,
+                                            lineHeight: large ? 48 : 32,
+                                            fontSize: large ? 28 : 21,
+                                            textAlign: TextAlign.start))),
+                              ])),
+                    ]);
+                  })),
+                  if (!compact) ...[
+                    SizedBox(height: Design.px(10)),
+                    MediaProgress(
+                        media: media,
+                        onSeek: (v) => controller.command('seek', value: '$v')),
+                  ],
+                ])));
   }
 }
 

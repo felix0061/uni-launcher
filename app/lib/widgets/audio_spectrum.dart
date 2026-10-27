@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'spectrum_painter.dart';
 import '../platform/audio_spectrum.dart';
 import '../theme/launcher_theme.dart';
 import '../theme/design_tokens.dart';
@@ -101,7 +102,8 @@ class _AudioSpectrumState extends State<AudioSpectrum>
                 child: Stack(fit: StackFit.expand, children: [
               CustomPaint(
                   key: const ValueKey('audio-spectrum-paint'),
-                  painter: AudioSpectrumPainter(service, s.accent, s.edge)),
+                  painter: AudioSpectrumPainter(
+                      service, s.accent, s.edge, s.spectrumStyle)),
               if (!service.granted && presentation == 'permission-required')
                 Center(
                     child: TextButton.icon(
@@ -122,35 +124,19 @@ class _AudioSpectrumState extends State<AudioSpectrum>
 class AudioSpectrumPainter extends CustomPainter {
   final AudioSpectrumService service;
   final Color accent, edge;
-  AudioSpectrumPainter(this.service, this.accent, this.edge)
+  final String style;
+  AudioSpectrumPainter(this.service, this.accent, this.edge, this.style)
       : super(repaint: service);
   @override
-  void paint(Canvas canvas, Size size) {
-    if (size.isEmpty) return;
-    final track = Paint()..color = edge.withValues(alpha: .45);
-    final paint = Paint()
-      ..shader = LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [accent, accent.withValues(alpha: .28)])
-          .createShader(Offset.zero & size);
-    const bands = 24;
-    final step = size.width / bands, width = (step * .48).clamp(1.0, 6.0);
-    for (var i = 0; i < bands; i++) {
-      final x = (i + .5) * step;
-      final value = service.available && i < service.levels.length
-          ? service.levels[i]
-          : 0.0;
-      final h = (value * (size.height - 3)).clamp(1.0, size.height);
-      final rect = RRect.fromRectAndRadius(
-          Rect.fromCenter(
-              center: Offset(x, size.height / 2), width: width, height: h),
-          const Radius.circular(1));
-      canvas.drawRRect(rect, value > .015 ? paint : track);
-    }
-  }
-
+  void paint(Canvas canvas, Size size) => paintSpectrum(canvas, size,
+      levels: service.available ? service.levels : const [],
+      accent: accent,
+      edge: edge,
+      style: style);
   @override
   bool shouldRepaint(AudioSpectrumPainter old) =>
-      old.service != service || old.accent != accent || old.edge != edge;
+      old.service != service ||
+      old.accent != accent ||
+      old.edge != edge ||
+      old.style != style;
 }

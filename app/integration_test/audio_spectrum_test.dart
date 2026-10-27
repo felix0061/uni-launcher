@@ -12,6 +12,8 @@ import 'package:uni_launcher/platform/native_gateway.dart';
 import 'package:uni_launcher/theme/launcher_theme.dart';
 import 'package:uni_launcher/widgets/card_content.dart';
 import 'package:uni_launcher/widgets/glass_surface.dart';
+import 'package:uni_launcher/widgets/bottom_dock.dart';
+import 'package:uni_launcher/widgets/spectrum_painter.dart';
 import '../test/fake_gateway.dart';
 
 void main() {
@@ -57,9 +59,16 @@ void main() {
     final controller = LauncherController(fake);
     await controller.initialize();
     final visible = ValueNotifier(true);
-    Future<void> show(int w, int h, {bool panel = false}) async {
+    Future<void> show(int w, int h,
+        {bool panel = false,
+        bool dock = false,
+        String spectrumStyle = 'bars'}) async {
       final style = SurfaceStyle.from(
-          const Appearance(themeStyle: 'blueGlass', mode: 'dark'), true);
+          Appearance(
+              themeStyle: 'blueGlass',
+              mode: 'dark',
+              spectrumStyle: spectrumStyle),
+          true);
       await t.pumpWidget(MaterialApp(
           theme: launcherTheme(style),
           home: Scaffold(
@@ -70,19 +79,36 @@ void main() {
                       builder: (_, enabled, __) => TickerMode(
                           enabled: enabled,
                           child: SizedBox(
-                              width: panel ? 1050 : w * 125.0,
-                              height: panel ? 600 : h * 100.0,
+                              width: dock
+                                  ? 1920
+                                  : panel
+                                      ? 1050
+                                      : w * 125.0,
+                              height: dock
+                                  ? 96
+                                  : panel
+                                      ? 600
+                                      : h * 100.0,
                               child: GlassSurface(
                                   padding: EdgeInsets.zero,
-                                  child: panel
-                                      ? Padding(
-                                          padding: const EdgeInsets.all(28),
-                                          child: MediaPanel(
-                                              controller: controller))
-                                      : CardContent(
-                                          card: LauncherCard('spectrum-music',
-                                              'music', '音乐', 0, 0, w, h, 0),
-                                          controller: controller)))))))));
+                                  child: dock
+                                      ? BottomDock(controller: controller)
+                                      : panel
+                                          ? Padding(
+                                              padding: const EdgeInsets.all(28),
+                                              child: MediaPanel(
+                                                  controller: controller))
+                                          : CardContent(
+                                              card: LauncherCard(
+                                                  'spectrum-music',
+                                                  'music',
+                                                  '音乐',
+                                                  0,
+                                                  0,
+                                                  w,
+                                                  h,
+                                                  0),
+                                              controller: controller)))))))));
       await t.pumpAndSettle();
     }
 
@@ -119,6 +145,35 @@ void main() {
       expect(t.takeException(), isNull);
       await binding.takeScreenshot('spectrum-music-${size.$1}x${size.$2}');
     }
+    for (final style in spectrumStyleLabels.keys) {
+      await show(4, 3, spectrumStyle: style);
+      expect(service.activeConsumers, 1);
+      expect(t.takeException(), isNull);
+      await binding.takeScreenshot('spectrum-music-style-$style');
+    }
+    await show(4, 3, dock: true, spectrumStyle: 'segments');
+    expect(service.activeConsumers, 1);
+    await binding.takeScreenshot('spectrum-music-dock');
+    await t.drag(find.byKey(const ValueKey('dock-music-visual-pages')),
+        const Offset(-450, 0));
+    await t.pumpAndSettle();
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    expect(service.activeConsumers, 0,
+        reason: 'Dock lyric page must release FFT');
+    expect(
+        (await service.methods
+            .invokeMapMethod<String, dynamic>('status'))!['running'],
+        false);
+    await binding.takeScreenshot('spectrum-music-dock-lyrics');
+    await t.drag(find.byKey(const ValueKey('dock-music-visual-pages')),
+        const Offset(450, 0));
+    await t.pumpAndSettle();
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    expect(service.activeConsumers, 1);
+    expect(
+        (await service.methods
+            .invokeMapMethod<String, dynamic>('status'))!['running'],
+        true);
     await show(4, 3, panel: true);
     await binding.takeScreenshot('spectrum-music-panel');
     final before = service.sequence;
@@ -153,7 +208,9 @@ void main() {
       'framesInTwoSeconds': framesInTwoSeconds,
       'hiddenCaptureStopped': true,
       'cardLayouts': ['4x2', '4x3', '4x4', '8x6'],
-      'noLayoutErrors': true
+      'noLayoutErrors': true,
+      'styles': spectrumStyleLabels.keys.toList(),
+      'dockSwipeStopsAndResumesNativeFFT': true
     };
   });
 }

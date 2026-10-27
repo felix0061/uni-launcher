@@ -65,7 +65,7 @@ def start(selected):
               'embedNavigation': ('boolean', 'false'), 'globalDockEnabled': ('boolean', 'false'),
               'appNames': ('string', json.dumps({selected: '信号测试地图'}, ensure_ascii=False)),
               'savedDesign': ('string', json.dumps({'version': 6, 'pageCount': 1,
-                  'preferences': {'mode': 'dark', 'palette': 'mint', 'custom': '#71e4ce', 'radius': 24},
+                  'preferences': {'mode': 'dark', 'palette': 'mint', 'custom': '#71e4ce', 'radius': 12, 'themeStyle': 'blueGlass'},
                   'cards': [{'id': 'signal-test', 'type': 'trafficLight', 'title': '红绿灯', 'x': 0, 'y': 0, 'w': 4, 'h': 3, 'page': 0}]}, ensure_ascii=False))}
     for child in list(tree):
         if child.get('name') in values:
@@ -112,6 +112,8 @@ def cruise(lights):
 
 
 def shot(name):
+    # Native dumpsys can observe reception before Flutter paints its next frame.
+    time.sleep(.7)
     (args.out / (name + '.png')).write_bytes(run('exec-out', 'screencap', '-p').stdout)
 
 
@@ -132,15 +134,23 @@ try:
     check('timeout clears every direction', not expired['available'] and not expired['lights'])
     shot('native-expired')
     start('com.autonavi.amapautp.yh')
-    cruise([{'direction': 1, 'status': 2, 'countdown': 60}, {'direction': 8, 'status': 4, 'countdown': 24}])
-    value = wait(lambda s: len(s.get('lights', [])) == 2)
+    cruise([{'direction': 1, 'status': 0, 'countdown': 60}, {'direction': 2, 'status': 1, 'countdown': 24}, {'direction': 3, 'status': 0, 'countdown': 45}])
+    value = wait(lambda s: len(s.get('lights', [])) == 3)
     samples['cruise'] = value
-    check('modified cruise batch received atomically', [s['countdownSeconds'] for s in value['lights']] == [60, 24])
+    check('modified cruise batch received atomically', [s['countdownSeconds'] for s in value['lights']] == [60, 24, 45])
+    check('yh direction resource table is applied', [s['direction'] for s in value['lights']] == ['left', 'straight', 'right'])
+    check('yh lamp resource table is applied independently', [s['lamp'] for s in value['lights']] == ['red', 'green', 'red'])
+    shot('native-yh-three-directions')
     seq = value['sequence']
     standard()
     check('fresh multi-direction batch survives concurrent standard sample', state()['sequence'] == seq)
     cruise([{'direction': 1, 'status': 2, 'countdown': 40}, {}])
     check('malformed multi-direction batch never partially replaces data', state()['sequence'] == seq)
+    cruise([{'direction': 2, 'status': 1, 'countdown': 18}])
+    value = wait(lambda s: len(s.get('lights', [])) == 1)
+    seq = value['sequence']
+    standard()
+    check('verified single cruise also survives concurrent standard sample', state()['sequence'] == seq)
     cruise([])
     empty = wait(lambda s: not s.get('lights'))
     check('explicit empty batch clears immediately', not empty['available'])

@@ -184,32 +184,34 @@ class _TrafficLightCardState extends State<TrafficLightCard>
                 signal: data.lights.single, elapsedMs: elapsed, large: !short)),
       ]);
     }
-    final limit = width > Design.px(600) ? 3 : 2;
-    final shown = data.lights.take(limit).toList();
+    final columns = data.lights.length.clamp(1, 3);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       _heading(s, small: short),
       SizedBox(height: Design.px(short ? 12 : 24)),
       Expanded(
-          child: Row(children: [
-        for (var i = 0; i < shown.length; i++) ...[
-          if (i > 0) ...[
-            SizedBox(width: Design.px(short ? 12 : 20)),
-            Container(width: 1, color: s.edge),
-            SizedBox(width: Design.px(short ? 12 : 20)),
-          ],
-          Expanded(
-              child: _SignalReading(
-                  signal: shown[i], elapsedMs: elapsed, large: !short)),
-        ],
-      ])),
+          child: LayoutBuilder(
+              builder: (context, box) => GridView.builder(
+                  key: const ValueKey('traffic-light-directions'),
+                  padding: EdgeInsets.zero,
+                  itemCount: data.lights.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: columns,
+                      mainAxisExtent: data.lights.length <= 3
+                          ? box.maxHeight
+                          : (box.maxHeight / 2)
+                              .clamp(Design.px(100), Design.px(150)),
+                      crossAxisSpacing: Design.px(10),
+                      mainAxisSpacing: Design.px(10)),
+                  itemBuilder: (context, i) => _SignalReading(
+                      signal: data.lights[i],
+                      elapsedMs: elapsed,
+                      large: false,
+                      stacked: true)))),
       if (!short) ...[
         SizedBox(height: Design.px(18)),
         Container(height: 1, color: s.edge),
         SizedBox(height: Design.px(14)),
-        Text(
-            data.lights.length > shown.length
-                ? '另有 ${data.lights.length - shown.length} 个方向 · 点击标题查看地图'
-                : '以路口实际信号为准',
+        Text('${data.lights.length} 个方向 · 以路口实际信号为准',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(fontSize: Design.px(15), color: s.muted)),
@@ -239,8 +241,12 @@ class _SignalReading extends StatelessWidget {
   final TrafficSignal signal;
   final int elapsedMs;
   final bool large;
+  final bool stacked;
   const _SignalReading(
-      {required this.signal, required this.elapsedMs, required this.large});
+      {required this.signal,
+      required this.elapsedMs,
+      required this.large,
+      this.stacked = false});
   @override
   Widget build(BuildContext context) {
     final s = SurfaceStyle.of(context);
@@ -258,6 +264,38 @@ class _SignalReading extends StatelessWidget {
       _ => 'traffic-light',
     };
     final seconds = signal.remaining(elapsedMs);
+    if (stacked) {
+      return Semantics(
+          label:
+              '${signal.directionLabel}，${signal.lampLabel}，${seconds ?? '未知'}秒',
+          child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      UniIcon(symbol, size: Design.px(38), color: color),
+                      SizedBox(width: Design.px(10)),
+                      Text(seconds?.toString() ?? '—',
+                          key: const ValueKey('traffic-light-seconds'),
+                          style: TextStyle(
+                              fontSize: Design.px(46),
+                              height: 1.1,
+                              color: color,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures()
+                              ])),
+                      SizedBox(width: Design.px(4)),
+                      Text('秒',
+                          style: TextStyle(
+                              fontSize: Design.px(15), color: s.muted)),
+                    ]),
+                SizedBox(height: Design.px(10)),
+                Text('${signal.directionLabel} · ${signal.lampLabel}',
+                    style: TextStyle(fontSize: Design.px(17), color: s.muted)),
+              ])));
+    }
     return FittedBox(
         fit: BoxFit.scaleDown,
         alignment: Alignment.center,

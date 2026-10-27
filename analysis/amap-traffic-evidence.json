@@ -52,14 +52,29 @@
       "waitNum",
       "showType"
     ],
-    "send": "Context.sendBroadcast(Intent)"
+    "send": "Context.sendBroadcast(Intent)",
+    "verifiedDisplayEnums": {
+      "source": "com.autonavi.floatwindow.FloatViewUtils.<clinit> and FloatViewHelper$2.run",
+      "directionTable": {
+        "1": "left_night",
+        "2": "straight_night",
+        "3": "right_night"
+      },
+      "statusTable": {
+        "0": "red_night",
+        "1": "green_night"
+      },
+      "status2": "float UI also uses green_night; semantic unknown, stays neutral",
+      "consumer": "CameraLightInfo b/c passed unchanged as ElecticCameraInfo direction/type; used to index TYPE_DIRECTIONS/TYPE_BGS",
+      "scope": "yh CameraLightInfo cruise only; do not apply to standard dir/status"
+    }
   },
   "unverified": [
-    "direction and lamp enum mappings",
-    "real broadcast reception",
     "channel/account/road coverage",
     "greenLightLastSecond semantics and availability",
-    "update cadence and invalidation signals"
+    "update cadence and invalidation signals",
+    "standard broadcast enums; cruise direction outside 1..3 / status outside 0..1",
+    "multiple simultaneous directions at a real road junction"
   ],
   "rawEvidenceFiles": [
     "official/traffic-bytecode.txt",
@@ -67,5 +82,21 @@
     "modified/traffic-bytecode.txt",
     "modified/dispatch-bytecode.txt",
     "zip-difference.json"
-  ]
+  ],
+  "realObservation": {
+    "date": "2026-10-27",
+    "source": "read-only observation before 0.6.14 update",
+    "package": "com.autonavi.amapautp.yh",
+    "protocol": "cruise",
+    "rawDirection": [
+      2
+    ],
+    "rawStatus": [
+      0,
+      1
+    ],
+    "maxObservedBatchSize": 1,
+    "countdownReceived": true,
+    "ownerConfirmed": "seconds rendered; direction/multiple signals absent"
+  }
 }

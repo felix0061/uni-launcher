@@ -73,12 +73,12 @@ class TrafficLightSnapshot {
         final count = _integer(item['countdownSeconds']);
         final verified = raw['enumVerified'] == true;
         lights.add(TrafficSignal(
-            direction: verified &&
+            direction: (verified || item['directionVerified'] == true) &&
                     const {'left', 'straight', 'right', 'uturn'}
                         .contains(item['direction'])
                 ? item['direction'] as String
                 : 'unknown',
-            lamp: verified &&
+            lamp: (verified || item['lampVerified'] == true) &&
                     const {'red', 'green', 'amber'}.contains(item['lamp'])
                 ? item['lamp'] as String
                 : 'unknown',

@@ -5,7 +5,8 @@ import '../theme/launcher_theme.dart';
 import 'card_content.dart';
 import 'glass_surface.dart';
 import 'launcher_dialog.dart';
-import 'lyrics_view.dart';
+import 'dock_music_visual.dart';
+import 'dock_climate_button.dart';
 import 'media_artwork.dart';
 import '../model/vehicle_data.dart';
 import 'vehicle_readout.dart';
@@ -151,9 +152,7 @@ class BottomDock extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             zone('left', '主驾'),
-                            action('climate', Icons.air, '空调与座椅',
-                                () => showClimatePanel(context, c),
-                                active: !s.technicalFrame, width: 56),
+                            DockClimateButton(controller: c, native: native),
                             zone('right', '副驾'),
                             action(
                                 'climate-power',
@@ -243,15 +242,8 @@ class BottomDock extends StatelessWidget {
                             SizedBox(width: Design.px(16)),
                             Expanded(
                                 flex: 6,
-                                child: Center(
-                                    key: const ValueKey('dock-lyrics'),
-                                    child: LyricsView(
-                                        media: media,
-                                        visibleLines: 1,
-                                        currentLineMaxLines: 2,
-                                        lineHeight: 32,
-                                        fontSize: 26,
-                                        textAlign: TextAlign.center)))
+                                child:
+                                    DockMusicVisual(media: media, demo: demo))
                           ]))),
                   gap(),
                   separator(),

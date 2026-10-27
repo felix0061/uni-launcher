@@ -6,6 +6,7 @@ import 'technical_frame.dart';
 class SurfaceStyle extends ThemeExtension<SurfaceStyle> {
   final bool dark, glass, technicalFrame;
   final double radius;
+  final String spectrumStyle;
   final Color accent,
       accentText,
       seed,
@@ -19,6 +20,7 @@ class SurfaceStyle extends ThemeExtension<SurfaceStyle> {
   const SurfaceStyle(
       {required this.dark,
       this.technicalFrame = false,
+      this.spectrumStyle = 'bars',
       required this.glass,
       required this.radius,
       required this.accent,
@@ -44,6 +46,7 @@ class SurfaceStyle extends ThemeExtension<SurfaceStyle> {
           dark: dark,
           glass: a.glass,
           technicalFrame: true,
+          spectrumStyle: a.spectrumStyle,
           radius: Design.px(a.radius),
           accent: accent,
           accentText: dark ? const Color(0xFF07111F) : Colors.white,
@@ -58,6 +61,7 @@ class SurfaceStyle extends ThemeExtension<SurfaceStyle> {
     }
     return SurfaceStyle(
         dark: dark,
+        spectrumStyle: a.spectrumStyle,
         glass: a.glass,
         radius: Design.px(a.radius),
         accent: a.accent(dark),

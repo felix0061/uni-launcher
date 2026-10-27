@@ -13,6 +13,7 @@ import '../widgets/uni_icon.dart';
 import '../widgets/launcher_dialog.dart';
 import '../widgets/embedded_navigation.dart';
 import '../widgets/system_settings.dart';
+import '../widgets/spectrum_painter.dart';
 
 class SettingsScreen extends StatelessWidget {
   final LauncherController controller;
@@ -153,6 +154,60 @@ class SettingBlock extends StatelessWidget {
           ]),
           SizedBox(height: Design.px(18)),
           child
+        ]));
+  }
+}
+
+class SpectrumSettings extends StatelessWidget {
+  final LauncherController controller;
+  const SpectrumSettings({super.key, required this.controller});
+  @override
+  Widget build(BuildContext context) {
+    final s = SurfaceStyle.of(context), c = controller;
+    return SettingBlock(
+        title: '音乐频谱',
+        note: '卡片、音乐弹窗与底栏共用样式',
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          LayoutBuilder(
+              builder: (context, box) => Wrap(
+                      spacing: Design.px(14),
+                      runSpacing: Design.px(14),
+                      children: [
+                        for (final entry in spectrumStyleLabels.entries)
+                          SizedBox(
+                              width: (box.maxWidth - Design.px(14)) / 2,
+                              child: OutlinedButton(
+                                  key: ValueKey('spectrum-style-${entry.key}'),
+                                  style: s
+                                      .selectionStyle(
+                                          c.appearance.spectrumStyle ==
+                                              entry.key)
+                                      .copyWith(
+                                          backgroundColor:
+                                              WidgetStatePropertyAll(s.soft),
+                                          foregroundColor:
+                                              WidgetStatePropertyAll(s.text)),
+                                  onPressed: () => c.setAppearance(c.appearance
+                                      .copyWith(spectrumStyle: entry.key)),
+                                  child: Padding(
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: Design.px(16)),
+                                      child: Column(children: [
+                                        SizedBox(
+                                            height: Design.px(38),
+                                            width: double.infinity,
+                                            child: SpectrumStylePreview(
+                                                style: entry.key,
+                                                accent: s.accent,
+                                                edge: s.edge)),
+                                        SizedBox(height: Design.px(12)),
+                                        Text(entry.value),
+                                      ]))))
+                      ])),
+          SizedBox(height: Design.px(16)),
+          Text('底栏右侧左右滑动可切换频谱和歌词；预览为静态示意。',
+              style: TextStyle(fontSize: Design.px(18), color: s.muted)),
         ]));
   }
 }
@@ -326,6 +381,8 @@ class AppearanceSettings extends StatelessWidget {
                     WallpaperSetting(controller: c),
                     SizedBox(height: Design.px(16)),
                     RadiusSetting(controller: c),
+                    SizedBox(height: Design.px(16)),
+                    SpectrumSettings(controller: c),
                   ])))),
       SizedBox(width: Design.px(24)),
       SizedBox(

@@ -99,6 +99,7 @@ class IconAction extends StatelessWidget {
   final bool active, solid, soft, framed;
   final double size, iconSize;
   final Color? foregroundColor;
+  final Widget? child;
   const IconAction(
       {super.key,
       required this.icon,
@@ -111,6 +112,7 @@ class IconAction extends StatelessWidget {
       this.soft = false,
       this.size = 48,
       this.iconSize = 24,
+      this.child,
       this.foregroundColor});
   @override
   Widget build(BuildContext context) {
@@ -156,8 +158,10 @@ class IconAction extends StatelessWidget {
                         highlightColor: s.accent.withValues(alpha: .20),
                         splashColor: s.accent.withValues(alpha: .12),
                         child: Center(
-                            child: DesignIcon(icon,
-                                size: iconSize, color: effectiveColor)))))));
+                            child: child ??
+                                DesignIcon(icon,
+                                    size: iconSize,
+                                    color: effectiveColor)))))));
   }
 }
 

@@ -35,8 +35,20 @@ public final class AmapTrafficLightProtocol {
                 JSONObject item=input.optJSONObject(i);if(item==null)return null;
                 Integer direction=integer(item.opt("direction")),status=integer(item.opt("status"));
                 if(direction==null||status==null)return null; // Reject the batch, never keep half of it.
-                result.put(light(direction,status,seconds(item.opt("countdown")),
-                    integer(item.opt("waitNum")),integer(item.opt("showType"))));
+                JSONObject signal=light(direction,status,seconds(item.opt("countdown")),
+                    integer(item.opt("waitNum")),integer(item.opt("showType")));
+                // Verified in this yh APK: CameraLightInfo b/c ->
+                // ElecticCameraInfo direction/type -> FloatViewUtils arrays.
+                // TYPE_DIRECTIONS=[0,left_night,straight_night,right_night].
+                String dir=direction==1?"left":direction==2?"straight":direction==3?"right":"unknown";
+                // TYPE_BGS[0]=red_night, [1]=green_night. Index 2 also
+                // uses green in that floating UI, but its meaning is not
+                // established; do not promote it to a green signal here.
+                String lamp=status==0?"red":status==1?"green":"unknown";
+                signal.put("direction",dir).put("lamp",lamp)
+                    .put("directionVerified",!"unknown".equals(dir))
+                    .put("lampVerified",!"unknown".equals(lamp));
+                result.put(signal);
             }
             return result;
         }catch(Exception ignored){return null;}

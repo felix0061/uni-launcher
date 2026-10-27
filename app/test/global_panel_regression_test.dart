@@ -186,6 +186,10 @@ void main() {
         matching: find.byType(UniIcon)));
     expect(cameraIcon.name, 'camera-360');
     final title = t.getCenter(find.byKey(const ValueKey('dock-track-title')));
+    expect(find.byKey(const ValueKey('audio-spectrum-paint')), findsOneWidget);
+    await t.drag(find.byKey(const ValueKey('dock-music-visual-pages')),
+        const Offset(-400, 0));
+    await t.pumpAndSettle();
     final lyric = t.getCenter(find.byKey(const ValueKey('dock-lyrics')));
     expect(lyric.dx, greaterThan(title.dx));
     expect(lyric.dy, closeTo(title.dy, .1));

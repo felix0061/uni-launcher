@@ -36,4 +36,16 @@ public class AmapTrafficLightProtocolTest {
         assertNull(AmapTrafficLightProtocol.cruise(new JSONObject().put("lights",large).toString()));
         assertNull(AmapTrafficLightProtocol.cruise(new String(new char[16385]).replace('\0','x')));
     }
+    @Test public void yhUsesItsOwnVerifiedDirectionAndLampTables()throws Exception{
+        JSONArray lights=AmapTrafficLightProtocol.cruise("{\"lights\":[{\"direction\":1,\"status\":0,\"countdown\":60},{\"direction\":2,\"status\":1,\"countdown\":24},{\"direction\":3,\"status\":2,\"countdown\":5},{\"direction\":99,\"status\":99}]}" );
+        assertEquals("left",lights.getJSONObject(0).getString("direction"));
+        assertEquals("red",lights.getJSONObject(0).getString("lamp"));
+        assertEquals("straight",lights.getJSONObject(1).getString("direction"));
+        assertEquals("green",lights.getJSONObject(1).getString("lamp"));
+        assertEquals("right",lights.getJSONObject(2).getString("direction"));
+        assertEquals("unknown",lights.getJSONObject(2).getString("lamp"));
+        assertFalse(lights.getJSONObject(2).getBoolean("lampVerified"));
+        assertFalse(lights.getJSONObject(3).getBoolean("directionVerified"));
+        assertEquals(4,lights.length());
+    }
 }

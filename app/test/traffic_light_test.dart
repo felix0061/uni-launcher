@@ -60,6 +60,51 @@ Widget review(TrafficLightSnapshot data,
 }
 
 void main() {
+  test(
+      'yh per-field verification is independent; unknown values remain neutral',
+      () {
+    final native = signalState();
+    final raw = native['trafficLights'] as Map;
+    raw['lights'] = [
+      {
+        'direction': 'left',
+        'directionVerified': true,
+        'lamp': 'red',
+        'lampVerified': true,
+        'countdownSeconds': 60
+      },
+      {
+        'direction': 'right',
+        'directionVerified': true,
+        'lamp': 'green',
+        'lampVerified': false,
+        'countdownSeconds': 24
+      },
+    ];
+    final data = TrafficLightSnapshot.fromNative(native);
+    expect(data.lights.map((s) => s.direction), ['left', 'right']);
+    expect(data.lights.map((s) => s.lamp), ['red', 'unknown']);
+  });
+
+  testWidgets(
+      'all reported directions remain reachable without duplicating lanes',
+      (t) async {
+    final signals = List.generate(
+        8,
+        (i) => TrafficSignal(
+            direction: ['left', 'straight', 'right'][i % 3],
+            lamp: 'red',
+            countdownSeconds: 60 + i));
+    await t.pumpWidget(review(
+        TrafficLightSnapshot(available: true, demo: true, lights: signals)));
+    await t.pump();
+    expect(find.text('60'), findsOneWidget);
+    await t.drag(find.byKey(const ValueKey('traffic-light-directions')),
+        const Offset(0, -400));
+    await t.pumpAndSettle();
+    expect(find.text('67').hitTestable(), findsOneWidget);
+    expect(t.takeException(), isNull);
+  });
   test('unknown enums stay neutral, validity is bounded and monotonic', () {
     final data = TrafficLightSnapshot.fromNative(signalState(age: 1200));
     expect(data.lights.single.lamp, 'unknown');
