@@ -77,6 +77,12 @@ python3 tools/upload_release.py            # 上传 APK 并创建 Release 草稿
 - [产品与界面设计](docs/PRODUCT_DESIGN.md)、[车辆卡片设计](docs/VEHICLE_CARD_DESIGN.md)
 - [项目目录与原生代码](docs/PROJECT_STRUCTURE.md)、[完整参考资料与历史设计](docs/PROJECT_REFERENCE.md)
 
+## 交流与反馈
+
+欢迎加入 UNI桌面 QQ 交流群，交流使用体验与车型适配：**105191114**。可使用 QQ 扫描下方二维码加入；问题和功能建议也欢迎通过仓库 Issue 反馈。
+
+<img src="qq_group.jpeg" alt="UNI桌面 QQ 交流群二维码" width="300" />
+
 ## 贡献与 Pull Request
 
 永远欢迎提交 Pull Request！请使用 `feat/lynkco-<车型>` 命名车型功能分支，例如领克 05 使用 `feat/lynkco-05`。
