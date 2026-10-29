@@ -127,6 +127,12 @@ public final class MediaAdapter {
         boolean playing=state!=null&&state.getState()==PlaybackState.STATE_PLAYING;
         if(play!=playing)command("toggle-play");
     }
+    /** 轻量查询，供语音灵敏度联动；不构建快照 JSON。 */
+    public boolean isPlaying(){
+        MediaController c=controller;
+        PlaybackState p=c==null?null:c.getPlaybackState();
+        return p!=null&&p.getState()==PlaybackState.STATE_PLAYING;
+    }
     /** Mirror the selected source into a standard active MediaSession. The
      * steering-wheel dispatcher can now target transport callbacks and the
      * instrument cluster can consume the same title/artist/playback state. */

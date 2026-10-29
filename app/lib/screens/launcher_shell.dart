@@ -6,6 +6,7 @@ import '../widgets/desktop.dart';
 import '../widgets/scene_background.dart';
 import '../theme/design_tokens.dart';
 import '../widgets/bottom_dock.dart';
+import '../widgets/voice_overlay.dart';
 import 'settings_screen.dart';
 
 class LauncherShell extends StatefulWidget {
@@ -95,27 +96,41 @@ class _LauncherShellState extends State<LauncherShell> {
                                 child: SizedBox(
                                     width: Design.canvasWidth,
                                     height: height / scale,
-                                    child: Column(children: [
-                                      Header(
-                                          controller: controller,
-                                          position: pagePosition),
-                                      Expanded(
-                                          child: IndexedStack(
-                                              index:
-                                                  controller.settings ? 1 : 0,
-                                              children: [
-                                            TickerMode(
-                                                enabled: !controller.settings,
-                                                child: Desktop(
+                                    child: Stack(children: [
+                                      Column(children: [
+                                        Header(
+                                            controller: controller,
+                                            position: pagePosition),
+                                        Expanded(
+                                            child: IndexedStack(
+                                                index: controller.settings
+                                                    ? 1
+                                                    : 0,
+                                                children: [
+                                              TickerMode(
+                                                  enabled:
+                                                      !controller.settings,
+                                                  child: Desktop(
+                                                      controller: controller,
+                                                      position: pagePosition)),
+                                              controller.settings
+                                                  ? SettingsScreen(
+                                                      controller: controller)
+                                                  : const SizedBox.shrink(),
+                                            ])),
+                                        if (!globalDockActive)
+                                          BottomDock(controller: controller),
+                                      ]),
+                                      if (!controller.settings)
+                                        Positioned(
+                                            left: 0,
+                                            right: 0,
+                                            bottom: Design.px(
+                                                globalDockActive ? 116 : 168),
+                                            child: Center(
+                                                child: VoiceOverlay(
                                                     controller: controller,
-                                                    position: pagePosition)),
-                                            controller.settings
-                                                ? SettingsScreen(
-                                                    controller: controller)
-                                                : const SizedBox.shrink(),
-                                          ])),
-                                      if (!globalDockActive)
-                                        BottomDock(controller: controller),
+                                                    size: Design.px(150))))
                                     ])))));
                   })),
             )));

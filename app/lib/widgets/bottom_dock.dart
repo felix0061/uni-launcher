@@ -10,6 +10,7 @@ import 'dock_music_progress_background.dart';
 import 'uni_app_icon.dart';
 import 'file_transfer_popup.dart';
 import 'uni_icon.dart';
+import 'voice_overlay.dart';
 import 'dock_climate_button.dart';
 import 'media_artwork.dart';
 import '../model/vehicle_data.dart';
@@ -102,10 +103,15 @@ class BottomDock extends StatelessWidget {
                     ? () => c.command('climate-mode', value: mode)
                     : null,
                 child: child);
+        final voice = mapOf(native['voice']);
+        final voiceActive = voice['enabled'] == true &&
+            const {'listening', 'thinking', 'speaking'}
+                .contains('${voice['state']}');
         return SizedBox(
             key: const ValueKey('bottom-dock'),
             height: Design.px(96),
-            child: GlassSurface(
+            child: Stack(children: [
+              GlassSurface(
                 dock: true,
                 radius: 0,
                 shadow: false,
@@ -343,7 +349,13 @@ class BottomDock extends StatelessWidget {
                       framed: false,
                       onTap: () => showUniDockMenu(context, c),
                       child: UniAppIcon(size: Design.px(42)))
-                ])));
+                ])),
+              Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: VoiceDockGlow(active: voiceActive))
+            ]));
       });
 }
 
