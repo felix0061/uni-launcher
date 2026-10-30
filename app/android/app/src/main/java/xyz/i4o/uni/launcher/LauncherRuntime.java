@@ -297,7 +297,12 @@ public final class LauncherRuntime {
         if("launch-navigation".equals(action)){if(!navigation.launchFullscreen())toast("请选择已安装的导航应用");return true;}
         // 语音「导航去 XX」：把目的地交给已选导航应用
         if("navigate-to".equals(action)){
-            if(!navigation.routeTo(value))toast("没找到能用的导航应用");
+            boolean ok=navigation.routeTo(value);
+            // 把真正生效的 scheme 显示出来，省得事后猜是哪条跑通的
+            if(ok){
+                String u=NavigationApps.lastRouteUri();
+                toast("导航："+(u==null||u.isEmpty()?"已发送":u.replace("?","\n?")));
+            }else toast("没找到能用的导航应用");
             return true;
         }
         if("launch-player".equals(action)){

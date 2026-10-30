@@ -18,6 +18,8 @@ public final class NavigationApps {
     // LiveNavigationHost creates short-lived NavigationApps helpers. Share only
     // package queries and one package receiver per Application, never Activities.
     private static final Map<Context,PackageQueries> QUERIES=new IdentityHashMap<>();
+    /** 最近一次成功导航用的 URI，供界面提示/排查。 */
+    private static volatile String lastRouteUri="";
     private final Context context;
     private final SharedPreferences prefs;
     private final PackageQueries queries;
@@ -25,6 +27,7 @@ public final class NavigationApps {
         this.context=context.getApplicationContext();
         if(this.context==null)throw new IllegalArgumentException("Application context required");
         this.prefs=prefs;
+        NavGeocoder.attach(this.context, prefs);   // 让地理编码能读到落盘缓存
         synchronized(QUERIES){
             PackageQueries cached=QUERIES.get(this.context);
             if(cached==null){cached=new PackageQueries(this.context);QUERIES.put(this.context,cached);}
@@ -60,54 +63,100 @@ public final class NavigationApps {
         return launchIntent();
     }
     /** 语音「导航去 XX」：按已选导航应用拼对应的路线 URI，并切到前台。 */
-    public boolean routeTo(String destination){
-        if(destination==null)return false;
-        String dest=destination.trim();
-        if(dest.isEmpty())return false;
-        String pkg=selected();
-        if(pkg.isEmpty())return false;
-        String enc=android.net.Uri.encode(dest);
-        Intent intent=null;
-        try{
-            if(pkg.startsWith("com.autonavi.")){
-                intent=new Intent(Intent.ACTION_VIEW,
-                        android.net.Uri.parse("androidamap://route?sourceApplication=uni&dname="+enc+"&dev=0&t=0"));
-            }else if(pkg.startsWith("com.baidu.")){
-                intent=new Intent(Intent.ACTION_VIEW,
-                        android.net.Uri.parse("baidumap://map/direction?destination="+enc+"&mode=driving&src=uni"));
-            }else if(pkg.startsWith("com.tencent.")){
-                intent=new Intent(Intent.ACTION_VIEW,
-                        android.net.Uri.parse("qqmap://map/routeplan?type=drive&to="+enc+"&referer=uni"));
-            }
-            if(intent!=null){
-                intent.setPackage(pkg);
-                if(context.getPackageManager().resolveActivity(intent,0)==null)intent=null;
-            }
-        }catch(Exception|LinkageError ignored){intent=null;}
-        if(intent==null){
-            intent=new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("geo:0,0?q="+enc)).setPackage(pkg);
-        }
-        try{moveOwnSingleTaskToDisplay(pkg);}catch(Exception|LinkageError ignored){}
-        try{
-            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                    |Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP));
-            return true;
-        }catch(Exception|LinkageError e){
-            android.util.Log.w("UniNavigation","able to route",e);return false;
-        }
-    }
-    /** Return an embedded single-task navigation stack to the physical display
-     * before launching it. Starting the package alone leaves AMap focused on
-     * ActivityView's virtual display and appears to do nothing on the panel. */
+    /** 只把导航切到前台（不带目的地）。 */
+    public static String lastRouteUri(){ return lastRouteUri; }
+
     public boolean launchFullscreen(){
         String pkg=selected();Intent intent=displayIntent();if(pkg.isEmpty()||intent==null)return false;
         try{moveOwnSingleTaskToDisplay(pkg);}
         catch(Exception|LinkageError e){android.util.Log.i("UniNavigation","No embedded navigation stack to restore",e);}
         try{
-            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP));
+            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                    |Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP));
             return true;
-        }catch(Exception|LinkageError e){android.util.Log.w("UniNavigation","Unable to open navigation full screen",e);return false;}
+        }catch(Exception|LinkageError e){
+            android.util.Log.w("UniNavigation","Unable to open navigation full screen",e);
+            return false;
+        }
     }
+    /** 语音「导航去 XX」：逐个尝试各导航 App 认的 scheme，命中哪个记哪个。
+     *  带包名试一次、不带包名再试一次 —— 车机版高德往往只认 amapuri/amapauto，
+     *  而 OEM 定制包可能挂在别的 activity 上，交给系统路由更容易成。 */
+    public boolean routeTo(String destination){
+        // 地理编码要联网，主线程会抛 NetworkOnMainThreadException（之前就是这样，
+        // 每次都拿不到坐标、只能退回搜索框）。整段逻辑丢到后台线程再启动 Activity。
+        if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) {
+            final String dest = destination;
+            new Thread(() -> routeBlocking(dest), "uni-nav-route").start();
+            return true;
+        }
+        return routeBlocking(destination);
+    }
+
+    private boolean routeBlocking(String destination){
+        if(destination==null)return false;
+        String dest=destination.trim();
+        if(dest.isEmpty())return false;
+        String pkg=selected();
+        String d=android.net.Uri.encode(dest);
+        java.util.List<String> uris=new java.util.ArrayList<>();
+        if(pkg.startsWith("com.autonavi.")||pkg.isEmpty()){
+            // 车机版（OEM amapauto）主界面注册的是 androidauto://<authority>，
+            // 实测只有 route/navi 带坐标才会真正规划路线（dev=1 = 传 WGS-84 让服务端加密）
+            double[] ll=null;
+            if(pkg.startsWith("com.autonavi.amap")) ll=NavGeocoder.locate(dest);
+            if(ll!=null){
+                // 天地图给 WGS-84，先自己转 GCJ-02 再传 dev=0；
+                // 并且有坐标时不再给 dname/poiname —— 高德会拿名字在附近重新搜，
+                // 结果可能落到隔壁 POI（实测「天安门」被导到国家大剧院）
+                double[] gcj=NavGeocoder.wgsToGcj(ll[0], ll[1]);
+                String lat=String.valueOf(gcj[0]), lon=String.valueOf(gcj[1]);
+                uris.add("androidauto://route?sourceApplication=uni"
+                        +"&dlat="+lat+"&dlon="+lon+"&dev=0&m=0&t=1");
+                uris.add("androidauto://navi?sourceApplication=uni"
+                        +"&lat="+lat+"&lon="+lon+"&dev=0&style=2");
+                uris.add("amapuri://route/plan/?sourceApplication=uni"
+                        +"&dlat="+lat+"&dlon="+lon+"&dev=0&t=0");
+            }
+            uris.add("androidauto://keywordNavi?sourceApplication=uni&keyword="+d+"&style=2");
+            uris.add("androidauto://poi?sourceApplication=uni&keywords="+d+"&dev=0");
+            uris.add("amapuri://route/plan/?sourceApplication=uni&dname="+d+"&dev=0&t=0");
+        }
+        if(pkg.startsWith("com.baidu.")||pkg.isEmpty()){
+            uris.add("baidumap://map/direction?destination="+d+"&mode=driving&src=uni");
+            uris.add("baidumap://map/navi?query="+d);
+        }
+        if(pkg.startsWith("com.tencent.")||pkg.isEmpty()){
+            uris.add("qqmap://map/routeplan?type=drive&to="+d+"&referer=uni");
+        }
+        uris.add("geo:0,0?q="+d);
+
+        String tried = "";
+        for(String u:uris){
+            // 先试锁包名，再试交给系统挑
+            for(String target : new String[]{pkg, null}){
+                if(target!=null && target.isEmpty()) continue;
+                try{
+                    Intent i=new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(u));
+                    if(target!=null) i.setPackage(target);
+                    if(context.getPackageManager().resolveActivity(i,0)==null){ tried += (target==null?"":"["+target+"]")+u+" ✗; "; continue; }
+                    try{moveOwnSingleTaskToDisplay(pkg);}catch(Exception|LinkageError ignored){}
+                    context.startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                            |Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP));
+                    lastRouteUri=u; android.util.Log.i("UniNavigation","route ok via "+(target==null?"system":target)+" -> "+u);
+                    return true;
+                }catch(Exception|LinkageError e){
+                    tried += (target==null?"":"["+target+"]")+u+" ✗("+e.getClass().getSimpleName()+"); ";
+                }
+            }
+        }
+        android.util.Log.w("UniNavigation","没有可用的路线 scheme，尝试过："+tried);
+        return false;
+    }
+    /** 语音「导航去 XX」：按已选导航应用逐个尝试它认的 scheme，命中哪个记哪个。
+     *  车机版高德通常不注册 androidamap://，只认 amapauto://；百度车机认 baidumap://。
+     *  全都不认就退回 geo:（只会打开 App），并把尝试过的 scheme 打到日志里。 */
+
     private void moveOwnSingleTaskToDisplay(String pkg)throws Exception{
         Object manager=Class.forName("android.app.ActivityManager").getMethod("getService").invoke(null);
         java.lang.reflect.Method all=manager.getClass().getMethod("getAllStackInfos");all.setAccessible(true);

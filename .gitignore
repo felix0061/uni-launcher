@@ -21,3 +21,7 @@ __pycache__/
 .tmp-tts/
 .tmp-vc/
 .tmp-*.py
+
+# Gradle 构建产物（含语音模块的 onnx 中间文件，动辄 600MB+）
+/build/
+.build-alt/
