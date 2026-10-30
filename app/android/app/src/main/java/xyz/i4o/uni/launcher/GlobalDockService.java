@@ -190,8 +190,9 @@ public final class GlobalDockService extends Service {
     private void startWindows(){
         if(dockWindow!=null)return;
         enableBarModifications(this,runtime.prefs());nativeInsets=NavigationInsets.applied(this);
-        workspace=new WorkspacePolicy(this,runtime.prefs());
-        if(nativeInsets)workspace.stopAndRestore();else workspace.start();
+        workspace=new WorkspacePolicy(this,runtime.prefs(),nativeInsets);
+        if(nativeInsets)workspace.stopAndRestore();
+        workspace.start();
         try{dockWindow=new OverlayWindow(false);}catch(RuntimeException e){
             android.util.Log.e("UniDock","Cannot create dock",e);
             toast(this,"全局底栏无法显示，请检查悬浮显示授权");stopSelf();return;
@@ -323,7 +324,7 @@ public final class GlobalDockService extends Service {
         }catch(Exception ignored){}return j;
     }
     private void showPanel(String kind){
-        if(!java.util.Arrays.asList("apps","climate","media","vehicle","navigation","music-picker","uni-menu").contains(kind))return;
+        if(!java.util.Arrays.asList("apps","climate","media","vehicle","navigation","music-picker","uni-menu","transfer").contains(kind))return;
         // Tapping the same button again closes it; different buttons replace it.
         if(kind.equals(panel)){dismissPanel();return;}
         main.removeCallbacks(releaseIdlePanel);
