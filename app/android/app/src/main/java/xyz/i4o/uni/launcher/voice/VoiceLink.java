@@ -26,8 +26,18 @@ public final class VoiceLink {
     public static final String ACTION_CONTROL = "xyz.i4o.uni.voice.CONTROL";
 
     private static final Object LOCK = new Object();
-    private static boolean cachedInstalled;
-    private static boolean cachedEnabled;
+    private static volatile boolean cachedInstalled;
+    private static volatile boolean cachedEnabled;
+    private static volatile String cachedState = "idle";
+    private static volatile String cachedHeard = "";
+
+    /** 语音状态（底栏波形槽位用），由 VoiceStateReceiver 投喂。 */
+    static void onState(String state, String heard, boolean enabled) {
+        if (state != null && !state.isEmpty()) cachedState = state;
+        cachedHeard = heard == null ? "" : heard;
+        cachedEnabled = enabled;
+        cachedInstalled = true;
+    }
 
     private VoiceLink() {}
 
@@ -91,7 +101,9 @@ public final class VoiceLink {
         JSONObject j = new JSONObject();
         try {
             j.put("installed", installed(context))
-             .put("enabled", cachedEnabled);
+             .put("enabled", cachedEnabled)
+             .put("state", cachedState)
+             .put("heard", cachedHeard);
         } catch (Exception ignored) {}
         return j;
     }

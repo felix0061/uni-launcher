@@ -53,5 +53,14 @@
       <intent-filter><action android:name="android.intent.action.BOOT_COMPLETED"/></intent-filter>
     </receiver>
         <meta-data android:name="flutterEmbedding" android:value="2"/>
-  </application>
+          <!-- 只订阅语音状态（底栏波形槽位显示用），不接收任何指令 -->
+        <receiver
+            android:name=".voice.VoiceStateReceiver"
+            android:exported="true"
+            android:permission="xyz.i4o.uni.voice.permission.VOICE">
+            <intent-filter>
+                <action android:name="xyz.i4o.uni.launcher.VOICE_STATE" />
+            </intent-filter>
+        </receiver>
+    </application>
 </manifest>

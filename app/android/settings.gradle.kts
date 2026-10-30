@@ -24,6 +24,7 @@ plugins {
 }
 
 include(":app")
+// 语音已拆成独立项目（uni-voice 仓库），本仓库不再包含语音代码
 
 
 

@@ -6,6 +6,7 @@ import 'card_content.dart';
 import 'glass_surface.dart';
 import 'launcher_dialog.dart';
 import 'dock_music_visual.dart';
+import 'voice_dock_slot.dart';
 import 'dock_music_progress_background.dart';
 import 'uni_app_icon.dart';
 import 'file_transfer_popup.dart';
@@ -33,7 +34,13 @@ class BottomDock extends StatelessWidget {
             media = mapOf(native['media']),
             canPlay = demo || media['available'] == true,
             canToggle = demo || media['canToggle'] == true,
-            playing = media['playing'] == true;
+            playing = media['playing'] == true,
+            voice = mapOf(native['voice']),
+            voiceState = '${voice['state']}',
+            voiceHeard = '${voice['heard'] ?? ''}',
+            voiceActive = voice['enabled'] == true &&
+                const {'listening', 'thinking', 'speaking'}
+                    .contains('${voice['state']}');
         Widget gap() => SizedBox(width: Design.px(20));
         Widget separator() => SizedBox(
             height: Design.px(34),
@@ -159,7 +166,7 @@ class BottomDock extends StatelessWidget {
                   separator(),
                   gap(),
                   AnimatedScale(
-                      scale: 1,
+                      scale: voiceActive ? .986 : 1,
                       alignment: Alignment.centerRight,
                       duration: const Duration(milliseconds: 420),
                       curve: Curves.easeOutCubic,
@@ -205,9 +212,13 @@ class BottomDock extends StatelessWidget {
                                 framed: !s.technicalFrame,
                                 width: 56)
                           ])))),
+                  VoiceDockSlot(
+                      active: voiceActive,
+                      state: voiceState,
+                      heard: voiceHeard),
                   Expanded(
                       child: AnimatedScale(
-                          scale: 1,
+                          scale: voiceActive ? .994 : 1,
                           alignment: Alignment.centerLeft,
                           duration: const Duration(milliseconds: 420),
                           curve: Curves.easeOutCubic,
