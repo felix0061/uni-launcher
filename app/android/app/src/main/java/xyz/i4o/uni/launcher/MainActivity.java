@@ -8,7 +8,6 @@ import android.net.Uri;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.os.Bundle;
-import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowManager;
@@ -26,7 +25,6 @@ import org.json.JSONObject;
 import xyz.i4o.uni.launcher.integration.NavigationChrome;
 import xyz.i4o.uni.launcher.overlay.SystemNavigationPolicy;
 import xyz.i4o.uni.launcher.platform.LiveNavigationHost;
-import xyz.i4o.uni.launcher.voice.VoiceAssistService;
 
 /** Home window and Flutter bridge; shared integrations live in LauncherRuntime. */
 public final class MainActivity extends FlutterActivity {
@@ -289,14 +287,6 @@ public final class MainActivity extends FlutterActivity {
     }
 
     @Override public void onWindowFocusChanged(boolean focus){super.onWindowFocusChanged(focus);if(focus&&chrome!=null)chrome.apply();}
-
-    /** 方控语音键（路径 D：桌面内激活）。全局场景由 §9.4 的 InputMonitor 补齐。 */
-    @Override public boolean dispatchKeyEvent(KeyEvent event){
-        if(VoiceAssistService.isVoiceKey(event.getKeyCode())&&event.getAction()==KeyEvent.ACTION_UP){
-            VoiceAssistService.activate(this,"steering");return true;
-        }
-        return super.dispatchKeyEvent(event);
-    }
     @Override public void onConfigurationChanged(Configuration c){super.onConfigurationChanged(c);publish();}
     @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] results){
         super.onRequestPermissionsResult(requestCode,permissions,results);if(requestCode==4106)xyz.i4o.uni.launcher.audio.SpectrumBridge.permissionChanged();if(requestCode==4105){try{rt.handle(new JSONObject().put("action","calendar-refresh"));}catch(Exception ignored){}publish();}

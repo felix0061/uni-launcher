@@ -7,7 +7,6 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Build;
-import android.media.AudioManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.Toast;
@@ -21,9 +20,6 @@ import org.json.JSONArray;
 import xyz.i4o.uni.launcher.core.ClimateState;
 import xyz.i4o.uni.launcher.core.CommandPolicy;
 import xyz.i4o.uni.launcher.integration.*;
-import xyz.i4o.uni.launcher.voice.VoiceAssistService;
-import xyz.i4o.uni.launcher.voice.VoiceBridge;
-import xyz.i4o.uni.launcher.voice.VoiceSettings;
 
 /** One Application-scoped native data source for all Flutter engines.
  * Adapter access and listener delivery are serialized on Android's main thread.
@@ -49,10 +45,6 @@ public final class LauncherRuntime {
     private final NavigationAudioAdapter navigationAudio;
     private final LanTransfer transfer;
     private final ClimateState simulator=new ClimateState();
-    /** 语音服务桥；无服务时为 null，快照不含 voice 块。 */
-    private volatile VoiceBridge voiceBridge;
-    /** 数据源引用计数：窗口 listener 与语音命令各持一份（§9.2），全空才停源。 */
-    private int sourceRefs;
     private final Map<Object,Runnable> listeners=new IdentityHashMap<>();
     private JSONArray installed;
     private boolean homeVisible;
@@ -161,8 +153,6 @@ public final class LauncherRuntime {
                 .put("climate",climate).put("vehicle",telemetry).put("version",xyz.i4o.uni.launcher.BuildConfig.VERSION_NAME+"-flutter");
             state.put("desktopSelected",homeVisible&&desktopContent);
             state.put("trafficLights",trafficLights.snapshot());
-            VoiceBridge voice=voiceBridge;
-            if(voice!=null)state.put("voice",voice.snapshot());
             JSONObject mediaState=prefs.getBoolean("demo",false)?demoMedia():media.snapshot().put("preferredPackage",prefs.getString("mediaPackage","auto"));
             JSONObject appNames=storedAppNames();
             String design=prefs.getString("savedDesign","");
@@ -318,24 +308,6 @@ public final class LauncherRuntime {
             }
             if(!apps.launchPackage(catalog.packageFor(value)))toast("此设备未安装对应原车应用");return true;
         }
-        // ---- 语音助手设置（Flutter 设置面板走同一命令通道） ----
-        if("voice-enabled".equals(action)){
-            VoiceSettings vs=new VoiceSettings(context);
-            vs.setEnabled(request.optBoolean("enabled",false));
-            if(vs.enabled())VoiceAssistService.ensureStarted(context);
-            else VoiceAssistService.stop(context);
-            publish();return true;
-        }
-        if("voice-voice-id".equals(action)){new VoiceSettings(context).setVoiceId(value);publish();return true;}
-        if("voice-speed".equals(action)){try{new VoiceSettings(context).setSpeed(Integer.parseInt(value));}catch(NumberFormatException ignored){}publish();return true;}
-        if("voice-pitch".equals(action)){try{new VoiceSettings(context).setPitch(Integer.parseInt(value));}catch(NumberFormatException ignored){}publish();return true;}
-        if("voice-sensitivity".equals(action)){try{new VoiceSettings(context).setWakeSensitivity(Integer.parseInt(value));}catch(NumberFormatException ignored){}publish();return true;}
-        if("voice-tts-mix".equals(action)){new VoiceSettings(context).setTtsMixMode(value);publish();return true;}
-        if("voice-continuous".equals(action)){new VoiceSettings(context).setContinuous(request.optBoolean("enabled",false));publish();return true;}
-        if("voice-local-only".equals(action)){new VoiceSettings(context).setLocalOnly(request.optBoolean("enabled",false));publish();return true;}
-        if("voice-cloud".equals(action)){new VoiceSettings(context).setCloudEnabled(request.optBoolean("enabled",false));publish();return true;}
-        // ---- 音量（语音指令走系统 AudioManager，不影响 launcher 快照） ----
-        if("volume-up".equals(action)||"volume-down".equals(action)||"volume-mute".equals(action)){adjustVolume(action);return true;}
         if(CommandPolicy.isClimateAction(action)){
             boolean demo=prefs.getBoolean("demo",false);
             boolean ok=demo?simulator.apply(action,request.optString("zone"),value):vehicle.command(action,request.optString("zone"),value);
@@ -370,41 +342,17 @@ public final class LauncherRuntime {
         onMain(()->{
             boolean first=listeners.isEmpty();
             listeners.put(owner,listener);
-            if(first)acquireSources();
+            if(first){media.setPreferredPackage(prefs.getString("mediaPackage","auto"));vehicle.start();weather.start();systemStatus.start();calendar.start();trafficLights.start();}
             publish();return null;
         });
     }
 
     public void removeListener(Object owner){
         onMain(()->{
-            if(listeners.remove(owner)!=null&&listeners.isEmpty())releaseSources();
+            if(listeners.remove(owner)!=null&&listeners.isEmpty()){media.stop();vehicle.stop();systemStatus.stop();calendar.stop();trafficLights.stop();}
             return null;
         });
     }
-
-    /** 语音服务桥的接入/摘除；服务停止后快照不再含 voice 块。 */
-    public void attachVoice(VoiceBridge bridge){onMain(()->{voiceBridge=bridge;return null;});}
-
-    /** §9.2：数据源引用计数。窗口 listener 与语音命令各持一份，全空才停源。 */
-    private void acquireSources(){
-        if(sourceRefs++==0){media.setPreferredPackage(prefs.getString("mediaPackage","auto"));vehicle.start();weather.start();systemStatus.start();calendar.start();trafficLights.start();}
-    }
-    private void releaseSources(){
-        if(--sourceRefs<=0){sourceRefs=0;media.stop();vehicle.stop();systemStatus.stop();calendar.stop();trafficLights.stop();}
-    }
-
-    /** 语音命令入口：执行前后各持一份源引用，保证无窗口时车辆/媒体仍就绪。 */
-    public boolean handleVoice(JSONObject request){
-        return onMain(()->{
-            acquireSources();
-            try{return handleOnMain(request);}
-            catch(Exception e){return false;}
-            finally{releaseSources();}
-        });
-    }
-
-    /** 轻量查询：媒体是否在播，用于语音唤醒/识别的噪音灵敏度联动（§9.3）。 */
-    public boolean mediaPlaying(){return onMain(()->media.isPlaying());}
 
     /** Climate, media and status sources each publish on their own callback. A burst
      * of them must reach the window as one packet: coalesce per looper turn and cap
@@ -508,16 +456,6 @@ public final class LauncherRuntime {
     }
 
     private void toast(String text){Toast.makeText(context,text,Toast.LENGTH_SHORT).show();}
-
-    /** 语音音量指令：走系统媒体流，弹出系统音量提示。 */
-    private void adjustVolume(String action){
-        try{
-            AudioManager am=(AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
-            if(am==null)return;
-            if("volume-mute".equals(action))am.adjustStreamVolume(AudioManager.STREAM_MUSIC,AudioManager.ADJUST_TOGGLE_MUTE,AudioManager.FLAG_SHOW_UI);
-            else am.adjustStreamVolume(AudioManager.STREAM_MUSIC,"volume-up".equals(action)?AudioManager.ADJUST_RAISE:AudioManager.ADJUST_LOWER,AudioManager.FLAG_SHOW_UI);
-        }catch(RuntimeException ignored){}
-    }
 
     private JSONObject storedAppNames(){
         try{
