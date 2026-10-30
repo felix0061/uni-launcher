@@ -6,7 +6,6 @@ import 'card_content.dart';
 import 'glass_surface.dart';
 import 'launcher_dialog.dart';
 import 'dock_music_visual.dart';
-import 'voice_dock_slot.dart';
 import 'dock_music_progress_background.dart';
 import 'uni_app_icon.dart';
 import 'file_transfer_popup.dart';
@@ -103,12 +102,6 @@ class BottomDock extends StatelessWidget {
                     ? () => c.command('climate-mode', value: mode)
                     : null,
                 child: child);
-        final voice = mapOf(native['voice']);
-        final voiceState = '${voice['state']}';
-    final voiceHeard = '${voice['heard'] ?? ''}';
-        final voiceActive = voice['enabled'] == true &&
-            const {'listening', 'thinking', 'speaking'}
-                .contains('${voice['state']}');
         return SizedBox(
             key: const ValueKey('bottom-dock'),
             height: Design.px(96),
@@ -166,7 +159,7 @@ class BottomDock extends StatelessWidget {
                   separator(),
                   gap(),
                   AnimatedScale(
-                      scale: voiceActive ? .986 : 1,
+                      scale: 1,
                       alignment: Alignment.centerRight,
                       duration: const Duration(milliseconds: 420),
                       curve: Curves.easeOutCubic,
@@ -212,13 +205,9 @@ class BottomDock extends StatelessWidget {
                                 framed: !s.technicalFrame,
                                 width: 56)
                           ])))),
-                  VoiceDockSlot(
-                      active: voiceActive,
-                      state: voiceState,
-                      heard: voiceHeard),
                   Expanded(
                       child: AnimatedScale(
-                          scale: voiceActive ? .994 : 1,
+                          scale: 1,
                           alignment: Alignment.centerLeft,
                           duration: const Duration(milliseconds: 420),
                           curve: Curves.easeOutCubic,

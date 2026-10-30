@@ -25,3 +25,13 @@ __pycache__/
 # Gradle 构建产物（含语音模块的 onnx 中间文件，动辄 600MB+）
 /build/
 .build-alt/
+
+# 验证截图与设计稿：只在本地留存，不入库（体积大、非构建产物）
+app/verification/**/*.png
+app/verification/**/*.jpg
+app/verification/**/*.webp
+design/**/*.png
+design/**/*.jpg
+design/**/*.webp
+archive/**/*.png
+archive/**/*.jpg

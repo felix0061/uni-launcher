@@ -1,4 +1,4 @@
-/// 语音总开关的模型：语音已拆成独立 App（xyz.i4o.uni.voice）单独安装，
+/// 语音总开关的模型：语音已顶替原车小卡（com.ecarx.xiaoka）单独安装，
 /// 桌面这边只关心「装没装、开没开、现在在干嘛」，音色/灵敏度/云端都在语音 App 里调。
 class VoiceSettings {
   final Map<String, dynamic> raw;

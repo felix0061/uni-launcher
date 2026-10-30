@@ -35,6 +35,18 @@ class EmbeddedContentPolicy extends InheritedWidget {
 /// 固定像素的按钮也几乎不会被放大，仅画面轻微变软（填充量降到 77%）。
 const double mapTextureScale = 0.875;
 
+/// 虚拟显示密度的下限：再低就会落进 ldpi 资源桶，导航 App 会重排界面。
+const double mapTextureMinDpi = 141;
+
+/// 按车机实际密度算缩放：尽量缩到 141dpi，但不低于 0.6（再低画面明显发虚）。
+/// 160dpi（IP753）→ 0.88125；240/320dpi → 0.6；≤120dpi 不缩放。
+double mapTextureScaleFor(double dpi) {
+  if (dpi <= 0) return 1;
+  final raw = mapTextureMinDpi / dpi;
+  if (raw >= 1) return 1;
+  return raw < 0.6 ? 0.6 : raw;
+}
+
 class EmbeddedNavigationCard extends StatefulWidget {
   final LauncherController controller;
   final Map<String, dynamic> navigation;

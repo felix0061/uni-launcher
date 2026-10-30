@@ -26,7 +26,6 @@ import org.json.JSONObject;
 import xyz.i4o.uni.launcher.integration.NavigationChrome;
 import xyz.i4o.uni.launcher.overlay.SystemNavigationPolicy;
 import xyz.i4o.uni.launcher.platform.LiveNavigationHost;
-import xyz.i4o.uni.launcher.voice.VoiceLink;
 
 /** Home window and Flutter bridge; shared integrations live in LauncherRuntime. */
 public final class MainActivity extends FlutterActivity {
@@ -290,11 +289,8 @@ public final class MainActivity extends FlutterActivity {
 
     @Override public void onWindowFocusChanged(boolean focus){super.onWindowFocusChanged(focus);if(focus&&chrome!=null)chrome.apply();}
 
-    /** 方控语音键：语音模块已拆成独立 App，这里只把按键转给它。 */
+    /** 方控语音键：语音 App 自己监听 ECARX 广播（它是 system UID），桌面不再转发。 */
     @Override public boolean dispatchKeyEvent(KeyEvent event){
-        if(isVoiceKey(event.getKeyCode())&&event.getAction()==KeyEvent.ACTION_UP){
-            VoiceLink.activate(this,"steering");return true;
-        }
         return super.dispatchKeyEvent(event);
     }
 

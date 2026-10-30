@@ -33,8 +33,7 @@
   <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES"/>
   <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
   <!-- 语音模块互通：两端同证书签名才生效（语音模块 uid 才能回调本应用的执行入口） -->
-  <permission android:name="xyz.i4o.uni.launcher.permission.VOICE" android:protectionLevel="signature"/>
-  <!-- 声明 ≠ 持有：发 CONTROL 广播时系统要检查「发送方是否持有接收方要求的权限」，
+    <!-- 声明 ≠ 持有：发 CONTROL 广播时系统要检查「发送方是否持有接收方要求的权限」，
          所以自己声明的权限也必须再 uses-permission 申请一次，否则广播会被静默丢弃。 -->
     <uses-permission android:name="xyz.i4o.uni.launcher.permission.VOICE"/>
     <uses-permission android:name="xyz.i4o.uni.voice.permission.VOICE"/>
@@ -49,15 +48,6 @@
     <activity android:name=".integration.OfficialWidgetActivity" android:exported="false" android:screenOrientation="landscape"/>
     <service android:name=".integration.MediaAccessService" android:label="UNI 媒体访问" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" android:exported="true"><intent-filter><action android:name="android.service.notification.NotificationListenerService"/></intent-filter></service>
     <service android:name=".GlobalDockService" android:exported="false"/>
-    <!-- 语音已拆成独立 App（xyz.i4o.uni.voice）：这里只保留它回调本应用执行车控的入口 -->
-    <receiver android:name=".voice.VoiceExecReceiver" android:exported="true" android:permission="xyz.i4o.uni.voice.permission.VOICE">
-      <intent-filter>
-        <action android:name="xyz.i4o.uni.launcher.VOICE_EXEC"/>
-        <action android:name="xyz.i4o.uni.launcher.VOICE_MEDIA_QUERY"/>
-        <action android:name="xyz.i4o.uni.launcher.VOICE_STATUS_QUERY"/>
-        <action android:name="xyz.i4o.uni.launcher.VOICE_STATE"/>
-      </intent-filter>
-    </receiver>
     <provider android:name=".integration.TransferFileProvider" android:authorities="xyz.i4o.uni.launcher.transfer" android:exported="false" android:grantUriPermissions="true"/>
     <receiver android:name=".GlobalDockBootReceiver" android:exported="true">
       <intent-filter><action android:name="android.intent.action.BOOT_COMPLETED"/></intent-filter>

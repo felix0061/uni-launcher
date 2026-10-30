@@ -1,0 +1,17 @@
+{
+  "checks": [
+    {
+      "name": "emulator_guard",
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "Target appears to be an emulator/x86 device. Select the car serial; --allow-emulator is only for validating this collector.\r\n"
+    },
+    {
+      "name": "unavailable_atrace",
+      "returncode": 2,
+      "stdout": "Target: emulator-5554; ABI: x86_64,x86,arm64-v8a,armeabi-v7a,armeabi; scenario: idle\r\nCollecting metadata. Prepare the requested screen; wait for CAPTURE START.\r\n",
+      "stderr": "No readable atrace categories; diagnostics saved in C:\\Users\\Gfy\\AppData\\Local\\Temp\\uni-jank-smoke-57a6b600\r\n"
+    }
+  ],
+  "meaning": "Emulator collector checks only; successful real-car capture not verified."
+}

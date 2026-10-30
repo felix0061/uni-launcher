@@ -1,0 +1,14 @@
+00:00 +0: loading D:/PO/uni-launcher/app/verification/perf-diagnosis/probe_test.dart
+00:00 +0: observe idle map MOVE delivery, optimized=false (variant: TargetPlatform.android)
+PROBE touch optimized=false beforeFrame=[0, 2, 2] frameRequested=false
+PROBE touch optimized=false afterFrame=[0, 2, 2]
+00:01 +1: observe idle map MOVE delivery, optimized=true (variant: TargetPlatform.android)
+PROBE touch optimized=true beforeFrame=[0] frameRequested=false
+PROBE touch optimized=true afterFrame=[0, 2]
+00:01 +2: observe live map lifetime across lift transforms (variant: TargetPlatform.android)
+PROBE lift creates=1 disposes=0 retained=true
+00:01 +3: observe map lifetime across blur freeze, glass=false (variant: TargetPlatform.android)
+PROBE blur glass=false creates=1 disposes=0
+00:01 +4: observe map lifetime across blur freeze, glass=true (variant: TargetPlatform.android)
+PROBE blur glass=true creates=3 disposes=2
+00:01 +5: All tests passed!
