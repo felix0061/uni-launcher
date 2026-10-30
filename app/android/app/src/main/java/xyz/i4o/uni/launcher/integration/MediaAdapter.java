@@ -61,6 +61,37 @@ public final class MediaAdapter {
         }catch(Exception ignored){}
         return labelValue;
     }
+    /** 语音「放周杰伦的歌」：先让当前播放器自己搜（A），再发系统搜索广播兜底（B）。
+     *  两条都试，谁响应算谁；返回 false 表示两个通道都没送出去。 */
+    public boolean playFromSearch(String query){
+        String q=query==null?"":query.trim();
+        if(q.isEmpty())return false;
+        boolean sent=false;
+        android.media.session.MediaController c=controller;
+        if(c!=null){
+            try{
+                android.os.Bundle extras=new android.os.Bundle();
+                extras.putString(android.app.SearchManager.QUERY,q);
+                extras.putString("query",q);
+                c.getTransportControls().playFromSearch(q,extras);
+                sent=true;
+                android.util.Log.i("UniMedia","playFromSearch(A) query="+q);
+            }catch(RuntimeException e){android.util.Log.w("UniMedia","playFromSearch(A) failed",e);}
+        }
+        try{
+            android.content.Intent i=new android.content.Intent(
+                    android.provider.MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH);
+            i.putExtra(android.app.SearchManager.QUERY,q);
+            i.putExtra("query",q);
+            i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+            String pkg=preferred==null?"auto":preferred;
+            if(!"auto".equals(pkg)&&!pkg.isEmpty())i.setPackage(pkg);
+            context.sendBroadcast(i);
+            sent=true;
+            android.util.Log.i("UniMedia","playFromSearch(B) broadcast query="+q);
+        }catch(RuntimeException e){android.util.Log.w("UniMedia","playFromSearch(B) failed",e);}
+        return sent;
+    }
     public void setPreferredPackage(String value){preferred=value==null||value.isEmpty()?"auto":value;start();}
     private final MediaController.Callback callback=new MediaController.Callback(){
         public void onMetadataChanged(MediaMetadata m){artworkDirty=true;choose();changed.run();}
@@ -137,6 +168,12 @@ public final class MediaAdapter {
         PlaybackState state=controller==null?null:controller.getPlaybackState();
         boolean playing=state!=null&&state.getState()==PlaybackState.STATE_PLAYING;
         if(play!=playing)command("toggle-play");
+    }
+    /** 轻量查询，供语音灵敏度联动；不构建快照 JSON。 */
+    public boolean isPlaying(){
+        MediaController c=controller;
+        PlaybackState p=c==null?null:c.getPlaybackState();
+        return p!=null&&p.getState()==PlaybackState.STATE_PLAYING;
     }
     /** Mirror the selected source into a standard active MediaSession. The
      * steering-wheel dispatcher can now target transport callbacks and the

@@ -77,7 +77,7 @@ public final class LiveNavigationHost {
     }
     public void setVisible(boolean visible){
         boolean changed=hostVisible!=visible;hostVisible=visible;
-        if(map!=null){if(!visible)map.cancelTouch();if(changed&&visible&&map.requestedVisible)map.activate();else map.publish();}
+        if(map!=null){if(!visible){map.cancelTouch();map.disarmOwnership();}if(changed&&visible&&map.requestedVisible)map.activate();else map.publish();}
     }
     // Texture composition moves with Flutter. There is no independent Android
     // layer to hide and no Surface recreation fence during page animations.
@@ -102,13 +102,40 @@ public final class LiveNavigationHost {
         VirtualDisplay display;
         Object inputForwarder;
         java.lang.reflect.Method forwardEvent;
-        int width,height,activationCount,launchCount,taskMoves,resizeCount,placementAttempts,generation;
+        int width,height,activationCount,launchCount,taskMoves,resizeCount,placementAttempts,generation,ownershipMoves;
         /** 纹理像素缩放：只降分辨率，密度同比降，保证导航 App 看到的 dp 尺寸不变。 */
         final float scale;
         boolean disposed,requestedVisible=true,ready,pointerDown;
         long downTime;
         String phase="loading",reason="正在载入实时地图";
         final Runnable timeout=()->{if(!disposed&&!ready){phase="unavailable";reason="地图未输出画面，请重试或全屏打开";publish();}};
+        /**
+         * 优化模式下的任务看护：导航 App（车机版有自启动/自恢复逻辑）会把宿主
+         * 任务搬回主屏，之后没人再搬回来，卡片就停在最后一帧变成 0 fps 死图。
+         * 这里在地图可见期间轮询任务归属，发现被搬走就搬回虚拟屏。
+         */
+        final Runnable ownershipWatch=new Runnable(){
+            @Override public void run(){
+                if(disposed||!hostVisible||!requestedVisible||display==null)return;
+                try{
+                    if(pkg.equals(apps().selected())){
+                        int before=taskMoves;
+                        ComponentName owner=placeExistingTask();
+                        if(taskMoves>before){
+                            ownershipMoves++;ready=false;awaitingFrame.set(true);
+                            phase="loading";reason="正在恢复实时地图";publish();
+                            android.util.Log.i("UniMap","ownership restored display="+display.getDisplay().getDisplayId()+" moves="+ownershipMoves);
+                            main.removeCallbacks(timeout);main.postDelayed(timeout,10000);
+                        }else if(owner==null&&launchCount<3){
+                            android.util.Log.i("UniMap","ownership task missing, relaunch launchCount="+launchCount);
+                            activate();
+                        }
+                    }
+                }catch(Exception|LinkageError ignored){
+                }
+                main.postDelayed(this,ready?1500:500);
+            }
+        };
         LiveMap(int id,String pkg,int logicalWidth,int logicalHeight,float scale)throws Exception{
             this.id=id;this.pkg=pkg;this.scale=scale;
             this.width=pixels(logicalWidth);this.height=pixels(logicalHeight);
@@ -140,6 +167,7 @@ public final class LiveNavigationHost {
             status.put("hostVisible",hostVisible);status.put("cardVisible",requestedVisible);
             status.put("activationCount",activationCount);status.put("resizeCount",resizeCount);
             status.put("launchCount",launchCount);status.put("taskMoves",taskMoves);
+            status.put("ownershipMoves",ownershipMoves);
             status.put("consumedFrames",consumedFrames.get());
             return status;
         }
@@ -185,6 +213,10 @@ public final class LiveNavigationHost {
             ready=false;awaitingFrame.set(true);phase="loading";reason="正在调整实时地图";publish();
             main.removeCallbacks(timeout);main.postDelayed(timeout,10000);
         }
+        boolean optimizeMode(){
+            return activity.getSharedPreferences("launcher",0).getBoolean("optimizeMode",false);
+        }
+        void disarmOwnership(){main.removeCallbacks(ownershipWatch);}
         void activate(){
             if(disposed||!hostVisible||!requestedVisible||display==null)return;
             try{
@@ -201,6 +233,11 @@ public final class LiveNavigationHost {
                 }
                 activationCount++;placementAttempts=0;int epoch=++generation;
                 main.postDelayed(()->verifyPlacement(epoch),200);
+                if(optimizeMode()){
+                    main.removeCallbacks(ownershipWatch);
+                    main.postDelayed(ownershipWatch,800);
+                    android.util.Log.i("UniMap","ownership watch armed (optimizeMode on)");
+                }
                 if(!ready){phase="loading";reason="正在载入实时地图";main.removeCallbacks(timeout);main.postDelayed(timeout,10000);}
                 publish();
             }catch(Exception|LinkageError error){phase="unavailable";reason="地图实时接入失败，请使用全屏入口";android.util.Log.w("UniMap","Live display launch",error);publish();}
@@ -259,7 +296,9 @@ public final class LiveNavigationHost {
             try{forwardEvent.invoke(inputForwarder,event);}catch(Exception ignored){}finally{event.recycle();pointerDown=false;}
         }
         void close(){
-            if(disposed)return;cancelTouch();disposed=true;generation++;main.removeCallbacks(timeout);channel.setMethodCallHandler(null);
+            if(disposed)return;cancelTouch();disposed=true;generation++;
+            main.removeCallbacks(timeout);main.removeCallbacks(ownershipWatch);
+            channel.setMethodCallHandler(null);
             if(display!=null){display.release();display=null;}
             if(surface!=null){surface.release();surface=null;}
             if(texture!=null){texture.setOnFrameConsumedListener(null);texture.release();texture=null;}

@@ -7,6 +7,7 @@ public final class CommandPolicy {
     public static boolean isClimateAction(String action) {
         return "temp-up".equals(action) || "temp-down".equals(action) || "fan-up".equals(action)
             || "fan-down".equals(action) || "climate-power".equals(action) || "climate-mode".equals(action)
+            || "temp-set".equals(action) || "fan-set".equals(action)
             || isSeatAction(action);
     }
     public static boolean isSeatAction(String action) {

@@ -12,7 +12,18 @@ public final class ClimateState {
             double next = CommandPolicy.temperature(("left".equals(zone) ? left : right) + ("temp-up".equals(action) ? .5 : -.5));
             if ("left".equals(zone)) left = next; else right = next;
             if (sync) left = right = next;
-        } else if ("fan-up".equals(action) || "fan-down".equals(action)) {
+        } else if ("temp-set".equals(action)) {
+            // 语音「调到23度」：落到 16~30 的 0.5 步进；左右联动时一起改
+            if (!CommandPolicy.validZone(zone)) return false;
+            double target;
+            try { target = Double.parseDouble(value); } catch (RuntimeException e) { return false; }
+            double next = CommandPolicy.temperature(target);
+            if ("left".equals(zone)) left = next; else right = next;
+            if (sync) left = right = next;
+        } else if ("fan-set".equals(action)) {
+            int level;
+            try { level = Integer.parseInt(value); } catch (RuntimeException e) { return false; }
+            fan = CommandPolicy.fan(level);        } else if ("fan-up".equals(action) || "fan-down".equals(action)) {
             fan = CommandPolicy.fan(fan + ("fan-up".equals(action) ? 1 : -1));
         } else if ("climate-power".equals(action)) power = !power;
         else if ("climate-mode".equals(action)) {

@@ -15,7 +15,9 @@ final class OfficialCarCommand {
     static String key(String action, String zone, String mode) {
         if ("temp-up".equals(action) || "temp-down".equals(action))
             return "left".equals(zone) || "right".equals(zone) ? zone : null;
-        if ("fan-up".equals(action) || "fan-down".equals(action)) return "fan";
+        if ("fan-up".equals(action) || "fan-down".equals(action) || "fan-set".equals(action)) return "fan";
+        if ("temp-set".equals(action))
+            return "left".equals(zone) || "right".equals(zone) ? zone : null;
         if ("climate-power".equals(action)) return "power";
         if ("climate-mode".equals(action))
             return "auto".equals(mode) || "ac".equals(mode) || "recirc".equals(mode) || "sync".equals(mode) ? mode : null;
@@ -42,7 +44,15 @@ final class OfficialCarCommand {
             if (!(current instanceof Number)) return null; // Never send advertised-but-unmapped AUTO.
             double raw = ((Number) current).doubleValue();
             if (!finite(raw) || raw != Math.rint(raw) || raw < 0 || raw > 7) return null;
-            int target = Math.max(0, Math.min(7, (int) raw + ("fan-up".equals(action) ? 1 : -1)));
+            int target;
+            if ("fan-set".equals(action)) {
+                int want;
+                try { want = Integer.parseInt(mode); } catch (RuntimeException e) { return null; }
+                if (want < 0 || want > 7) return null;
+                target = want;
+            } else {
+                target = Math.max(0, Math.min(7, (int) raw + ("fan-up".equals(action) ? 1 : -1)));
+            }
             return new OfficialCarCommand(key, OfficialCarContract.FAN, 0,
                     target == 0 ? 0 : OfficialCarContract.FAN + target, null, target);
         }

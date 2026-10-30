@@ -1,0 +1,13 @@
+# 语音模型资产一律原样存储，禁止任何换行符转换。
+# tokens.txt / lexicon.txt / keywords.txt / en.phone 都是「一行一个 token」的解析格式，
+# 一旦被 core.autocrlf 转成 CRLF，解析出的 token 会带上 \r，导致唤醒词、
+# 词表与离线音色全部失效（且只在重新 clone 后复现，极难排查）。
+app/android/app/src/main/assets/models/** -text
+
+# 其它二进制资产
+*.onnx binary
+*.fst binary
+*.far binary
+*.so binary
+*.jar binary
+*.keystore binary

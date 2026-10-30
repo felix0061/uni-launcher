@@ -95,28 +95,32 @@ class _LauncherShellState extends State<LauncherShell> {
                                 child: SizedBox(
                                     width: Design.canvasWidth,
                                     height: height / scale,
-                                    child: Column(children: [
-                                      Header(
-                                          controller: controller,
-                                          position: pagePosition),
-                                      Expanded(
-                                          child: IndexedStack(
-                                              index:
-                                                  controller.settings ? 1 : 0,
-                                              children: [
-                                            TickerMode(
-                                                enabled: !controller.settings,
-                                                child: Desktop(
-                                                    controller: controller,
-                                                    position: pagePosition)),
-                                            controller.settings
-                                                ? SettingsScreen(
-                                                    controller: controller)
-                                                : const SizedBox.shrink(),
-                                          ])),
-                                      if (!globalDockActive)
-                                        BottomDock(controller: controller),
-                                    ])))));
+                                    child: Stack(children: [
+                                      Column(children: [
+                                        Header(
+                                            controller: controller,
+                                            position: pagePosition),
+                                        Expanded(
+                                            child: IndexedStack(
+                                                index: controller.settings
+                                                    ? 1
+                                                    : 0,
+                                                children: [
+                                              TickerMode(
+                                                  enabled:
+                                                      !controller.settings,
+                                                  child: Desktop(
+                                                      controller: controller,
+                                                      position: pagePosition)),
+                                              controller.settings
+                                                  ? SettingsScreen(
+                                                      controller: controller)
+                                                  : const SizedBox.shrink(),
+                                            ])),
+                                        if (!globalDockActive)
+                                          BottomDock(controller: controller),
+                                      ]),
+                                                                          ])))));
                   })),
             )));
   }

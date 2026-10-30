@@ -31,6 +31,8 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // 离线语音引擎的设备级冒烟测试（模型加载/合成），本机模拟器与车机均可跑
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     lint {
@@ -55,6 +57,17 @@ android {
         release {
             // Local test distribution using the existing baseline development certificate.
             signingConfig = signingConfigs.getByName("uniLocal")
+            // sherpa-onnx 的 JNI 层用 GetFieldID 按名字读取 Kotlin data class 字段
+            // （maxActivePaths / keywordsFile / numTrailingBlanks ...）。R8 会把类和字段
+            // 重命名成单字母，JNI 找不到字段就直接抛
+            // "Failed to get field ID for maxActivePaths"，引擎降级到 stub。
+            // dex 本身不到 1MB，关掉压缩混淆换取离线引擎加载的确定性。
+            isMinifyEnabled = false
+            isShrinkResources = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }
@@ -72,6 +85,10 @@ flutter {
 dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")
+    androidTestImplementation("androidx.test.ext:junit:1.1.2")
+    androidTestImplementation("androidx.test:runner:1.3.0")
+    // 语音已拆成独立 APK（:voice 模块自带 sherpa-onnx 与模型）：
+    // 桌面这边不再依赖 sherpa-onnx / okhttp，安装包少掉一整套原生库
 }
 
 val syncOfficialCatalog by tasks.registering(Copy::class) {

@@ -59,6 +59,43 @@ public final class NavigationApps {
         }catch(Exception|LinkageError ignored){}
         return launchIntent();
     }
+    /** 语音「导航去 XX」：按已选导航应用拼对应的路线 URI，并切到前台。 */
+    public boolean routeTo(String destination){
+        if(destination==null)return false;
+        String dest=destination.trim();
+        if(dest.isEmpty())return false;
+        String pkg=selected();
+        if(pkg.isEmpty())return false;
+        String enc=android.net.Uri.encode(dest);
+        Intent intent=null;
+        try{
+            if(pkg.startsWith("com.autonavi.")){
+                intent=new Intent(Intent.ACTION_VIEW,
+                        android.net.Uri.parse("androidamap://route?sourceApplication=uni&dname="+enc+"&dev=0&t=0"));
+            }else if(pkg.startsWith("com.baidu.")){
+                intent=new Intent(Intent.ACTION_VIEW,
+                        android.net.Uri.parse("baidumap://map/direction?destination="+enc+"&mode=driving&src=uni"));
+            }else if(pkg.startsWith("com.tencent.")){
+                intent=new Intent(Intent.ACTION_VIEW,
+                        android.net.Uri.parse("qqmap://map/routeplan?type=drive&to="+enc+"&referer=uni"));
+            }
+            if(intent!=null){
+                intent.setPackage(pkg);
+                if(context.getPackageManager().resolveActivity(intent,0)==null)intent=null;
+            }
+        }catch(Exception|LinkageError ignored){intent=null;}
+        if(intent==null){
+            intent=new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("geo:0,0?q="+enc)).setPackage(pkg);
+        }
+        try{moveOwnSingleTaskToDisplay(pkg);}catch(Exception|LinkageError ignored){}
+        try{
+            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                    |Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP));
+            return true;
+        }catch(Exception|LinkageError e){
+            android.util.Log.w("UniNavigation","able to route",e);return false;
+        }
+    }
     /** Return an embedded single-task navigation stack to the physical display
      * before launching it. Starting the package alone leaves AMap focused on
      * ActivityView's virtual display and appears to do nothing on the panel. */

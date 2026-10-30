@@ -7,6 +7,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Build;
+import android.media.AudioManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.Toast;
@@ -20,6 +21,7 @@ import org.json.JSONArray;
 import xyz.i4o.uni.launcher.core.ClimateState;
 import xyz.i4o.uni.launcher.core.CommandPolicy;
 import xyz.i4o.uni.launcher.integration.*;
+import xyz.i4o.uni.launcher.voice.VoiceLink;
 
 /** One Application-scoped native data source for all Flutter engines.
  * Adapter access and listener delivery are serialized on Android's main thread.
@@ -45,6 +47,8 @@ public final class LauncherRuntime {
     private final NavigationAudioAdapter navigationAudio;
     private final LanTransfer transfer;
     private final ClimateState simulator=new ClimateState();
+    /** 数据源引用计数：窗口 listener 与语音命令各持一份（§9.2），全空才停源。 */
+    private int sourceRefs;
     private final Map<Object,Runnable> listeners=new IdentityHashMap<>();
     private JSONArray installed;
     private boolean homeVisible;
@@ -91,6 +95,9 @@ public final class LauncherRuntime {
         if(prefs.getAll().isEmpty())prefs.edit().putBoolean("globalDockEnabled",true).apply();
         if(!prefs.contains("demo"))prefs.edit().putBoolean("demo",Build.FINGERPRINT.contains("generic")||Build.MODEL.contains("sdk_gphone")||Build.MODEL.contains("Android SDK")).apply();
         long afterPrefs=android.os.SystemClock.uptimeMillis();
+        // 桌面一起来就问一次语音模块：把总开关的持久化状态拉回来，
+        // 服务被杀过也能自动重新拉起（开关是开的才拉），避免用户每次手动再打开。
+        main.postDelayed(() -> { try { VoiceLink.refresh(application); } catch (RuntimeException ignored) {} }, 2500);
         apps=new AppRepository(context);catalog=new OfficialCatalog(context);
         long afterRepos=android.os.SystemClock.uptimeMillis();
         vehicle=new VehicleTelemetry(context,this::publish);navigation=new NavigationApps(context,prefs);
@@ -153,6 +160,8 @@ public final class LauncherRuntime {
                 .put("climate",climate).put("vehicle",telemetry).put("version",xyz.i4o.uni.launcher.BuildConfig.VERSION_NAME+"-flutter");
             state.put("desktopSelected",homeVisible&&desktopContent);
             state.put("trafficLights",trafficLights.snapshot());
+            // 语音已拆成独立 App：这里只报安装状态和它上报的当前状态
+            state.put("voice",VoiceLink.snapshot(context));
             JSONObject mediaState=prefs.getBoolean("demo",false)?demoMedia():media.snapshot().put("preferredPackage",prefs.getString("mediaPackage","auto"));
             JSONObject appNames=storedAppNames();
             String design=prefs.getString("savedDesign","");
@@ -210,7 +219,7 @@ public final class LauncherRuntime {
                 String themeStyle=p.optString("themeStyle","classic");
                 if(!"classic".equals(themeStyle)&&!"blueGlass".equals(themeStyle))return false;
                 String effect=p.optString("pageTransition","none");
-                if(!"none".equals(effect)&&!"fade".equals(effect)&&!"slide".equals(effect)&&!"zoom".equals(effect)&&!"depth".equals(effect))return false;
+                if(!"none".equals(effect)&&!"fade".equals(effect)&&!"slide".equals(effect)&&!"zoom".equals(effect)&&!"depth".equals(effect)&&!"lift".equals(effect))return false;
                 if(!"smart".equals(mode)&&!"system".equals(mode)&&!"dark".equals(mode)&&!"light".equals(mode))return false;
                 String wallpaper=p.optString("wallpaper","gradient");
                 if(!"gradient".equals(wallpaper)&&!"coastal".equals(wallpaper)&&!"graphite".equals(wallpaper)&&!"dawn".equals(wallpaper)&&!"neon".equals(wallpaper)&&!"precision".equals(wallpaper)&&!"terrain".equals(wallpaper)&&!"custom".equals(wallpaper))return false;
@@ -238,6 +247,8 @@ public final class LauncherRuntime {
                     }
                 }
                 SharedPreferences.Editor editor=prefs.edit().putString("savedDesign",raw);
+                // 原生组件（地图任务看护等）读 prefs 的镜像值，不解析 64KB 设计串。
+                editor.putBoolean("optimizeMode",p.optBoolean("optimizeMode",false));
                 if(data.has("appNames"))editor.putString("appNames",data.getJSONObject("appNames").toString());
                 // 异步写盘：内存立即生效，不阻塞主线程等待磁盘提交；布局变更由
                 // trackDesign 的内容指纹在下次快照时推进 designRevision。
@@ -247,6 +258,8 @@ public final class LauncherRuntime {
         }
     private boolean handleOnMain(JSONObject request)throws Exception{
         String action=request.optString("action"),value=request.optString("value"),zone=request.optString("zone");
+        // 车机上没有调试器，出问题时先看这一行有没有出现，就能分清「没点到」还是「动作失败」。
+        if(action.startsWith("transfer-"))android.util.Log.i("UniTransfer","action "+action+(value.isEmpty()?"":" "+value));
         if("rename-app".equals(action)){
             if(zone.length()==0||zone.length()>255||zone.indexOf('\n')>=0||zone.indexOf('\r')>=0||value.length()>96||value.indexOf('\n')>=0||value.indexOf('\r')>=0)return true;
             JSONObject names=storedAppNames();
@@ -258,6 +271,10 @@ public final class LauncherRuntime {
         }
         if("demo-mode".equals(action)){
             prefs.edit().putBoolean("demo",request.optBoolean("enabled",false)).apply();publish();return true;
+        }
+        // 优化模式即时生效：Flutter 拨开关时先发这条，设计串随后落盘。
+        if("optimize-mode".equals(action)){
+            prefs.edit().putBoolean("optimizeMode",request.optBoolean("enabled",false)).apply();return true;
         }
         if("select-player".equals(action)||"select-navigation".equals(action)){
             if(!"auto".equals(value)&&context.getPackageManager().getLaunchIntentForPackage(value)==null){toast("所选应用未安装或不可启动");return true;}
@@ -275,7 +292,14 @@ public final class LauncherRuntime {
         if("navigation-audio-mode".equals(action)){if(navigationAudio.setMode(value))settingsRevision++;else toast("导航混音模式不可用或原车未确认变更");publish();return true;}
         if("calendar-refresh".equals(action)){calendar.refresh();publish();return true;}
         if("weather-forecast-refresh".equals(action)){weather.refreshForecast();return true;}
+        // 语音「放周杰伦的歌」：交给当前播放器自己搜
+        if("music-search".equals(action)){media.playFromSearch(value);return true;}
         if("launch-navigation".equals(action)){if(!navigation.launchFullscreen())toast("请选择已安装的导航应用");return true;}
+        // 语音「导航去 XX」：把目的地交给已选导航应用
+        if("navigate-to".equals(action)){
+            if(!navigation.routeTo(value))toast("没找到能用的导航应用");
+            return true;
+        }
         if("launch-player".equals(action)){
             String selected=prefs.getString("mediaPackage","auto");
             if("auto".equals(selected))selected=media.snapshot().optString("source","ecarx.xsf.mediacenter");
@@ -290,6 +314,9 @@ public final class LauncherRuntime {
         if("transfer-stop".equals(action)){transfer.stop();publish();return true;}
         if("transfer-install".equals(action)){if(!transfer.install(value))toast("未找到可安装的文件，或系统未允许安装");publish();return true;}
         if("transfer-delete".equals(action)){transfer.delete(value);publish();return true;}
+        // 手机只负责把地址交上来；下载由车机上的点击触发，避免车机被外部驱动流量。
+        if("transfer-link-download".equals(action)){if(!transfer.downloadLink(value))toast("链接无效或任务已不存在");publish();return true;}
+        if("transfer-link-remove".equals(action)){transfer.removeLink(value);publish();return true;}
         if("official-widget".equals(action)){
             if(catalog.providers(value).isEmpty()){toast("没有对应的原厂卡片");return true;}
             context.startActivity(new Intent(context,OfficialWidgetActivity.class).putExtra("type",value).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));return true;
@@ -303,6 +330,54 @@ public final class LauncherRuntime {
             }
             if(!apps.launchPackage(catalog.packageFor(value)))toast("此设备未安装对应原车应用");return true;
         }
+        // ---- 语音：桌面只管总开关，音色/灵敏度/云端都在独立语音 App 里设置 ----
+        if("voice-enabled".equals(action)){
+            // 开关状态由语音模块持有，这里只发指令；等回执到了再刷一次界面
+            VoiceLink.setEnabled(context,request.optBoolean("enabled",false),this::publish);
+            publish();return true;
+        }
+        if("voice-open-settings".equals(action)){VoiceLink.openSettings(context);return true;}
+        if("voice-refresh".equals(action)){VoiceLink.refresh(context);publish();return true;}
+        // ---- 音量（语音指令走系统 AudioManager，不影响 launcher 快照） ----
+        if("volume-up".equals(action)||"volume-down".equals(action)||"volume-mute".equals(action)){adjustVolume(action);return true;}
+        // 语音「音量调到 50」：按百分比换算成系统媒体流的档位
+        if("volume-set".equals(action)){
+            try{
+                AudioManager am=(AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
+                if(am!=null){
+                    int percent=Integer.parseInt(value);
+                    int max=am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+                    int index=Math.max(0,Math.min(max,Math.round(max*percent/100f)));
+                    am.setStreamVolume(AudioManager.STREAM_MUSIC,index,AudioManager.FLAG_SHOW_UI);
+                }
+            }catch(RuntimeException ignored){}
+            return true;
+        }
+        // 语音「打开高德」：按名称在已装应用里找最接近的一个
+        if("launch-by-label".equals(action)){
+            String want=value==null?"":value.trim().toLowerCase();
+            if(want.isEmpty())return true;
+            try{
+                org.json.JSONArray list=apps.refresh().apps;
+                String bestId=null;int bestScore=-1;
+                for(int i=0;i<list.length();i++){
+                    org.json.JSONObject item=list.optJSONObject(i);
+                    if(item==null)continue;
+                    String label=item.optString("label","").toLowerCase();
+                    String pkg=item.optString("package","").toLowerCase();
+                    int score=-1;
+                    if(label.equals(want))score=100;
+                    else if(label.contains(want))score=60+want.length();
+                    else if(pkg.contains(want))score=40+want.length();
+                    if(score>bestScore){bestScore=score;bestId=item.optString("id","");}
+                }
+                if(bestId!=null&&!bestId.isEmpty()&&bestScore>0)apps.launch(bestId);
+                else toast("没找到「"+value+"」这个应用");
+            }catch(RuntimeException ignored){}
+            return true;
+        }
+        // 语音「回桌面」：切回桌面页
+        if("show-home".equals(action)){setDesktopContent(true);publish();return true;}
         if(CommandPolicy.isClimateAction(action)){
             boolean demo=prefs.getBoolean("demo",false);
             boolean ok=demo?simulator.apply(action,request.optString("zone"),value):vehicle.command(action,request.optString("zone"),value);
@@ -337,17 +412,38 @@ public final class LauncherRuntime {
         onMain(()->{
             boolean first=listeners.isEmpty();
             listeners.put(owner,listener);
-            if(first){media.setPreferredPackage(prefs.getString("mediaPackage","auto"));vehicle.start();weather.start();systemStatus.start();calendar.start();trafficLights.start();}
+            if(first)acquireSources();
             publish();return null;
         });
     }
 
     public void removeListener(Object owner){
         onMain(()->{
-            if(listeners.remove(owner)!=null&&listeners.isEmpty()){media.stop();vehicle.stop();weather.stop();systemStatus.stop();calendar.stop();trafficLights.stop();}
+            if(listeners.remove(owner)!=null&&listeners.isEmpty())releaseSources();
             return null;
         });
     }
+
+    /** §9.2：数据源引用计数。窗口 listener 与语音命令各持一份，全空才停源。 */
+    private void acquireSources(){
+        if(sourceRefs++==0){media.setPreferredPackage(prefs.getString("mediaPackage","auto"));vehicle.start();weather.start();systemStatus.start();calendar.start();trafficLights.start();}
+    }
+    private void releaseSources(){
+        if(--sourceRefs<=0){sourceRefs=0;media.stop();vehicle.stop();weather.stop();systemStatus.stop();calendar.stop();trafficLights.stop();}
+    }
+
+    /** 语音命令入口：执行前后各持一份源引用，保证无窗口时车辆/媒体仍就绪。 */
+    public boolean handleVoice(JSONObject request){
+        return onMain(()->{
+            acquireSources();
+            try{return handleOnMain(request);}
+            catch(Exception e){return false;}
+            finally{releaseSources();}
+        });
+    }
+
+    /** 轻量查询：媒体是否在播，用于语音唤醒/识别的噪音灵敏度联动（§9.3）。 */
+    public boolean mediaPlaying(){return onMain(()->media.isPlaying());}
 
     /** Climate, media and status sources each publish on their own callback. A burst
      * of them must reach the window as one packet: coalesce per looper turn and cap
@@ -429,6 +525,46 @@ public final class LauncherRuntime {
     }
 
     /** 后台构建应用列表，完成后在主线程替换结果并补发；只保留最后一次请求的结果。 */
+    /** 语音模块问「车况/天气」时回一句能直接念出来的话；读不到就回空串。 */
+    public String voiceStatusText(String what) {
+        try {
+            if ("weather".equals(what)) {
+                org.json.JSONObject w = weather.snapshot();
+                StringBuilder b = new StringBuilder();
+                String city = w.optString("city", "");
+                if (!city.isEmpty()) b.append(city).append("，");
+                double t = w.optDouble("temperature", w.optDouble("temp", Double.NaN));
+                if (!Double.isNaN(t)) b.append("现在 ").append(Math.round(t)).append(" 度");
+                String desc = w.optString("description", w.optString("condition", ""));
+                if (!desc.isEmpty()) b.append("，").append(desc);
+                b.append("。");
+                return b.length() <= 2 ? "" : b.toString();
+            }
+            if ("vehicle".equals(what)) {
+                org.json.JSONObject v = vehicle.snapshot();
+                StringBuilder b = new StringBuilder();
+                double soc = v.optDouble("soc", v.optDouble("battery", Double.NaN));
+                if (!Double.isNaN(soc)) b.append("电量 ").append(Math.round(soc)).append("%");
+                double range = v.optDouble("range", v.optDouble("electricRange", Double.NaN));
+                if (!Double.isNaN(range)) {
+                    if (b.length() > 0) b.append("，");
+                    b.append("还能跑 ").append(Math.round(range)).append(" 公里");
+                }
+                double fuel = v.optDouble("fuel", v.optDouble("fuelLevel", Double.NaN));
+                if (!Double.isNaN(fuel)) {
+                    if (b.length() > 0) b.append("，");
+                    b.append("油量 ").append(Math.round(fuel)).append("%");
+                }
+                if (b.length() == 0) {
+                    String reason = v.optString("reason", "");
+                    return reason.isEmpty() ? "" : "车辆数据还没读到（" + reason + "），仪表盘上的更准";
+                }
+                b.append("。");
+                return b.toString();
+            }
+        } catch (RuntimeException ignored) {}
+        return "";
+    }
     private void refreshAppsInBackground(){
         appsRefreshQueued=false;
         final int gen=appsRefreshGeneration.incrementAndGet();
@@ -451,6 +587,16 @@ public final class LauncherRuntime {
     }
 
     private void toast(String text){Toast.makeText(context,text,Toast.LENGTH_SHORT).show();}
+
+    /** 语音音量指令：走系统媒体流，弹出系统音量提示。 */
+    private void adjustVolume(String action){
+        try{
+            AudioManager am=(AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
+            if(am==null)return;
+            if("volume-mute".equals(action))am.adjustStreamVolume(AudioManager.STREAM_MUSIC,AudioManager.ADJUST_TOGGLE_MUTE,AudioManager.FLAG_SHOW_UI);
+            else am.adjustStreamVolume(AudioManager.STREAM_MUSIC,"volume-up".equals(action)?AudioManager.ADJUST_RAISE:AudioManager.ADJUST_LOWER,AudioManager.FLAG_SHOW_UI);
+        }catch(RuntimeException ignored){}
+    }
 
     private JSONObject storedAppNames(){
         try{

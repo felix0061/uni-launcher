@@ -6,6 +6,7 @@ import 'card_content.dart';
 import 'glass_surface.dart';
 import 'launcher_dialog.dart';
 import 'dock_music_visual.dart';
+import 'voice_dock_slot.dart';
 import 'dock_music_progress_background.dart';
 import 'uni_app_icon.dart';
 import 'file_transfer_popup.dart';
@@ -102,10 +103,17 @@ class BottomDock extends StatelessWidget {
                     ? () => c.command('climate-mode', value: mode)
                     : null,
                 child: child);
+        final voice = mapOf(native['voice']);
+        final voiceState = '${voice['state']}';
+    final voiceHeard = '${voice['heard'] ?? ''}';
+        final voiceActive = voice['enabled'] == true &&
+            const {'listening', 'thinking', 'speaking'}
+                .contains('${voice['state']}');
         return SizedBox(
             key: const ValueKey('bottom-dock'),
             height: Design.px(96),
-            child: GlassSurface(
+            child: Stack(children: [
+              GlassSurface(
                 dock: true,
                 radius: 0,
                 shadow: false,
@@ -157,7 +165,12 @@ class BottomDock extends StatelessWidget {
                   gap(),
                   separator(),
                   gap(),
-                  SizedBox(
+                  AnimatedScale(
+                      scale: voiceActive ? .986 : 1,
+                      alignment: Alignment.centerRight,
+                      duration: const Duration(milliseconds: 420),
+                      curve: Curves.easeOutCubic,
+                      child: SizedBox(
                       width: Design.px(480),
                       child: climateGroup(Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -198,12 +211,18 @@ class BottomDock extends StatelessWidget {
                                 active: climate['power'] == true,
                                 framed: !s.technicalFrame,
                                 width: 56)
-                          ]))),
-                  gap(),
-                  separator(),
-                  gap(),
+                          ])))),
+                  VoiceDockSlot(
+                      active: voiceActive,
+                      state: voiceState,
+                      heard: voiceHeard),
                   Expanded(
-                      child: GlassSurface(
+                      child: AnimatedScale(
+                          scale: voiceActive ? .994 : 1,
+                          alignment: Alignment.centerLeft,
+                          duration: const Duration(milliseconds: 420),
+                          curve: Curves.easeOutCubic,
+                          child: GlassSurface(
                           key: const ValueKey('dock-music-frame'),
                           radius: s.controlRadius,
                           shadow: false,
@@ -331,7 +350,7 @@ class BottomDock extends StatelessWidget {
                                                   child: DockMusicVisual(
                                                       media: media, demo: demo))
                                             ])))
-                                  ]))))),
+                                  ])))))),
                   gap(),
                   separator(),
                   gap(),
@@ -343,7 +362,9 @@ class BottomDock extends StatelessWidget {
                       framed: false,
                       onTap: () => showUniDockMenu(context, c),
                       child: UniAppIcon(size: Design.px(42)))
-                ])));
+                ])),
+              // 语音指示已由空调区与音乐区之间的胶囊承担，这里不再叠光带
+            ]));
       });
 }
 

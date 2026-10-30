@@ -11,3 +11,13 @@ __pycache__/
 /archive/webview-android/node_modules/
 
 /car-reports/
+
+# 语音模型临时下载/解压目录（最终模型已入 assets，临时文件不入库）
+/.tmp-models/
+
+# 本地临时产物（模型下载解压、验证截图）
+.tmp-models2/
+.tmp-shots/
+.tmp-tts/
+.tmp-vc/
+.tmp-*.py
